@@ -1,0 +1,26 @@
+---
+- assert:
+    msg: 'we only support Ubuntu 18.04 for now'
+  when: ansible_distribution != 'Ubuntu' or ansible_distribution_release != 'bionic'
+
+- import_role:
+    name: computology.packagecloud
+  vars:
+    repository: vectorizedio/v
+    os: ubuntu
+    version: bionic
+    master_token: "{{ redpanda_vectorizedio_packagecloud_token }}"
+  when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'bionic'
+
+- name: install redpanda from repository
+  package:
+    name:
+      - redpanda
+    state: present
+    update_cache: yes
+
+- name: set data dir file perms
+  file:
+    path: /var/lib/redpanda/data
+    owner: redpanda
+    group: redpanda

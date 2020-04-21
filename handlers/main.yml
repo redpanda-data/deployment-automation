@@ -1,0 +1,12 @@
+---
+- name: restart redpanda-tuner
+  become: true
+  systemd:
+    name: redpanda-tuner
+    state: restarted
+
+- name: restart redpanda
+  become: true
+  systemd:
+    name: redpanda
+    state: restarted
