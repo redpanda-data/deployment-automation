@@ -1,0 +1,16 @@
+---
+- include: check-requirements.yml
+
+- name: install package dependencies
+  package:
+    name:
+      - mdadm
+      - xfsprogs
+    state: present
+    update_cache: yes
+
+- include: prepare-data-dir.yml
+
+- include: install-redpanda.yml
+
+- include: start-redpanda.yml
