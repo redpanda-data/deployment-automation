@@ -42,9 +42,23 @@ variable (see [Role Variables](#-role-variables) below).
   * `redpanda_cluster_org_id`. ID of the organization that the cluster 
     belongs to (**default**: `vectorized-customer`).
 
-In addition, the role expects hosts in the inventory to be tagged with 
-a `private_ip` variable that denotes the internal network IP address 
-assigned to them.
+## Inventory Requirements
+
+The role expects each host in the inventory have the following 
+variables associated to them:
+
+  * `private_ip`. Denotes the internal network IP address assigned to 
+  them.
+  * `id`. The ID of the host in the redpanda cluster (1-index).
+
+For example:
+
+```ini
+[redpanda]
+54.186.78.36 private_ip=172.31.18.83 id=1 ansible_user=myuser ansible_become=True
+54.186.78.37 private_ip=172.31.18.84 id=2 ansible_user=myuser ansible_become=True
+54.186.78.38 private_ip=172.31.18.85 id=3 ansible_user=myuser ansible_become=True
+```
 
 ## Dependencies
 
