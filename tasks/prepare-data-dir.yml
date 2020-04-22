@@ -14,7 +14,7 @@
       fstype: xfs
       state: mounted
 
-  when: not redpanda_with_raid | default(False)
+  when: not redpanda_with_raid | default(True)
 
 
 - name: prepare raid for data directory
@@ -43,7 +43,7 @@
     include_role:
       name: mrlesmithjr.mdadm
 
-  when: redpanda_with_raid | default(False)
+  when: redpanda_with_raid | default(True)
 
 - name: data path
   file:
