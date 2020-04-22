@@ -36,7 +36,7 @@ variable (see [Role Variables](#-role-variables) below).
   * `redpanda_vectorizedio_packagecloud_token` **Required** The master 
     token provided by VectorizedIO to <https://packagecloud.io>.
   * `redpanda_with_raid`. Whether to aggregate the local SSD devices 
-    in RAID0 configuration (**default**: `false`).
+    in RAID0 configuration (**default**: `true`).
   * `redpanda_cluster_id`. ID of the cluster being deployed 
     (**default**: `redpanda`).
   * `redpanda_cluster_org_id`. ID of the organization that the cluster 
