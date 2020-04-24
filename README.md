@@ -55,7 +55,7 @@ assigned to them.
 ## Example Playbook
 
 ```yaml
-- hosts: <HOSTNAMES>
+- hosts: redpanda
   become: yes
   roles:
   - {
@@ -68,7 +68,7 @@ assigned to them.
 ## Example Inventory
 
 ```yaml
-my-cluster:
+redpanda:
   hosts:
     <HOSTNAME>:
       private_ip: <PRIVATE_IP_ADDRESS>
