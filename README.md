@@ -55,9 +55,24 @@ assigned to them.
 ## Example Playbook
 
 ```yaml
-- hosts: redpanda
+- hosts: <HOSTNAMES>
+  become: yes
   roles:
-  - { role: redpanda, redpanda_with_raid: true }
+  - {
+      role: redpanda-ansible,
+      redpanda_with_raid: true,
+      redpanda_vectorizedio_packagecloud_token: <TOKEN>
+    }
+```
+
+## Example Inventory
+
+```yaml
+my-cluster:
+  hosts:
+    <HOSTNAME>:
+      private_ip: <PRIVATE_IP_ADDRESS>
+      id: 1
 ```
 
 ## Author Information
