@@ -56,8 +56,23 @@ assigned to them.
 
 ```yaml
 - hosts: redpanda
+  become: yes
   roles:
-  - { role: redpanda, redpanda_with_raid: true }
+  - {
+      role: redpanda-ansible,
+      redpanda_with_raid: true,
+      redpanda_vectorizedio_packagecloud_token: <TOKEN>
+    }
+```
+
+## Example Inventory
+
+```yaml
+redpanda:
+  hosts:
+    <HOSTNAME>:
+      private_ip: <PRIVATE_IP_ADDRESS>
+      id: 1
 ```
 
 ## Author Information
