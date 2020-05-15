@@ -22,11 +22,12 @@ ansible-galaxy install -r requirements.yml
 
 ## Recommended hardware
 
+* On AWS, `i3.8xlarge` gives you the best perf per dollar, since we are IO bound.
+
 The role assumes that the hosts where Redpanda is running are 
 provisioned with SSD devices, and available as `/dev/nvme0n1`, 
 `/dev/nvme0n2`, etc. In the case of AWS, it is recommended to use 
-instance type `i3.8xlarge` and enable the `redpanda_with_raid` 
-variable (see [Role Variables](#-role-variables) below).
+`redpanda_with_raid` variable (see [Role Variables](#-role-variables) below).
 
 ## Requirements
 
