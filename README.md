@@ -4,6 +4,8 @@ Ansible role for installing and configuring [Redpanda](https://vectorized.io).
 
 ## Installation
 
+> See a fully worked out [AWS Example](./example)
+
 Add the following to a `requirements.yml` file:
 
 ```yaml
