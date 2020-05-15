@@ -1,0 +1,3 @@
+- src: computology.packagecloud
+- src: mrlesmithjr.mdadm
+- src: git+https://github.com/vectorizedio/redpanda-ansible

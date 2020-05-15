@@ -1,0 +1,8 @@
+- hosts: redpanda
+  become: yes
+  roles:
+  - {
+      role: redpanda-ansible,
+      redpanda_with_raid: true,
+      redpanda_vectorizedio_packagecloud_token: <TOKEN>
+    }
