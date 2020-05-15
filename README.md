@@ -62,6 +62,8 @@ assigned to them.
   roles:
   - {
       role: redpanda-ansible,
+      redpanda_cluster_org_id: '<customer-name>'
+      redpanda_cluster_id: '<us-west-2>'
       redpanda_with_raid: true,
       redpanda_vectorizedio_packagecloud_token: <TOKEN>
     }

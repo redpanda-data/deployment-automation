@@ -1,4 +1,0 @@
----
-readpanda_with_raid: false
-redpanda_cluster_org_id: 'vectorized-customer'
-redpanda_cluster_id: 'redpanda'
