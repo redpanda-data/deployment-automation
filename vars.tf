@@ -16,7 +16,7 @@ variable "distro" {
 
 variable "instance_type" {
   description = "Default instance type to create"
-  default     = "i3.large"
+  default     = "i3.8xlarge"
 }
 
 variable "public_key_path" {
