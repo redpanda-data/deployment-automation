@@ -1,0 +1,49 @@
+- hosts: redpanda
+  tasks:
+
+  - name: ensure /etc/redpanda exists
+    file:
+      path: /etc/redpanda
+      state: directory
+
+  - name: configure redpanda
+    notify:
+      - restart redpanda-tuner
+      - restart redpanda
+    vars:
+      seed_private_ip: '{{ hostvars[groups["redpanda"][0]].private_ip }}'
+    shell: |
+      rpk config set cluster_id 'redpanda'
+      rpk config set organization 'redpanda-test'
+      rpk config set redpanda.advertised_kafka_api '{
+        address: {{ hostvars[inventory_hostname].private_ip }},
+        port: 9092
+      }' --format yaml
+      rpk config set redpanda.advertised_rpc_api '{
+        address: {{ hostvars[inventory_hostname].private_ip }},
+        port: 33145
+      }' --format yaml
+      rpk mode production
+
+      {% if hostvars[groups['redpanda'][0]].id == hostvars[inventory_hostname].id %}
+      sudo rpk config bootstrap \
+        --id {{ hostvars[inventory_hostname].id }} \
+        --self {{ hostvars[inventory_hostname].private_ip }}
+
+      {% else %}
+
+      sudo rpk config bootstrap \
+        --id {{ hostvars[inventory_hostname].id }} \
+        --self {{ hostvars[inventory_hostname].private_ip }} \
+        --ips {{ seed_private_ip }}
+      {% endif %}
+
+  handlers:
+  - name: restart redpanda-tuner
+    systemd:
+      name: redpanda-tuner
+      state: restarted
+  - name: restart redpanda
+    systemd:
+      name: redpanda
+      state: restarted

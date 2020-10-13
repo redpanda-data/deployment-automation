@@ -1,89 +1,36 @@
-# Redpanda
+# Redpanda-provision
 
-Ansible role for installing and configuring [Redpanda](https://vectorized.io).
+Utilities to easily provision a [Redpanda](https://vectorized.io) cluster on AWS.
 
-## Installation
+Terraform & Ansible are used to create and manage the nodes and deploy the application.
 
-> See a fully worked out [AWS Example](./example)
+### Installation Requirements
 
-Add the following to a `requirements.yml` file:
+* Install terraform in your prefered way https://www.terraform.io/downloads.html
+* Install Ansible https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
+* `ansible-galaxy install -r ansible/requirements.yml` to gather ansible requirements
 
-```yaml
-- src: computology.packagecloud
-- src: mrlesmithjr.mdadm
-- src: git+https://github.com/vectorizedio/redpanda-ansible
-```
+### Usage
 
-Then execute:
+Steps 1-3 are only needed to create new EC2 instances to deploy the redpanda cluster on.
+If already created infrastructure is going to be used, they can safely be skiped.
 
-```bash
-ansible-galaxy install -r requirements.yml
-```
+1. Create AWS secret keys and provide them to terraform https://registry.terraform.io/providers/hashicorp/aws/latest/docs#environment-variables
+2. `terraform init`
+3. `terraform apply` to create the resources on AWS.
+    - Supported configuration variables (See `vars.tf`):
+        - `aws_region`: The AWS region to deploy the infrastructure on.
+        - `nodes`: The number of nodes to base the cluster on. Keep in mind that one node is used as a monitoring node.
+        - `instance_type`: The instance to run redpanda on. To build on RAID the chosen instance_type must support that (eg `m5ad.4xlarge`)
+        - `public_key_path`: Provide the path to the public key of the keypair used to access the nodes.
+        - `distro`: Linux distribution to install (dependent on vars below)
+        - `distro_ami`: AWS AMI to use for each available distribution.
+        These have to be changed with according to the chosen AWS region.
+        - `distro_ssh_user`: User used to ssh into the created EC2 instances.
+4. Fill in the `hosts.ini` template with the user & ips, based either on the terraform output or your own infrastructure.
+5. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml -e redpanda_packagecloud_token=<your_token_here> <extra variables - optional>`
+    - To start Redpanda and monitoring on the nodes, extra variable `-e start=true` can be passed to the ansible command
+    - To deploy instances with multiple HDDs in a RAID, extra variable `-e with_raid=true` can be passed to the ansible command.
+      Keep in mind that a supported instance should be created with terraform in the previous step.
 
-## Recommended hardware
-
-* On AWS, we recommend `i3.8xlarge` (excellent perf per dollar) or avobe in the `i3` series, since we are IO bound.
-
-The role assumes that the hosts where Redpanda is running are 
-provisioned with SSD devices, and available as `/dev/nvme0n1`, 
-`/dev/nvme0n2`, etc. In the case of AWS, it is recommended to use 
-`redpanda_with_raid` variable (see [Role Variables](#-role-variables) below).
-
-## Requirements
-
-  * Ansible >= 2.9
-  * Ubuntu 18.04 on hosts.
-
-## Role Variables
-
-  * `redpanda_vectorizedio_packagecloud_token` **Required** The master 
-    token provided by VectorizedIO to <https://packagecloud.io>.
-  * `redpanda_with_raid`. Whether to aggregate the local SSD devices 
-    in RAID0 configuration (**default**: `true`).
-  * `redpanda_cluster_id`. ID of the cluster being deployed 
-    (**default**: `redpanda`).
-  * `redpanda_cluster_org_id`. ID of the organization that the cluster 
-    belongs to (**default**: `vectorized-customer`).
-
-In addition, the role expects hosts in the inventory to be tagged with 
-a `private_ip` variable that denotes the internal network IP address 
-assigned to them.
-
-## Dependencies
-
-  * [`computology.packagecloud`](https://github.com/computology/packagecloud-ansible-role). 
-    Installs packages from [Packagecloud](https://packagecloud.io).
-  * [`mrlesmithjr.mdadm`](https://github.com/mrlesmithjr/ansible-mdadm/). Configures RAID.
-
-## Example Playbook
-
-```yaml
-- hosts: redpanda
-  become: yes
-  roles:
-  - {
-      role: redpanda-ansible,
-      redpanda_cluster_org_id: '<customer-name>'
-      redpanda_cluster_id: '<us-west-2>'
-      redpanda_with_raid: true,
-      redpanda_vectorizedio_packagecloud_token: <TOKEN>
-    }
-```
-
-## Example Inventory
-
-```yaml
-redpanda:
-  hosts:
-    <HOSTNAME>:
-      private_ip: <PRIVATE_IP_ADDRESS>
-      id: 1
-```
-
-## Author Information
-
-VectorizedIO dev team
-
-## LICENSE
-
-[Apache-2.0](./LICENSE)
+6. Use rpk & standard kafka tool to produce/consume from the redpanda cluster & access the grafana installation on the monitor host.

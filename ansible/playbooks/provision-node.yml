@@ -1,0 +1,15 @@
+- include: install-node-deps.yml
+
+- include: prepare-data-dir-raid.yml
+  when: with_raid | default(False)
+
+- include: prepare-data-dir.yml
+  when: not (with_raid | default(False))
+
+- include: install-redpanda.yml
+
+- include: start-redpanda.yml
+  when: start | default(False)
+
+- include: deploy-prometheus-grafana.yml
+  when: start | default(False)
