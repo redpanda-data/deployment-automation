@@ -4,13 +4,15 @@ Utilities to easily provision a [Redpanda](https://vectorized.io) cluster on AWS
 
 Terraform & Ansible are used to create and manage the nodes and deploy the application.
 
-### Installation Requirements
+## Installation Requirements
 
 * Install terraform in your prefered way https://www.terraform.io/downloads.html
 * Install Ansible https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
 * `ansible-galaxy install -r ansible/requirements.yml` to gather ansible requirements
 
-### Usage
+## Usage
+
+### Optional Steps: 1-3
 
 Steps 1-3 are only needed to create new EC2 instances to deploy the redpanda cluster on.
 If already created infrastructure is going to be used, they can safely be skiped.
@@ -27,6 +29,8 @@ If already created infrastructure is going to be used, they can safely be skiped
         - `distro_ami`: AWS AMI to use for each available distribution.
         These have to be changed with according to the chosen AWS region.
         - `distro_ssh_user`: User used to ssh into the created EC2 instances.
+### Required Steps: 4-6  
+        
 4. Fill in the `hosts.ini` template with the user & ips, based either on the terraform output or your own infrastructure.
 5. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml -e redpanda_packagecloud_token=<your_token_here> <extra variables - optional>`
     - To start Redpanda and monitoring on the nodes, extra variable `-e start=true` can be passed to the ansible command
