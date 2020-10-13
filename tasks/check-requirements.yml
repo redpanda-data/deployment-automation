@@ -1,7 +1,0 @@
----
-- assert:
-    that: ansible_service_mgr == 'systemd'
-    msg: "expecting systemd as the init system"
-- assert:
-    that: redpanda_vectorizedio_packagecloud_token is defined
-    msg: "expecting token for packagecloud"
