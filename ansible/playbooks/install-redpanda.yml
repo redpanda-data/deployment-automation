@@ -1,0 +1,29 @@
+- hosts: redpanda
+
+  tasks:
+  - name: add the redpanda repo
+    shell: |
+      curl -s https://{{redpanda_packagecloud_token}}:@packagecloud.io/install/repositories/vectorizedio/v/script.deb.sh | sudo bash
+    args:
+      warn: no
+    when: ansible_os_family == 'Debian'
+  
+  - name: add the redpanda repo
+    shell: |
+      curl -s https://{{redpanda_packagecloud_token}}:@packagecloud.io/install/repositories/vectorizedio/v/script.rpm.sh | sudo bash
+    args:
+      warn: no
+    when: ansible_os_family == 'RedHat'
+  
+  - name: install redpanda from repository
+    package:
+      name:
+        - redpanda
+      state: present
+      update_cache: yes
+
+  - name: set data dir file perms
+    file:
+      path: /var/lib/redpanda/data
+      owner: redpanda
+      group: redpanda
