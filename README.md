@@ -23,7 +23,7 @@ If already created infrastructure is going to be used, they can safely be skiped
     - Supported configuration variables (See `vars.tf`):
         - `aws_region`: The AWS region to deploy the infrastructure on.
         - `nodes`: The number of nodes to base the cluster on. Keep in mind that one node is used as a monitoring node.
-        - `instance_type`: The instance to run redpanda on. To build on RAID the chosen instance_type must support that (eg `m5ad.4xlarge`)
+        - `instance_type`: The instance to run redpanda on.
         - `public_key_path`: Provide the path to the public key of the keypair used to access the nodes.
         - `distro`: Linux distribution to install (dependent on vars below)
         - `distro_ami`: AWS AMI to use for each available distribution.
@@ -34,7 +34,5 @@ If already created infrastructure is going to be used, they can safely be skiped
 4. Fill in the `hosts.ini` template with the user & ips, based either on the terraform output or your own infrastructure.
 5. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml -e redpanda_packagecloud_token=<your_token_here> <extra variables - optional>`
     - To start Redpanda and monitoring on the nodes, extra variable `-e start=true` can be passed to the ansible command
-    - To deploy instances with multiple HDDs in a RAID, extra variable `-e with_raid=true` can be passed to the ansible command.
-      Keep in mind that a supported instance should be created with terraform in the previous step.
 
 6. Use rpk & standard kafka tool to produce/consume from the redpanda cluster & access the grafana installation on the monitor host.

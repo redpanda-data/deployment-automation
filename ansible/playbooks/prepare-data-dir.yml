@@ -1,17 +1,41 @@
 - hosts: redpanda
   tasks:
+  - set_fact: 
+      device_info: "{{ hostvars[inventory_hostname].ansible_devices }}"
+      nvme_device_ids: "{{ hostvars[inventory_hostname].ansible_devices.keys() | map('regex_search', 'nvme.*') | select('string') | list }}" 
+  - set_fact: 
+      nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) + ["/dev/" + item] }}'
+    loop: '{{ nvme_device_ids }}'
+    when: device_info[item]["partitions"] | length == 0
 
-  - name: create xfs filesystem
-    filesystem:
-      fstype: xfs
-      dev: /dev/nvme0n1
+  - block: 
+    - name: define mdadm_arrays variable
+      set_fact:
+        mdadm_arrays:
+        - name: md0
+          devices: '{{ nvme_devices_for_raid }}'
+          filesystem: xfs
+          level: 0
+          mountpoint: /mnt/vectorized
+          state: present
 
-  - name: mount nvme device
-    mount:
-      path: /mnt/vectorized
-      src: /dev/nvme0n1
-      fstype: xfs
-      state: mounted
+    - name: run mdadm
+      include_role: 
+        name: mrlesmithjr.mdadm
+    when: nvme_devices_for_raid|length > 1
+
+  - block: 
+    - name: create xfs file system
+      filesystem: 
+        fstype: xfs
+        dev: '{{ nvme_devices_for_raid[0] }}'
+    - name: mount nvme device
+      mount:
+        path: /mnt/vectorized
+        src: '{{ nvme_devices_for_raid[0] }}'
+        fstype: xfs
+        state: mounted 
+    when: nvme_devices_for_raid|length == 1
 
   - name: data path
     file:
