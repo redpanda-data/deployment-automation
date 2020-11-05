@@ -16,7 +16,11 @@
       rpk config set cluster_id 'redpanda'
       rpk config set organization 'redpanda-test'
       rpk config set redpanda.advertised_kafka_api '{
+      {% if advertise_public_ips %}
+        address: {{ inventory_hostname }},
+      {% else %}
         address: {{ hostvars[inventory_hostname].private_ip }},
+      {% endif %}
         port: 9092
       }' --format yaml
       rpk config set redpanda.advertised_rpc_api '{
