@@ -16,7 +16,17 @@ variable "distro" {
 
 variable "instance_type" {
   description = "Default instance type to create"
-  default     = "i3.8xlarge"
+  type = map(string)
+  default = {
+    redpanda    = "i3.8xlarge"
+    prometheus  = "c5.2xlarge"
+  }
+}
+
+variable "enable_monitoring" {
+  description = "Setup a prometheus/grafana instance"
+  type        = bool
+  default     = true
 }
 
 variable "public_key_path" {

@@ -1,9 +1,15 @@
-output "ips" {
-  value = aws_instance.node.*.public_ip
+output "redpanda" {
+  value = {
+    for instance in aws_instance.redpanda :
+    instance.public_ip => instance.private_ip
+  }
 }
 
-output "private_ips" {
-  value = aws_instance.node.*.private_ip
+output "prometheus" {
+  value = {
+    for instance in aws_instance.prometheus :
+    instance.public_ip => instance.private_ip
+  }
 }
 
 output "ssh_user" {
