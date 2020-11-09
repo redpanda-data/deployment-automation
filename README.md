@@ -32,7 +32,6 @@ If already created infrastructure is going to be used, they can safely be skiped
 ### Required Steps: 4-6  
         
 4. Fill in the `hosts.ini` template with the user & ips, based either on the terraform output or your own infrastructure.
-5. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml -e redpanda_packagecloud_token=<your_token_here> <extra variables - optional>`
-    - To start Redpanda and monitoring on the nodes, extra variable `-e start=true` can be passed to the ansible command
+5. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml -e redpanda_packagecloud_token=<your_token_here>
 
 6. Use rpk & standard kafka tool to produce/consume from the redpanda cluster & access the grafana installation on the monitor host.
