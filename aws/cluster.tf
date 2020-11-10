@@ -121,12 +121,14 @@ resource "aws_key_pair" "ssh" {
 }
 
 resource "local_file" "hosts_ini" {
-  content = templatefile("${path.module}/templates/hosts_ini.tpl",
+  content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
-      redpanda = aws_instance.redpanda
-      prometheus = aws_instance.prometheus[0]
-      ssh_user = var.distro_ssh_user[var.distro]
-      enable_monitoring = var.enable_monitoring
+      redpanda_public_ips   = aws_instance.redpanda.*.public_ip
+      redpanda_private_ips  = aws_instance.redpanda.*.private_ip
+      prometheus_public_ip  = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
+      prometheus_private_ip = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
+      ssh_user              = var.distro_ssh_user[var.distro]
+      enable_monitoring     = var.enable_monitoring
     }
   )
   filename = "${path.module}/hosts.ini"

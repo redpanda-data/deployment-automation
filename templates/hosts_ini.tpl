@@ -1,9 +1,9 @@
 [redpanda]
-%{ for i, instance in redpanda ~}
-${ instance.public_ip } ansible_user=${ ssh_user } ansible_become=True private_ip=${instance.private_ip} id=${i}
+%{ for i, ip in redpanda_public_ips ~}
+${ ip } ansible_user=${ ssh_user } ansible_become=True private_ip=${redpanda_private_ips[i]} id=${i}
 %{ endfor ~}
 
 %{~ if enable_monitoring == true ~}
 [monitor]
-${ prometheus.public_ip } ansible_user=${ ssh_user } ansible_become=True private_ip=${ prometheus.private_ip } id=0
+${ prometheus_public_ip } ansible_user=${ ssh_user } ansible_become=True private_ip=${ prometheus_private_ip } id=0
 %{~ endif ~}
