@@ -1,0 +1,16 @@
+name: Terraform fmt
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  fmt:
+    name: Lint .tf files
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v2
+        - uses: hashicorp/setup-terraform@v1
+    
+        - name: Terraform fmt
+          run: terraform fmt -check -diff
