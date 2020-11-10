@@ -17,10 +17,27 @@ provider "aws" {
   region  = var.aws_region
 }
 
-resource "aws_instance" "node" {
+resource "aws_instance" "redpanda" {
   count                  = var.nodes
   ami                    = var.distro_ami[var.distro]
-  instance_type          = var.instance_type
+  instance_type          = var.instance_type["redpanda"]
+  key_name               = aws_key_pair.ssh.key_name
+  vpc_security_group_ids = [aws_security_group.node_sec_group.id]
+  tags = {
+    owner : local.deployment_id
+  }
+
+  connection {
+    user        = var.distro_ssh_user[var.distro]
+    host        = self.public_ip
+    private_key = file(var.private_key_path)
+  }
+}
+
+resource "aws_instance" "prometheus" {
+  count                  = var.enable_monitoring ? 1 : 0
+  ami                    = var.distro_ami[var.distro]
+  instance_type          = var.instance_type["prometheus"]
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
   tags = {
@@ -73,14 +90,6 @@ resource "aws_security_group" "node_sec_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # HTTP access to the trogdor agent and controller ports
-  ingress {
-    from_port   = 8888
-    to_port     = 8889
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   # grafana
   ingress {
     from_port   = 3000
@@ -97,15 +106,6 @@ resource "aws_security_group" "node_sec_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # node exporter
-  ingress {
-    from_port   = 9100
-    to_port     = 9100
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-
   # outbound internet access
   egress {
     from_port   = 0
@@ -118,4 +118,16 @@ resource "aws_security_group" "node_sec_group" {
 resource "aws_key_pair" "ssh" {
   key_name   = "${local.deployment_id}-key"
   public_key = file(var.public_key_path)
+}
+
+resource "local_file" "hosts_ini" {
+  content = templatefile("${path.module}/templates/hosts_ini.tpl",
+    {
+      redpanda = aws_instance.redpanda
+      prometheus = aws_instance.prometheus[0]
+      ssh_user = var.distro_ssh_user[var.distro]
+      enable_monitoring = var.enable_monitoring
+    }
+  )
+  filename = "${path.module}/hosts.ini"
 }
