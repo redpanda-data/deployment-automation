@@ -16,10 +16,10 @@ variable "distro" {
 
 variable "instance_type" {
   description = "Default instance type to create"
-  type = map(string)
+  type        = map(string)
   default = {
-    redpanda    = "i3.8xlarge"
-    prometheus  = "c5.2xlarge"
+    redpanda   = "i3.8xlarge"
+    prometheus = "c5.2xlarge"
   }
 }
 
