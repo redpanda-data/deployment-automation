@@ -15,6 +15,7 @@ Terraform & Ansible are used to create and manage the nodes and deploy the appli
 ### Optional Steps: Deploying the VMs
 
 Steps 1-3 are only needed to create new EC2 instances to deploy the redpanda cluster on.
+
 If already created infrastructure is going to be used, they can safely be skipped but you will need to update the `hosts.ini` file with your specific information.
 
 Please refer to each cloud's readme for more information: [AWS](aws/readme.md), [GCP](gcp/readme.md)
@@ -23,6 +24,12 @@ Please refer to each cloud's readme for more information: [AWS](aws/readme.md), 
 
 Before running these steps, verify that the `hosts.ini` file contains the correct information for your infrastructure. This will be automatically populated if using the terraform steps above.
         
-1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml -e redpanda_packagecloud_token=<your_token_here>
+1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml -e redpanda_packagecloud_token=<your_token_here>`
+
+  Available Ansible variables:
+
+  You can pass the following variables as `-e var=value`:
+   - `start=false|true`: Automatically start redpanda and monitoring on the nodes.
+   - `advertise_public_ips=false|true`: Configure the Redpanda API to advertise the node's public IPs instead of the private ones. This allows for using the cluster from outside its subnet. **Note**: This is not recommended for production deployments, because it means that your nodes will be public. Use it for testing only.
 
 2. Use rpk & standard kafka tool to produce/consume from the redpanda cluster & access the grafana installation on the monitor host.
