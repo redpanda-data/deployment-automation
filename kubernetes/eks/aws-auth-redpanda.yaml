@@ -1,0 +1,78 @@
+{{/*
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-auth
+  namespace: kube-system
+data:
+  mapRoles: |
+    - rolearn: arn:aws:iam::924893724304:role/eksctl-redpanda-dev1-nodegroup-re-NodeInstanceRole-12L9U51FKKF67
+      username: system:node:{{EC2PrivateDNSName}}
+      groups:
+        - system:bootstrappers
+        - system:nodes
+  mapUsers: | 
+    - userarn: arn:aws:iam::924893724304:user/alex
+      username: alex
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/ben
+      username: ben
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/david
+      username: david
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/denis
+      username: denis
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/dimitris
+      username: dimitris
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/evgeny
+      username: evgeny
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/james
+      username: james
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/mateo
+      username: mateo
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/michal
+      username: michal
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/noah
+      username: noah
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/rob
+      username: rob
+      groups: 
+        - system:masters
+    - userarn: arn:aws:iam::924893724304:user/roko 
+      username: roko
+      groups: 
+        - system:masters

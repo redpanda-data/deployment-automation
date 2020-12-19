@@ -1,0 +1,41 @@
+{{/*
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+kind: ClusterConfig
+apiVersion: eksctl.io/v1alpha5
+metadata:
+    name: redpanda-dev1
+    region: us-east-2
+nodeGroups:
+  - name: redpanda-dev1-nodegroup
+    minSize: 1
+    maxSize: 4
+    desiredCapacity: 3
+    instanceType: m5.large
+    ssh:
+      allow: true
+      publicKeyPath: ~/.ssh/vectorized-ec2.pub 
+    kubeletExtraConfig:
+      kubeReserved:
+        memory: "300Mi"
+        ephemeral-storage: "1Gi"
+      systemReserved:
+        memory: "200Mi"
+        ephemeral-storage: "1Gi"
+      evictionHard:
+        memory.available: "200Mi"
+        nodefs.available: "10%"
