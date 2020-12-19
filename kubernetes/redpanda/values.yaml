@@ -113,6 +113,8 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# For guaranteed QoS see:
+# https://kubernetes.io/docs/tasks/administer-cluster/cpu-management-policies/#static-policy
 resources:
   requests:
     # requests.cpu must be an integer for containers in Guaranteed pods to be given access to exclusive CPUs
