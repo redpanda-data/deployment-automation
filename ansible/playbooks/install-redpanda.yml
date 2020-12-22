@@ -3,14 +3,14 @@
   tasks:
   - name: add the redpanda repo
     shell: |
-      curl -s https://{{redpanda_packagecloud_token}}:@packagecloud.io/install/repositories/vectorizedio/v/script.deb.sh | sudo bash
+      curl -1sLf https://packages.vectorized.io/sMIXnoa7DK12JW4A/redpanda/cfg/setup/bash.deb.sh | sudo -E bash
     args:
       warn: no
     when: ansible_os_family == 'Debian'
   
   - name: add the redpanda repo
     shell: |
-      curl -s https://{{redpanda_packagecloud_token}}:@packagecloud.io/install/repositories/vectorizedio/v/script.rpm.sh | sudo bash
+      curl -1sLf https://packages.vectorized.io/sMIXnoa7DK12JW4A/redpanda/cfg/setup/bash.rpm.sh | sudo -E bash
     args:
       warn: no
     when: ansible_os_family == 'RedHat'
