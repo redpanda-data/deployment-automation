@@ -11,12 +11,12 @@
       - restart redpanda-tuner
       - restart redpanda
     vars:
-      seed_private_ip: '{{ hostvars[groups["redpanda"][0]].private_ip }}'
+      use_public_ips: "{{ advertise_public_ips | default(false, true) }}"
     shell: |
       rpk config set cluster_id 'redpanda'
       rpk config set organization 'redpanda-test'
       rpk config set redpanda.advertised_kafka_api '{
-      {% if advertise_public_ips %}
+      {% if use_public_ips %}
         address: {{ inventory_hostname }},
       {% else %}
         address: {{ hostvars[inventory_hostname].private_ip }},
@@ -27,7 +27,7 @@
         address: {{ hostvars[inventory_hostname].private_ip }},
         port: 33145
       }' --format yaml
-      rpk mode production
+      sudo rpk mode production
 
       {% if hostvars[groups['redpanda'][0]].id == hostvars[inventory_hostname].id %}
       sudo rpk config bootstrap \
@@ -39,8 +39,9 @@
       sudo rpk config bootstrap \
         --id {{ hostvars[inventory_hostname].id }} \
         --self {{ hostvars[inventory_hostname].private_ip }} \
-        --ips {{ seed_private_ip }}
+        --ips {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='private_ip') | join(',') }}
       {% endif %}
+
 
   handlers:
   - name: restart redpanda-tuner

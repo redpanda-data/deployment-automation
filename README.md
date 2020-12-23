@@ -24,7 +24,7 @@ Please refer to each cloud's readme for more information: [AWS](aws/readme.md), 
 
 Before running these steps, verify that the `hosts.ini` file contains the correct information for your infrastructure. This will be automatically populated if using the terraform steps above.
         
-1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml -e redpanda_packagecloud_token=<your_token_here>`
+1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml`
 
   Available Ansible variables:
 
