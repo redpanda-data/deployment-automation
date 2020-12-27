@@ -81,5 +81,5 @@ resource "local_file" "hosts_ini" {
       enable_monitoring     = var.enable_monitoring
     }
   )
-  filename = "${path.module}/hosts.ini"
+  filename = "${path.module}/../hosts.ini"
 }

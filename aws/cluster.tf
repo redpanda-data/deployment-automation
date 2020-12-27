@@ -20,7 +20,7 @@ provider "aws" {
 resource "aws_instance" "redpanda" {
   count                  = var.nodes
   ami                    = var.distro_ami[var.distro]
-  instance_type          = var.instance_type["redpanda"]
+  instance_type          = var.instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
   tags = {
@@ -37,7 +37,7 @@ resource "aws_instance" "redpanda" {
 resource "aws_instance" "prometheus" {
   count                  = var.enable_monitoring ? 1 : 0
   ami                    = var.distro_ami[var.distro]
-  instance_type          = var.instance_type["prometheus"]
+  instance_type          = var.prometheus_instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
   tags = {
@@ -131,5 +131,5 @@ resource "local_file" "hosts_ini" {
       enable_monitoring     = var.enable_monitoring
     }
   )
-  filename = "${path.module}/hosts.ini"
+  filename = "${path.module}/../hosts.ini"
 }
