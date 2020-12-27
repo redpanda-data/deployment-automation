@@ -6,7 +6,7 @@ variable "aws_region" {
 variable "nodes" {
   description = "The number of nodes to deploy"
   type        = number
-  default     = "1"
+  default     = "3"
 }
 
 variable "distro" {
@@ -15,12 +15,13 @@ variable "distro" {
 }
 
 variable "instance_type" {
-  description = "Default instance type to create"
-  type        = map(string)
-  default = {
-    redpanda   = "i3.8xlarge"
-    prometheus = "c5.2xlarge"
-  }
+  description = "Default redpanda instance type to create"
+  default     = "i3.2xlarge"
+}
+
+variable "prometheus_instance_type" {
+  description = "Instant type of the prometheus/grafana node"
+  default     = "c5.2xlarge"
 }
 
 variable "enable_monitoring" {

@@ -1,8 +1,7 @@
-# Redpanda-provision
+# Terraform and Ansible Deployment for Redpanda
 
-Utilities to easily provision a [Redpanda](https://vectorized.io) cluster on AWS.
-
-Terraform & Ansible are used to create and manage the nodes and deploy the application.
+Terraform and Ansible Scripts to easily provision a [Redpanda](https://vectorized.io)
+cluster on AWS or GCP.
 
 ## Installation Requirements
 
@@ -14,22 +13,29 @@ Terraform & Ansible are used to create and manage the nodes and deploy the appli
 
 ### Optional Steps: Deploying the VMs
 
-Steps 1-3 are only needed to create new EC2 instances to deploy the redpanda cluster on.
+To use existing infrastructure, update the `hosts.ini` file with the appropriate 
+information. Otherwise see the READMEs for the following cloud providers:
 
-If already created infrastructure is going to be used, they can safely be skipped but you will need to update the `hosts.ini` file with your specific information.
-
-Please refer to each cloud's readme for more information: [AWS](aws/readme.md), [GCP](gcp/readme.md)
+* [AWS](aws/readme.md)
+* [GCP](gcp/readme.md)
 
 ### Required Steps: Deploying Redpanda
 
-Before running these steps, verify that the `hosts.ini` file contains the correct information for your infrastructure. This will be automatically populated if using the terraform steps above.
-        
+Before running these steps, verify that the `hosts.ini` file contains the
+correct information for your infrastructure. This will be automatically
+populated if using the terraform steps above.
+
 1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml`
 
   Available Ansible variables:
 
   You can pass the following variables as `-e var=value`:
-   - `start=false|true`: Automatically start redpanda and monitoring on the nodes.
-   - `advertise_public_ips=false|true`: Configure the Redpanda API to advertise the node's public IPs instead of the private ones. This allows for using the cluster from outside its subnet. **Note**: This is not recommended for production deployments, because it means that your nodes will be public. Use it for testing only.
 
-2. Use rpk & standard kafka tool to produce/consume from the redpanda cluster & access the grafana installation on the monitor host.
+* `advertise_public_ips=false|true`: Configure Redpanda to advertise the
+node's public IPs for client communication instead of private IPs.
+This allows for using the cluster from outside its subnet.
+**Note**: This is not recommended for production deployments, because it
+means that your nodes will be public. Use it for testing only. Default `false`
+
+2. Use rpk & standard Kafka tool to produce/consume from the Redpanda cluster
+& access the Grafana installation on the monitor host.
