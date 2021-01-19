@@ -13,7 +13,7 @@ cluster on AWS or GCP.
 
 ### Optional Steps: Deploying the VMs
 
-To use existing infrastructure, update the `hosts.ini` file with the appropriate 
+To use existing infrastructure, update the `hosts.ini` file with the appropriate
 information. Otherwise see the READMEs for the following cloud providers:
 
 * [AWS](aws/readme.md)
@@ -36,6 +36,7 @@ node's public IPs for client communication instead of private IPs.
 This allows for using the cluster from outside its subnet.
 **Note**: This is not recommended for production deployments, because it
 means that your nodes will be public. Use it for testing only. Default `false`
+* `grafana_admin_pass=<password_here>`: Configure Grafana's admin user's password
 
 2. Use rpk & standard Kafka tool to produce/consume from the Redpanda cluster
 & access the Grafana installation on the monitor host.
