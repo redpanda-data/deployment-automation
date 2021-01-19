@@ -26,13 +26,13 @@
           - targets: "{{ groups['redpanda'] | map('extract', hostvars, ['ansible_default_ipv4','address']) | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
 
 - hosts: monitor
-  roles: 
+  roles:
   - cloudalchemy.grafana
   vars:
     grafana_version: 6.7.3
     grafana_security:
       admin_user: admin
-      admin_password: enter_your_secure_password
+      admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
     grafana_datasources:
     - name: prometheus
       type: prometheus
