@@ -19,4 +19,4 @@ After completing these steps, please follow the required steps in the [project r
         These have to be changed with according to the chosen AWS region.
         * `distro_ssh_user`: User used to ssh into the created EC2 instances.
 
-  Example: `terraform apply -var="instance_type=i3.large" -var="nodes 3"`
+  Example: `terraform apply -var="instance_type=i3.large" -var="nodes=3"`
