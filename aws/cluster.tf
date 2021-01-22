@@ -79,7 +79,7 @@ resource "aws_security_group" "node_sec_group" {
     from_port   = 33145
     to_port     = 33145
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self        = true
   }
 
   # HTTP access to the Admin port
@@ -87,7 +87,7 @@ resource "aws_security_group" "node_sec_group" {
     from_port   = 9644
     to_port     = 9644
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    self        = true
   }
 
   # grafana
@@ -104,6 +104,14 @@ resource "aws_security_group" "node_sec_group" {
     to_port     = 9090
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # node exporter
+  ingress {
+    from_port   = 9100
+    to_port     = 9100
+    protocol    = "tcp"
+    self        = true
   }
 
   # outbound internet access
