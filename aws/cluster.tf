@@ -2,19 +2,8 @@ resource "random_uuid" "cluster" {}
 
 locals {
   timestamp = timestamp()
-}
-
-locals {
   uuid = random_uuid.cluster.result
-}
-
-locals {
   deployment_id = "redpanda-${random_uuid.cluster.result}-${local.timestamp}"
-}
-
-provider "aws" {
-  profile = "default"
-  region  = var.aws_region
 }
 
 resource "aws_instance" "redpanda" {
