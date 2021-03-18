@@ -11,6 +11,10 @@ variable "subnet" {
   description = "The name of the existing subnet where the machines will be deployed"
 }
 
+variable "project_name" {
+  description = "The project name on GCP."
+}
+
 variable "nodes" {
   description = "The number of nodes to deploy."
   type        = number
