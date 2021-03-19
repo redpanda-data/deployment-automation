@@ -7,7 +7,7 @@ provider "google" {
 resource "google_compute_instance" "redpanda" {
   count        = var.nodes
   name         = "rp-node-${count.index}"
-  tags         = ["rp-node"]
+  tags         = ["rp-cluster"]
   machine_type = var.machine_type
 
   metadata = {
@@ -41,7 +41,7 @@ KEYS
 resource "google_compute_instance" "monitor" {
   count        = 1
   name         = "rp-monitor"
-  tags         = ["rp-monitoring"]
+  tags         = ["rp-cluster"]
   machine_type = var.machine_type
 
   metadata = {

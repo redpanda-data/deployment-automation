@@ -4,7 +4,7 @@ This Terraform module will deploy VMs on GCP Compute Engine.
 
 **Prerequisites:**
 
-- An existing subnet to deploy the VMs into. The subnet's attached firewall should allow inbound traffic on ports 22, 3000, 8888, 8889, 9090, 9092, 9644 and 33145. This module adds the `rp-node` tag to the deployed VMs, which can be used as the target tag for the firewall rule.
+- An existing subnet to deploy the VMs into. The subnet's attached firewall should allow inbound traffic on ports 22, 3000, 8888, 8889, 9090, 9092, 9644 and 33145. This module adds the `rp-cluster` tag to the deployed VMs, which can be used as the target tag for the firewall rule.
 
 - The module assumes credentials for GCP have been configured using 
   [User Application Default Credentials](https://cloud.google.com/sdk/gcloud/reference/auth/application-default). This can be done by executing `gcloud auth application-default login`, after which a JSON file is generated that the Terraform GCP provider can automatically find. Consult the [GCP provider documentation](https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/provider_reference) for other alternatives.
