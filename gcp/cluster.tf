@@ -1,6 +1,5 @@
 provider "google" {
-  credentials = file(pathexpand("~/.gcp.json"))
-  project     = "vectorized"
+  project     = var.project_name
   region      = var.region
   zone        = "${var.region}-${var.zone}"
 }
@@ -8,7 +7,7 @@ provider "google" {
 resource "google_compute_instance" "redpanda" {
   count        = var.nodes
   name         = "rp-node-${count.index}"
-  tags         = ["rp-node"]
+  tags         = ["rp-cluster"]
   machine_type = var.machine_type
 
   metadata = {
@@ -39,10 +38,10 @@ KEYS
 
 }
 
-resource "google_compute_instance" "prometheus" {
-  count        = var.enable_monitoring ? 1 : 0
-  name         = "rp-monitoring"
-  tags         = ["rp-monitoring"]
+resource "google_compute_instance" "monitor" {
+  count        = 1
+  name         = "rp-monitor"
+  tags         = ["rp-cluster"]
   machine_type = var.machine_type
 
   metadata = {
@@ -73,12 +72,11 @@ KEYS
 resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
-      redpanda_public_ips   = google_compute_instance.redpanda.*.network_interface.0.access_config.0.nat_ip
-      redpanda_private_ips  = google_compute_instance.redpanda.*.network_interface.0.network_ip
-      prometheus_public_ip  = var.enable_monitoring ? google_compute_instance.prometheus[0].network_interface.0.access_config.0.nat_ip : ""
-      prometheus_private_ip = var.enable_monitoring ? google_compute_instance.prometheus[0].network_interface.0.network_ip : ""
-      ssh_user              = var.ssh_user
-      enable_monitoring     = var.enable_monitoring
+      redpanda_public_ips  = google_compute_instance.redpanda.*.network_interface.0.access_config.0.nat_ip
+      redpanda_private_ips = google_compute_instance.redpanda.*.network_interface.0.network_ip
+      monitor_public_ip    = google_compute_instance.monitor[0].network_interface.0.access_config.0.nat_ip
+      monitor_private_ip   = google_compute_instance.monitor[0].network_interface.0.network_ip
+      ssh_user             = var.ssh_user
     }
   )
   filename = "${path.module}/../hosts.ini"
