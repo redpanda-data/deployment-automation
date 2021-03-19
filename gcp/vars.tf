@@ -46,9 +46,3 @@ variable "public_key_path" {
 variable "ssh_user" {
   description = "The ssh user. Must match the one in the public ssh key's comments."
 }
-
-variable "enable_monitoring" {
-  description = "Setup a prometheus/grafana instance"
-  type        = bool
-  default     = true
-}
