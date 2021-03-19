@@ -7,6 +7,7 @@ cluster on AWS or GCP.
 
 * Install terraform in your preferred way https://www.terraform.io/downloads.html
 * Install Ansible https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
+* Depending on your system, you might need to install some python packages (e.g. `selinux` or `jmespath`). Ansible will throw an error with the expected python packages, both on local and remote machines.
 * `ansible-galaxy install -r ansible/requirements.yml` to gather ansible requirements
 
 ## Usage
