@@ -1,7 +1,7 @@
 - hosts: redpanda
   roles:
-  - cloudalchemy.node-exporter
-  
+  - cloudalchemy.node_exporter
+
   tasks:
 
   - name: amazon setup
