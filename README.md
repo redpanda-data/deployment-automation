@@ -6,11 +6,11 @@ cluster on AWS or GCP.
 ## Installation Requirements
 
 * Install terraform in your preferred way https://www.terraform.io/downloads.html
-** On Mac OS X: `brew tap hashicorp/tap ; brew install hashicorp/tap/terraform`
+  - On Mac OS X: `brew tap hashicorp/tap ; brew install hashicorp/tap/terraform`
 * Install Ansible https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
-** On Mac OS X: `brew install ansible`
+  - On Mac OS X: `brew install ansible`
 * Depending on your system, you might need to install some python packages (e.g. `selinux` or `jmespath`). Ansible will throw an error with the expected python packages, both on local and remote machines.
-** On Mac OS X, you need to install gnu-tar: `brew install gnu-tar`
+  - On Mac OS X, you need to install gnu-tar: `brew install gnu-tar`
 
 ### Gather Ansible requirements 
 * `ansible-galaxy install -r ansible/requirements.yml` to gather ansible requirements
