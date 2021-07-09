@@ -1,0 +1,57 @@
+- hosts: redpanda
+  tasks:
+
+  - name: Test hosts list
+    debug:
+      msg:
+      - "ipv4            : {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+      - "private ip      : {{ hostvars[inventory_hostname]['private_ip'] }}"
+      - "ansible_hostname: {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+      - "ansible_fqdn    : {{ hostvars[inventory_hostname]['ansible_fqdn'] }}"
+
+  # for debug. get rid of this later
+  - name: rm!
+    file:
+      path: /etc/redpanda/certs
+      state: absent
+
+  - name: ensure /etc/redpanda/certs exists
+    ansible.builtin.file:
+      path: /etc/redpanda/certs
+      state: directory
+      owner: redpanda
+      group: redpanda
+      mode: 0755
+
+  - name: Copy node template
+    ansible.builtin.template:
+      src: node.conf.tpl
+      dest: /etc/redpanda/certs/node.conf
+      owner: redpanda
+      group: redpanda
+
+  - name: Generate an OpenSSH keypair on {{ansible_hostname}}
+    ansible.builtin.command:
+      creates: /etc/redpanda/certs/node.key
+      chdir: /etc/redpanda/certs
+      cmd: openssl genrsa -out node.key 2048
+
+  - name: Generate a Certificate Signing Request on {{ansible_hostname}}
+    ansible.builtin.command:
+      creates: /etc/redpanda/certs/node.csr
+      chdir: /etc/redpanda/certs
+      cmd: openssl req -new -config node.conf -key node.key -out node.csr -batch
+
+  - name: CHOWN to redpanda
+    ansible.builtin.file:
+      path: /etc/redpanda/certs
+      state: directory
+      owner: redpanda
+      group: redpanda
+      recurse: yes
+
+  - name: Fetch CSRs
+    fetch:
+      src: /etc/redpanda/certs/node.csr
+      dest: certs/{{ansible_hostname}}/node.csr
+      flat: yes

@@ -1,0 +1,37 @@
+#
+# Creates a local CA in $dir/ca (if one does not exist)
+#
+
+- hosts: localhost
+  vars:
+    root_ca_dir: "{{ playbook_dir }}/ca"
+
+  tasks:
+  - name: Check that Root CA directory {{ root_ca_dir }} exists
+    file:
+      path: "{{ root_ca_dir }}"
+      state: directory
+
+  - name: Copy the ca.conf file to CA
+    template:
+      src: ca.conf.tpl
+      dest: "{{ root_ca_dir }}/ca.conf"
+
+  - name: Generate an OpenSSH keypair for the CA
+    command:
+      chdir: "{{ root_ca_dir }}"
+      cmd: openssl genrsa -out {{ root_ca_dir }}/ca.key 2048
+      creates: "{{ root_ca_dir }}/ca.key"
+        
+  - name: Generate self-signed CA certificate
+    command:
+      chdir: "{{ root_ca_dir }}"
+      cmd: openssl req -new -x509 -config ca.conf -key ca.key -out ca.crt -days 365 -batch
+      creates: "{{ root_ca_dir }}/ca.crt"
+
+  - name: Initialize CA data files
+    shell: |
+      cd {{ root_ca_dir }}
+      rm -f index.txt serial.txt
+      touch index.txt
+      echo '01' > serial.txt
