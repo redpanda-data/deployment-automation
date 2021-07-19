@@ -1,0 +1,58 @@
+- hosts: redpanda
+
+  tasks:
+  - name: Copy CA Certs
+    copy:
+      src: ca/ca.crt
+      dest: /etc/redpanda/certs/truststore.pem
+      owner: redpanda
+      group: redpanda
+
+  - name: Copy Node Certs
+    copy:
+      src: certs/{{ansible_hostname}}/node.crt
+      dest: /etc/redpanda/certs/node.crt
+      owner: redpanda
+      group: redpanda
+
+  - name: Configure via RPK
+    shell:
+      cmd: |
+        rpk redpanda config set redpanda "
+
+          kafka_api:
+          - name: default
+            address: {{ hostvars[inventory_hostname]['private_ip'] }}
+            port: 9092
+
+          advertised_kafka_api:
+          - name: default
+            address: {{ inventory_hostname }}
+            port: 9092
+
+          kafka_api_tls:
+          - name: default
+            enabled: true
+            require_client_auth: false
+            cert_file: /etc/redpanda/certs/node.crt
+            key_file: /etc/redpanda/certs/node.key
+            truststore_file: /etc/redpanda/certs/truststore.pem
+
+          rpc_server_tls:
+            enabled: true
+            require_client_auth: false
+            cert_file: /etc/redpanda/certs/node.crt
+            key_file: /etc/redpanda/certs/node.key
+            truststore_file: /etc/redpanda/certs/truststore.pem
+
+        " --format yaml
+        rpk redpanda config set 'rpk.kafka_api' "
+            tls:
+              truststore_file: /etc/redpanda/certs/truststore.pem
+        " --format yaml
+        chown -R redpanda:redpanda /etc/redpanda
+
+  - name: Restart redpanda
+    systemd:
+      name: redpanda
+      state: restarted
