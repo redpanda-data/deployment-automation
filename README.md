@@ -52,7 +52,7 @@ means that your nodes will be public. Use it for testing only. Default `false`
 
 2. Use rpk & standard Kafka tool to produce/consume from the Redpanda cluster
 & access the Grafana installation on the monitor host.
-* The Grafana URL is http://<grafana host>:3000/login
+* The Grafana URL is http://&lt;grafana host&gt;:3000/login
 
 
 ## Configure TLS
