@@ -7,6 +7,8 @@
       nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) + ["/dev/" + item] }}'
     loop: '{{ nvme_device_ids }}'
     when: device_info[item]["partitions"] | length == 0
+  - set_fact:
+      nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) }}'
 
   - block: 
     - name: define mdadm_arrays variable
