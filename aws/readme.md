@@ -7,7 +7,7 @@ After completing these steps, please follow the required steps in the [project r
 1. Create AWS secret keys and provide them to terraform https://registry.terraform.io/providers/hashicorp/aws/latest/docs#environment-variables
 2. `cd` to the `aws` directory and run `terraform init`.
 3. `terraform apply` to create the resources on AWS.
-  
+
 Example: `terraform apply -var="instance_type=i3.large" -var="nodes=3"`
 
 
@@ -68,7 +68,7 @@ No Modules.
 
 ## Requirements
 
-You must have Go installed in order to run infrastructure tests. 
+You must have Go installed in order to run infrastructure tests.
 
 | Name | Version |
 |------|---------|
