@@ -5,7 +5,7 @@ This Terraform module will deploy VMs on AWS EC2, with a security group which al
 After completing these steps, please follow the required steps in the [project readme](../README.md) to deploy Redpanda to the new VMs.
 
 1. Create AWS secret keys and provide them to terraform https://registry.terraform.io/providers/hashicorp/aws/latest/docs#environment-variables
-2. `terraform init`
+2. `cd` to the `aws` directory and run `terraform init`.
 3. `terraform apply` to create the resources on AWS.
   
 Example: `terraform apply -var="instance_type=i3.large" -var="nodes=3"`
