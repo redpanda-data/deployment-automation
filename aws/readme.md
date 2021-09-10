@@ -46,14 +46,30 @@ No Modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | aws\_region | The AWS region to deploy the infrastructure on | `string` | `"us-west-2"` | no |
+| clients | Number of client VMs, if any, to deploy. | `number` | `0` | no |
+| client\_distro | Linux distribution to use for clients, if any. | `string` | `ubuntu-focal` | no |
+| client\_instance\_type | EC2 instance type for client hosts. | `string` | `m5n.8xlarge` | no |
 | distro | The default distribution to base the cluster on | `string` | `"ubuntu-focal"` | no |
 | distro\_ami | n/a | `map(string)` | <pre>{<br>  "amazon-linux-2": "ami-01ce4793a2f45922e",<br>  "debian-buster": "ami-0f7939d313699273c",<br>  "debian-stretch": "ami-072ad3956e05c814c",<br>  "fedora-31": "ami-0e82cc6ce8f393d4b",<br>  "fedora-32": "ami-020405ee5d5747724",<br>  "rhel-8": "ami-087c2c50437d0b80d",<br>  "ubuntu-bionic": "ami-0c1ab2d66f996cd4b",<br>  "ubuntu-focal": "ami-02c45ea799467b51b",<br> "ubuntu-hirsute": "ami-035649ffeb04ce758" <br>}</pre> | no |
-| distro\_ssh\_user | The default user used by the AWS AMIs | `map(string)` | <pre>{<br>  "amazon-linux-2": "ec2-user",<br>  "debian-buster": "admin",<br>  "debian-stretch": "admin",<br>  "fedora-31": "fedora",<br>  "fedora-32": "fedora",<br>  "rhel-8": "ec2-user",<br>  "ubuntu-*": "ubuntu"}</pre> | no |
+| distro\_ssh\_user | The default user used by the AWS AMIs | `map(string)` | <pre>{<br>  "amazon-linux-2": "ec2-user",<br>  "debian-buster": "admin",<br>  "debian-stretch": "admin",<br>  "fedora-31": "fedora",<br>  "fedora-32": "fedora",<br>  "rhel-8": "ec2-user",<br>  "ubuntu-\*": "ubuntu" <br>}</pre> | no |
 | enable\_monitoring | Setup a prometheus/grafana instance | `bool` | `true` | no |
 | instance\_type | Default redpanda instance type to create | `string` | `"i3.2xlarge"` | no |
 | nodes | The number of nodes to deploy | `number` | `"3"` | no |
 | prometheus\_instance\_type | Instant type of the prometheus/grafana node | `string` | `"c5.2xlarge"` | no |
 | public\_key\_path | The public key used to ssh to the hosts | `string` | `"~/.ssh/id_rsa.pub"` | no |
+
+### Client Inputs
+By default, no client VMs are provisioned. If you want to also provision client
+hosts, you can set the following options:
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| clients | Number of client VMs, if any, to deploy. | `number` | `0` | no |
+| client\_distro | Linux distribution to use for clients, if any. | `string` | `ubuntu-focal` | no |
+| client\_instance\_type | EC2 instance type for client hosts. | `string` | `m5n.8xlarge` | no |
+
+Note that these will just be bare AMI machines without any Kafka client or
+testing tools installed. This may be added in the future.
 
 ## Outputs
 

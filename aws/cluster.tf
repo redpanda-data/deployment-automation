@@ -40,6 +40,23 @@ resource "aws_instance" "prometheus" {
   }
 }
 
+resource "aws_instance" "client" {
+  count                 = var.clients
+  ami                   = var.distro_ami[var.client_distro]
+  instance_type         = var.client_instance_type
+  key_name              = aws_key_pair.ssh.key_name
+  vpc_security_group_ids = [aws_security_group.node_sec_group.id]
+  tags = {
+    owner : local.deployment_id
+  }
+
+  connection {
+    user        = var.distro_ssh_user[var.client_distro]
+    host        = self.public_ip
+    private_key = file(var.private_key_path)
+  }
+}
+
 resource "aws_security_group" "node_sec_group" {
   name = "${local.deployment_id}-node-sec-group"
   tags = {
@@ -126,6 +143,8 @@ resource "local_file" "hosts_ini" {
       monitor_private_ip = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
       ssh_user              = var.distro_ssh_user[var.distro]
       enable_monitoring     = var.enable_monitoring
+      client_public_ips     = aws_instance.client.*.public_ip
+      client_private_ips     = aws_instance.client.*.private_ip
     }
   )
   filename = "${path.module}/../hosts.ini"
