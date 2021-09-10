@@ -49,6 +49,7 @@ variable "distro_ami" {
     # https://cloud-images.ubuntu.com/locator/ec2/
     "ubuntu-focal"  = "ami-02c45ea799467b51b"
     "ubuntu-bionic" = "ami-0c1ab2d66f996cd4b"
+    "ubuntu-hirsute" = "ami-035649ffeb04ce758"  # non-LTS for development
 
     # https://us-west-2.console.aws.amazon.com/ec2/v2/home?region=us-west-2#LaunchInstanceWizard:
     "rhel-8"         = "ami-087c2c50437d0b80d"
@@ -66,6 +67,7 @@ variable "distro_ssh_user" {
     "fedora-32"      = "fedora"
     "ubuntu-bionic"  = "ubuntu"
     "ubuntu-focal"   = "ubuntu"
+    "ubuntu-hirsute" = "ubuntu"
     "rhel-8"         = "ec2-user"
     "amazon-linux-2" = "ec2-user"
   }
