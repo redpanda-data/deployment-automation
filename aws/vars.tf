@@ -21,7 +21,7 @@ variable "instance_type" {
 
 variable "client_instance_type" {
   description = "Default client instance type to create"
-  default     = "m5n.8xlarge"
+  default     = "m5n.2xlarge"
 }
 
 variable "prometheus_instance_type" {
