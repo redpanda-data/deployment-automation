@@ -19,6 +19,11 @@ variable "instance_type" {
   default     = "i3.2xlarge"
 }
 
+variable "client_instance_type" {
+  description = "Default client instance type to create"
+  default     = "m5n.2xlarge"
+}
+
 variable "prometheus_instance_type" {
   description = "Instant type of the prometheus/grafana node"
   default     = "c5.2xlarge"
@@ -28,6 +33,17 @@ variable "enable_monitoring" {
   description = "Setup a prometheus/grafana instance"
   type        = bool
   default     = true
+}
+
+variable "clients" {
+  description = "Number of kafka client hosts to set up, if any."
+  type        = number
+  default     = 0
+}
+
+variable "client_distro" {
+  description = "Linux distribution to use for clients."
+  default     = "ubuntu-focal"
 }
 
 variable "public_key_path" {
@@ -49,6 +65,8 @@ variable "distro_ami" {
     # https://cloud-images.ubuntu.com/locator/ec2/
     "ubuntu-focal"  = "ami-02c45ea799467b51b"
     "ubuntu-bionic" = "ami-0c1ab2d66f996cd4b"
+    # non-LTS for development
+    "ubuntu-hirsute" = "ami-035649ffeb04ce758"
 
     # https://us-west-2.console.aws.amazon.com/ec2/v2/home?region=us-west-2#LaunchInstanceWizard:
     "rhel-8"         = "ami-087c2c50437d0b80d"
@@ -66,6 +84,7 @@ variable "distro_ssh_user" {
     "fedora-32"      = "fedora"
     "ubuntu-bionic"  = "ubuntu"
     "ubuntu-focal"   = "ubuntu"
+    "ubuntu-hirsute" = "ubuntu"
     "rhel-8"         = "ec2-user"
     "amazon-linux-2" = "ec2-user"
   }
