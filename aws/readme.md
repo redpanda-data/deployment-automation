@@ -46,9 +46,6 @@ No Modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | aws\_region | The AWS region to deploy the infrastructure on | `string` | `"us-west-2"` | no |
-| clients | Number of client VMs, if any, to deploy. | `number` | `0` | no |
-| client\_distro | Linux distribution to use for clients, if any. | `string` | `ubuntu-focal` | no |
-| client\_instance\_type | EC2 instance type for client hosts. | `string` | `m5n.8xlarge` | no |
 | distro | The default distribution to base the cluster on | `string` | `"ubuntu-focal"` | no |
 | distro\_ami | n/a | `map(string)` | <pre>{<br>  "amazon-linux-2": "ami-01ce4793a2f45922e",<br>  "debian-buster": "ami-0f7939d313699273c",<br>  "debian-stretch": "ami-072ad3956e05c814c",<br>  "fedora-31": "ami-0e82cc6ce8f393d4b",<br>  "fedora-32": "ami-020405ee5d5747724",<br>  "rhel-8": "ami-087c2c50437d0b80d",<br>  "ubuntu-bionic": "ami-0c1ab2d66f996cd4b",<br>  "ubuntu-focal": "ami-02c45ea799467b51b",<br> "ubuntu-hirsute": "ami-035649ffeb04ce758" <br>}</pre> | no |
 | distro\_ssh\_user | The default user used by the AWS AMIs | `map(string)` | <pre>{<br>  "amazon-linux-2": "ec2-user",<br>  "debian-buster": "admin",<br>  "debian-stretch": "admin",<br>  "fedora-31": "fedora",<br>  "fedora-32": "fedora",<br>  "rhel-8": "ec2-user",<br>  "ubuntu-\*": "ubuntu" <br>}</pre> | no |
@@ -66,7 +63,7 @@ hosts, you can set the following options:
 |------|-------------|------|---------|:--------:|
 | clients | Number of client VMs, if any, to deploy. | `number` | `0` | no |
 | client\_distro | Linux distribution to use for clients, if any. | `string` | `ubuntu-focal` | no |
-| client\_instance\_type | EC2 instance type for client hosts. | `string` | `m5n.8xlarge` | no |
+| client\_instance\_type | EC2 instance type for client hosts. | `string` | `m5n.2xlarge` | no |
 
 Note that these will just be bare AMI machines without any Kafka client or
 testing tools installed. This may be added in the future.
