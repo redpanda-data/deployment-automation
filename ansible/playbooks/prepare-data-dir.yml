@@ -46,7 +46,7 @@
       owner: root
       group: root
       mode: ugo=rwx
-  - name: set premissions
+  - name: set permissions
     file:
       dest: /var/lib/redpanda
       src: /mnt/vectorized/redpanda
