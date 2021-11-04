@@ -154,7 +154,6 @@ resource "azurerm_network_security_group" "redpanda" {
 resource "azurerm_virtual_network" "redpanda" {
   name                = "redpanda_vnet"
   address_space       = ["10.0.0.0/16"]
-  dns_servers         = ["10.0.0.4", "10.0.0.5"]
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   
@@ -206,6 +205,12 @@ resource "azurerm_network_interface" "redpanda" {
   }
 }
 
+resource "azurerm_network_interface_security_group_association" "redpanda" {
+  count                     = var.vm_instances
+  network_interface_id      = "${element(azurerm_network_interface.redpanda.*.id, count.index)}"
+  network_security_group_id = azurerm_network_security_group.redpanda.id
+}
+
 #
 # Network interfaces and IP addresses for the Redpanda client(s)
 #
@@ -235,4 +240,10 @@ resource "azurerm_network_interface" "redpanda_client" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = "${element(azurerm_public_ip.redpanda_client.*.id, count.index)}"
   }
+}
+
+resource "azurerm_network_interface_security_group_association" "redpanda_client" {
+  count                     = var.client_vm_instances
+  network_interface_id      = "${element(azurerm_network_interface.redpanda_client.*.id, count.index)}"
+  network_security_group_id = azurerm_network_security_group.redpanda.id
 }
