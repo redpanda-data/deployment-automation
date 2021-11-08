@@ -183,8 +183,10 @@ resource "azurerm_public_ip" "redpanda" {
   count               = var.vm_instances
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
-  allocation_method   = "Dynamic"
-  
+  allocation_method   = "Static"
+  availability_zone   = try(var.zone, "Zone-Redundant")
+  sku                 = "Standard"
+
   tags = {
     deployment_id = local.deployment_id
   }
@@ -220,7 +222,9 @@ resource "azurerm_public_ip" "redpanda_client" {
   count               = var.client_vm_instances
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
-  allocation_method   = "Dynamic"
+  allocation_method   = "Static"
+  availability_zone   = try(var.zone, "Zone-Redundant")
+  sku                 = "Standard"
   
   tags = {
     deployment_id = local.deployment_id

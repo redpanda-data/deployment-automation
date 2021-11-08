@@ -3,15 +3,32 @@ variable "region" {
   default     = "North Europe"
 }
 
+variable "zone" {
+  description = "Availability Zone"
+  default     = null
+}
+
 variable "vm_sku" {
   description = "Azure VM SKU to use for the Redpanda nodes"
-  default     = "Standard_L8s_v2"
+  default     = "Standard_L8s_v2" # Lsv2-series sizes have local NVMe disks
 }
 
 variable "vm_instances" {
   description = "Number of Redpanda nodes to create"
   type        = number
   default     = 3
+}
+
+variable "vm_add_data_disk" {
+  description = "Attach a Premium_LRS data disk to each node?"
+  type        = bool
+  default     = false
+}
+
+variable "vm_data_disk_gb" {
+  description = "Size of the Premium_LRS data disk in GiB"
+  type        = number
+  default     = 2048 #P50
 }
 
 variable "client_vm_sku" {
@@ -33,10 +50,12 @@ variable "vm_image" {
     sku       = string
     version   = string
   })
+  # Ubuntu 20.04 LTS
+  # https://github.com/Azure/azure-cli/issues/13320#issuecomment-649867249
   default = {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
+    offer     = "0001-com-ubuntu-server-focal"
+    sku       = "20_04-lts"
     version   = "latest"
   } 
 }
