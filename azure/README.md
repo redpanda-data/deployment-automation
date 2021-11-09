@@ -27,38 +27,13 @@ See `vars.tf` for a complete list:
 - `public_key`: Public Key file used for authentication (default: `~/.ssh/id_rsa.pub`)
 
 Examples:
-- `terraform apply -var vm_sku=Standard_L8s_v2 -var vm_instances=3 -var client_vm_instances=2`
-- `terraform apply -var vm_sku=Standard_D8ds_v4 -var vm_add_data_disk=true`
+- `terraform apply -var vm_sku=Standard_L8s_v2 -var vm_instances=3 -var client_vm_instances=2 -auto-approve`
+- `terraform apply -var vm_sku=Standard_D8ds_v4 -var vm_add_data_disk=true -auto-approve`
+
+Note that `terraform apply` will automatically generate an Ansible inventory file `../hosts.ini`.
 
 ## Recommended VM SKUs
 
 - Best overall performance: [Lsv2-series](https://docs.microsoft.com/en-us/azure/virtual-machines/lsv2-series). Storage optimized with directly mapped local NVMe drives
 - Best persistent storage: [Ddsv4-series](https://docs.microsoft.com/en-us/azure/virtual-machines/ddv4-ddsv4-series#ddsv4-series). General purpose with support for [Ultra SSD storage](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#ultra-disks)
 - Cost effective persistent storage: [M-series](https://docs.microsoft.com/en-us/azure/virtual-machines/m-series). Supports [Write Accelerator](https://docs.microsoft.com/en-us/azure/virtual-machines/how-to-enable-write-accelerator) on Premium SSD storage
-
-## Format and mount data disks
-
-The Redpanda VMs are created with a managed disk for better performance. Azure attaches the managed disk to the VM, but it isn't formatted and mounted. When the resources have been created the following steps needs to be run on each Redpanda VM:
-
-```shell
-# SSH into the VM
-ssh -i ~/.ssh/id_rsa adminpanda@<public IP address>
-# Find the disk (e.g. `sdb`)
-lsblk -o NAME,HCTL,SIZE,MOUNTPOINT | grep -i "sd"
-# Format the disk using XFS
-sudo parted /dev/sdc --script mklabel gpt mkpart xfspart xfs 0% 100%
-sudo mkfs.xfs /dev/sdc1
-sudo partprobe /dev/sdc1
-# Mount the disk
-sudo mkdir /mnt/vectorized
-sudo mount /dev/sdc1 /mnt/vectorized
-
-# (Optional) Persist the mount
-# Find the UUID of the drive
-sudo blkid
-# Add the drive to /etc/fstab
-sudo vim /etc/fstab
-UUID=8a63cd02-acab-4f5f-aacb-3f9839181873    /mnt/vectorized    xfs    defaults,nofail    1    2
-```
-
-Reference: [Add a disk to a Linux VM](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk)

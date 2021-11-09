@@ -251,3 +251,42 @@ resource "azurerm_network_interface_security_group_association" "redpanda_client
   network_interface_id      = "${element(azurerm_network_interface.redpanda_client.*.id, count.index)}"
   network_security_group_id = azurerm_network_security_group.redpanda.id
 }
+
+#
+# Network interface and IP addresse for the monitoring VM
+#
+
+resource "azurerm_public_ip" "monitoring" {
+  name                = "monitoring_public_ip"
+  count               = var.enable_monitoring ? 1 : 0
+  resource_group_name = azurerm_resource_group.redpanda.name
+  location            = azurerm_resource_group.redpanda.location
+  allocation_method   = "Static"
+  availability_zone   = try(var.zone, "Zone-Redundant")
+  sku                 = "Standard"
+
+  tags = {
+    deployment_id = local.deployment_id
+  }
+}
+
+resource "azurerm_network_interface" "monitoring" {
+  name                          = "monitoring_nic"
+  count                         = var.enable_monitoring ? 1 : 0
+  resource_group_name           = azurerm_resource_group.redpanda.name
+  location                      = azurerm_resource_group.redpanda.location
+  enable_accelerated_networking = true
+
+  ip_configuration {
+    name                          = "ip_addresses"
+    subnet_id                     = azurerm_subnet.redpanda.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = "${element(azurerm_public_ip.monitoring.*.id, count.index)}"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "monitoring" {
+  count                     = var.enable_monitoring ? 1 : 0
+  network_interface_id      = "${element(azurerm_network_interface.monitoring.*.id, count.index)}"
+  network_security_group_id = azurerm_network_security_group.redpanda.id
+}

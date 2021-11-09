@@ -10,7 +10,7 @@ variable "zone" {
 
 variable "vm_sku" {
   description = "Azure VM SKU to use for the Redpanda nodes"
-  default     = "Standard_L8s_v2" # Lsv2-series sizes have local NVMe disks
+  default     = "Standard_L32s_v2" # Lsv2-series sizes have local NVMe disks
 }
 
 variable "vm_instances" {
@@ -33,13 +33,26 @@ variable "vm_data_disk_gb" {
 
 variable "client_vm_sku" {
   description = "Azure VM SKU to use for the client node"
-  default     = "Standard_D2s_v4"
+  default     = "Standard_D2ds_v5"
+  # Note when benchmark testing to match the max network
+  # bandwidth with the Redpanda nodes.
 }
 
 variable "client_vm_instances" {
   description = "Number of client nodes to create"
   type        = number
   default     = 1
+}
+
+variable "enable_monitoring" {
+  description = "Setup a Prometheus/Grafana instance?"
+  type        = bool
+  default     = true
+}
+
+variable "monitoring_vm_sku" {
+  description = "Azure VM SKU to use for the monitoring node"
+  default     = "Standard_D2ds_v5"
 }
 
 variable "vm_image" {
