@@ -8,7 +8,7 @@ resource "azurerm_linux_virtual_machine" "redpanda" {
   count                = var.vm_instances
   resource_group_name  = azurerm_resource_group.redpanda.name
   location             = azurerm_resource_group.redpanda.location
-  # availability_set_id  = azurerm_availability_set.redpanda.id
+  availability_set_id  = azurerm_availability_set.redpanda.id
   size                 = var.vm_sku
   admin_username       = var.admin_username
   network_interface_ids = ["${element(azurerm_network_interface.redpanda.*.id, count.index)}"]
@@ -46,7 +46,6 @@ resource "azurerm_managed_disk" "redpanda" {
   resource_group_name  = azurerm_resource_group.redpanda.name
   location             = azurerm_resource_group.redpanda.location
   storage_account_type = "Premium_LRS"
-  # storage_account_type = "UltraSSD_LRS"
   create_option        = "Empty"
   # https://docs.microsoft.com/en-us/azure/virtual-machines/disks-change-performance
   disk_size_gb         = var.vm_data_disk_gb
@@ -76,7 +75,7 @@ resource "azurerm_linux_virtual_machine" "redpanda_client" {
   count                = var.client_vm_instances
   resource_group_name  = azurerm_resource_group.redpanda.name
   location             = azurerm_resource_group.redpanda.location
-  # availability_set_id  = azurerm_availability_set.redpanda.id
+  availability_set_id  = azurerm_availability_set.redpanda.id
   size                 = var.client_vm_sku
   admin_username       = var.admin_username
   network_interface_ids = ["${element(azurerm_network_interface.redpanda_client.*.id, count.index)}"]
@@ -112,7 +111,7 @@ resource "azurerm_linux_virtual_machine" "monitoring" {
   count                = var.enable_monitoring ? 1 : 0
   resource_group_name  = azurerm_resource_group.redpanda.name
   location             = azurerm_resource_group.redpanda.location
-  # availability_set_id  = azurerm_availability_set.redpanda.id
+  availability_set_id  = azurerm_availability_set.redpanda.id
   size                 = var.monitoring_vm_sku
   admin_username       = var.admin_username
   network_interface_ids = ["${element(azurerm_network_interface.monitoring.*.id, count.index)}"]

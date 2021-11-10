@@ -33,7 +33,7 @@ variable "vm_data_disk_gb" {
 
 variable "client_vm_sku" {
   description = "Azure VM SKU to use for the client node"
-  default     = "Standard_D2ds_v5"
+  default     = "Standard_D4ds_v5"
   # Note when benchmark testing to match the max network
   # bandwidth with the Redpanda nodes.
 }

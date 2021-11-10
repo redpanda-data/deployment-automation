@@ -14,6 +14,14 @@ output "client_private_ips" {
   value = "${azurerm_network_interface.redpanda_client.*.private_ip_address}"
 }
 
+output "monitor_public_ip" {
+  value = "${azurerm_public_ip.monitoring.*.ip_address}"
+}
+
+output "monitor_private_ip" {
+  value = "${azurerm_network_interface.monitoring.*.private_ip_address}"
+}
+
 output "ssh_user" {
   value = var.admin_username
 }
@@ -31,8 +39,8 @@ resource "local_file" "hosts_ini" {
       client_private_ips   = "${azurerm_network_interface.redpanda_client.*.private_ip_address}"
       monitor_public_ip    = "${azurerm_public_ip.monitoring.*.ip_address}"
       monitor_private_ip   = "${azurerm_network_interface.monitoring.*.private_ip_address}"
-      enable_monitoring    = var.enable_monitoring
-      ssh_user             = var.admin_username
+      enable_monitoring    = "${var.enable_monitoring}"
+      ssh_user             = "${var.admin_username}"
     }
   )
   filename = "${path.module}/../hosts.ini"
