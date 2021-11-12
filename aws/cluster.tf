@@ -1,9 +1,11 @@
 resource "random_uuid" "cluster" {}
 
+resource "time_static" "timestamp" {}
+
 locals {
-  timestamp = timestamp()
   uuid = random_uuid.cluster.result
-  deployment_id = "redpanda-${random_uuid.cluster.result}-${local.timestamp}"
+  timestamp = time_static.timestamp.rfc3339
+  deployment_id = "redpanda-${local.uuid}-${local.timestamp}"
 }
 
 resource "aws_instance" "redpanda" {
