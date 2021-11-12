@@ -6,6 +6,12 @@ locals {
   uuid = random_uuid.cluster.result
   timestamp = time_static.timestamp.rfc3339
   deployment_id = "redpanda-${local.uuid}-${local.timestamp}"
+
+  # tags shared by all instances
+  instance_tags = {
+    owner        : local.deployment_id
+    iam_username : trimprefix(data.aws_arn.caller_arn.resource, "user/")
+  }
 }
 
 resource "aws_instance" "redpanda" {
@@ -14,9 +20,7 @@ resource "aws_instance" "redpanda" {
   instance_type          = var.instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
-  tags = {
-    owner : local.deployment_id
-  }
+  tags                   = local.instance_tags
 
   connection {
     user        = var.distro_ssh_user[var.distro]
@@ -31,9 +35,7 @@ resource "aws_instance" "prometheus" {
   instance_type          = var.prometheus_instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
-  tags = {
-    owner : local.deployment_id
-  }
+  tags                   = local.instance_tags
 
   connection {
     user        = var.distro_ssh_user[var.distro]
@@ -48,9 +50,7 @@ resource "aws_instance" "client" {
   instance_type         = var.client_instance_type
   key_name              = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
-  tags = {
-    owner : local.deployment_id
-  }
+  tags                  = local.instance_tags
 
   connection {
     user        = var.distro_ssh_user[var.client_distro]
@@ -61,9 +61,7 @@ resource "aws_instance" "client" {
 
 resource "aws_security_group" "node_sec_group" {
   name = "${local.deployment_id}-node-sec-group"
-  tags = {
-    owner : local.deployment_id
-  }
+  tags = local.instance_tags
   description = "redpanda ports"
 
   # SSH access from anywhere
@@ -150,4 +148,13 @@ resource "local_file" "hosts_ini" {
     }
   )
   filename = "${path.module}/../hosts.ini"
+}
+
+# we extract the IAM username by getting the caller identity as an ARN
+# then extracting the resource protion, which gives something like 
+# user/travis.downs, and finally we strip the user/ part to use as a tag
+data "aws_caller_identity" "current" {}
+
+data "aws_arn" "caller_arn" {
+  arn = data.aws_caller_identity.current.arn
 }
