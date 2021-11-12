@@ -24,6 +24,16 @@ resource "azurerm_availability_set" "redpanda" {
   }
 }
 
+resource "azurerm_proximity_placement_group" "redpanda" {
+  name                = "redpanda_proximity_group"
+  resource_group_name = azurerm_resource_group.redpanda.name
+  location            = azurerm_resource_group.redpanda.location
+
+  tags = {
+    deployment_id = local.deployment_id
+  }
+}
+
 resource "azurerm_network_security_group" "redpanda" {
   name                = "redpanda_nsg"
   resource_group_name = azurerm_resource_group.redpanda.name

@@ -3,25 +3,22 @@
 #
 
 resource "azurerm_linux_virtual_machine" "redpanda" {
-  name                 = "redpanda_broker${count.index}"
-  computer_name        = "redpanda${count.index}"
-  count                = var.vm_instances
-  resource_group_name  = azurerm_resource_group.redpanda.name
-  location             = azurerm_resource_group.redpanda.location
-  availability_set_id  = azurerm_availability_set.redpanda.id
-  size                 = var.vm_sku
-  admin_username       = var.admin_username
-  network_interface_ids = ["${element(azurerm_network_interface.redpanda.*.id, count.index)}"]
-  zone = try(var.zone, null)
-
+  name                         = "redpanda_broker${count.index}"
+  computer_name                = "redpanda${count.index}"
+  count                        = var.vm_instances
+  resource_group_name          = azurerm_resource_group.redpanda.name
+  location                     = azurerm_resource_group.redpanda.location
+  availability_set_id          = azurerm_availability_set.redpanda.id
+  proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
+  zone                         = try(var.zone, null)
+  size                         = var.vm_sku
+  admin_username               = var.admin_username
+  network_interface_ids        = ["${element(azurerm_network_interface.redpanda.*.id, count.index)}"]
+  
   os_disk {
     storage_account_type = "Premium_LRS"
     caching              = "ReadWrite"
   }
-
-  # additional_capabilities {
-  #   ultra_ssd_enabled = true
-  # }
   
   admin_ssh_key {
     username   = var.admin_username
@@ -70,15 +67,16 @@ resource "azurerm_virtual_machine_data_disk_attachment" "redpanda" {
 #
 
 resource "azurerm_linux_virtual_machine" "redpanda_client" {
-  name                 = "redpanda_client${count.index}"
-  computer_name        = "client${count.index}"
-  count                = var.client_vm_instances
-  resource_group_name  = azurerm_resource_group.redpanda.name
-  location             = azurerm_resource_group.redpanda.location
-  availability_set_id  = azurerm_availability_set.redpanda.id
-  size                 = var.client_vm_sku
-  admin_username       = var.admin_username
-  network_interface_ids = ["${element(azurerm_network_interface.redpanda_client.*.id, count.index)}"]
+  name                         = "redpanda_client${count.index}"
+  computer_name                = "client${count.index}"
+  count                        = var.client_vm_instances
+  resource_group_name          = azurerm_resource_group.redpanda.name
+  location                     = azurerm_resource_group.redpanda.location
+  availability_set_id          = azurerm_availability_set.redpanda.id
+  proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
+  size                         = var.client_vm_sku
+  admin_username               = var.admin_username
+  network_interface_ids        = ["${element(azurerm_network_interface.redpanda_client.*.id, count.index)}"]
 
   os_disk {
     storage_account_type = "Standard_LRS"
@@ -107,14 +105,15 @@ resource "azurerm_linux_virtual_machine" "redpanda_client" {
 #
 
 resource "azurerm_linux_virtual_machine" "monitoring" {
-  name                 = "monitor"
-  count                = var.enable_monitoring ? 1 : 0
-  resource_group_name  = azurerm_resource_group.redpanda.name
-  location             = azurerm_resource_group.redpanda.location
-  availability_set_id  = azurerm_availability_set.redpanda.id
-  size                 = var.monitoring_vm_sku
-  admin_username       = var.admin_username
-  network_interface_ids = ["${element(azurerm_network_interface.monitoring.*.id, count.index)}"]
+  name                         = "monitor"
+  count                        = var.enable_monitoring ? 1 : 0
+  resource_group_name          = azurerm_resource_group.redpanda.name
+  location                     = azurerm_resource_group.redpanda.location
+  availability_set_id          = azurerm_availability_set.redpanda.id
+  proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
+  size                         = var.monitoring_vm_sku
+  admin_username               = var.admin_username
+  network_interface_ids        = ["${element(azurerm_network_interface.monitoring.*.id, count.index)}"]
 
   os_disk {
     storage_account_type = "Standard_LRS"
