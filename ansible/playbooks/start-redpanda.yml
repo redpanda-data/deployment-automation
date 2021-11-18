@@ -13,6 +13,7 @@
     vars:
       use_public_ips: "{{ advertise_public_ips | d() | bool }}"
     shell: |
+      set -e
       rpk config set cluster_id 'redpanda'
       rpk config set organization 'redpanda-test'
       rpk config set redpanda.advertised_kafka_api '{
