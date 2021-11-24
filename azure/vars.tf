@@ -10,7 +10,7 @@ variable "zone" {
 
 variable "vm_sku" {
   description = "Azure VM SKU to use for the Redpanda nodes"
-  default     = "Standard_L32s_v2" # Lsv2-series sizes have local NVMe disks
+  default     = "Standard_L8s_v2" # Lsv2-series sizes have local NVMe disks
 }
 
 variable "vm_instances" {
@@ -28,12 +28,12 @@ variable "vm_add_data_disk" {
 variable "vm_data_disk_gb" {
   description = "Size of the Premium_LRS data disk in GiB"
   type        = number
-  default     = 2048 #P50
+  default     = 2048 #P40
 }
 
 variable "client_vm_sku" {
   description = "Azure VM SKU to use for the client node"
-  default     = "Standard_D4ds_v5"
+  default     = "Standard_D2ds_v5"
   # Note when benchmark testing to match the max network
   # bandwidth with the Redpanda nodes.
 }
