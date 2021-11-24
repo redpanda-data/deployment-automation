@@ -22,18 +22,21 @@ See `vars.tf` for a complete list:
 - `vm_data_disk_gb`: Size of the Premium_LRS data disk in GiB (default `512` P20)
 - `client_vm_sku`: Azure VM SKU to use for the client node (default: `Standard_D2s_v4`)
 - `client_vm_instances`: Number of client nodes to create (default: `1`)
-- `vm_image`: Source image reference for the VMs (default: `Canonical.UbuntuServer.18.04-LTS.latest`)
+- `enable_monitoring`: Setup a Prometheus/Grafana instance? (default: `true`)
+- `vm_image`: Source image reference for the VMs (default: `Canonical.0001-com-ubuntu-server-focal.20_04-lts.latest`)
 - `admin_username`: Username for the local administrator on each VM (default: `adminpanda`)
 - `public_key`: Public Key file used for authentication (default: `~/.ssh/id_rsa.pub`)
 
 Examples:
 - `terraform apply -var vm_sku=Standard_L8s_v2 -var vm_instances=3 -var client_vm_instances=2 -auto-approve`
-- `terraform apply -var vm_sku=Standard_D8ds_v4 -var vm_add_data_disk=true -auto-approve`
+- `terraform apply -var vm_sku=Standard_F8s_v2 -var vm_add_data_disk=true -auto-approve`
 
 Note that `terraform apply` will automatically generate an Ansible inventory file `../hosts.ini`.
 
 ## Recommended VM SKUs
 
-- Best overall performance: [Lsv2-series](https://docs.microsoft.com/en-us/azure/virtual-machines/lsv2-series). Storage optimized with directly mapped local NVMe drives
-- Best persistent storage: [Ddsv4-series](https://docs.microsoft.com/en-us/azure/virtual-machines/ddv4-ddsv4-series#ddsv4-series). General purpose with support for [Ultra SSD storage](https://docs.microsoft.com/en-us/azure/virtual-machines/disks-types#ultra-disks)
-- Cost effective persistent storage: [M-series](https://docs.microsoft.com/en-us/azure/virtual-machines/m-series). Supports [Write Accelerator](https://docs.microsoft.com/en-us/azure/virtual-machines/how-to-enable-write-accelerator) on Premium SSD storage
+Azure’s storage optimised [Lsv2-series](https://docs.microsoft.com/en-us/azure/virtual-machines/lsv2-series) VMs are recommended for maximum performance. These VMs include directly mapped local NVMe disks that provide high throughput, low latency IO for Redpanda. 
+
+There are some drawbacks to using Lsv2; the NVMe disks are ephemeral so data stored in Redpanda is lost when the VM is stopped, and the expected network bandwidth is relatively low for such highly specced machines. This may force the use of larger sizes for the additional network bandwidth rather than for the vCPU or memory.
+
+For a persistent storage option consider using the compute optimised [Fsv2-series](https://docs.microsoft.com/en-us/azure/virtual-machines/fsv2-series) VMs with Premium SSD storage. These VMs have a higher expected network bandwidth per vCPU than Lsv2, but the downside is that the SSDs are remote to the VM so performance will suffer from lower throughput and higher latency.
