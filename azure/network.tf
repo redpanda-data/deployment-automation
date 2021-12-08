@@ -14,8 +14,8 @@ resource "azurerm_resource_group" "redpanda" {
   }
 }
 
-resource "azurerm_availability_set" "redpanda" {
-  name                = "redpanda_availability_set"
+resource "azurerm_proximity_placement_group" "redpanda" {
+  name                = "redpanda_proximity_group"
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
 
@@ -24,10 +24,11 @@ resource "azurerm_availability_set" "redpanda" {
   }
 }
 
-resource "azurerm_proximity_placement_group" "redpanda" {
-  name                = "redpanda_proximity_group"
-  resource_group_name = azurerm_resource_group.redpanda.name
-  location            = azurerm_resource_group.redpanda.location
+resource "azurerm_availability_set" "redpanda" {
+  name                         = "redpanda_availability_set"
+  resource_group_name          = azurerm_resource_group.redpanda.name
+  location                     = azurerm_resource_group.redpanda.location
+  proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
 
   tags = {
     deployment_id = local.deployment_id
