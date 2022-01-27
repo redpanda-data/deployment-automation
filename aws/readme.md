@@ -15,7 +15,7 @@ Example: `terraform apply -var="instance_type=i3.large" -var="nodes=3"`
 
 | Name | Version |
 |------|---------|
-| aws | 3.29.1 |
+| aws | 3.73.0 |
 | local | 2.1.0 |
 | random | 3.1.0 |
 
@@ -23,7 +23,7 @@ Example: `terraform apply -var="instance_type=i3.large" -var="nodes=3"`
 
 | Name | Version |
 |------|---------|
-| aws | 3.29.1 |
+| aws | 3.73.0 |
 | local | 2.1.0 |
 | random | 3.1.0 |
 
@@ -35,9 +35,9 @@ No Modules.
 
 | Name |
 |------|
-| [aws_instance](https://registry.terraform.io/providers/hashicorp/aws/3.29.1/docs/resources/instance) |
-| [aws_key_pair](https://registry.terraform.io/providers/hashicorp/aws/3.29.1/docs/resources/key_pair) |
-| [aws_security_group](https://registry.terraform.io/providers/hashicorp/aws/3.29.1/docs/resources/security_group) |
+| [aws_instance](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/instance) |
+| [aws_key_pair](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/key_pair) |
+| [aws_security_group](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/security_group) |
 | [local_file](https://registry.terraform.io/providers/hashicorp/local/2.1.0/docs/resources/file) |
 | [random_uuid](https://registry.terraform.io/providers/hashicorp/random/3.1.0/docs/resources/uuid) |
 
