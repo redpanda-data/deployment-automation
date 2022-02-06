@@ -7,14 +7,14 @@
     args:
       warn: no
     when: ansible_os_family == 'Debian'
-  
+
   - name: add the redpanda repo
     shell: |
       curl -1sLf https://packages.vectorized.io/sMIXnoa7DK12JW4A/redpanda/cfg/setup/bash.rpm.sh | sudo -E bash
     args:
       warn: no
     when: ansible_os_family == 'RedHat'
-  
+
   - name: install redpanda from repository
     package:
       name:
