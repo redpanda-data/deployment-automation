@@ -1,0 +1,72 @@
+---
+- name: Bootstrap SSH access to hosts before running ansible first time
+  hosts: all
+
+  # This is a utility for developers and is not intended to be used in
+  # production. Please review all the commands below before using.
+
+  vars:
+    # Ensures this user account is present. This should match the `ansible_user`
+    # field used in your host inventory and/or configuration.
+    user_name: panda
+    user_pass: $6$laKEI9cBziZPWnSW$Im.fT9LMhn.GLM0fc2RnyXnv1DwK2vkMCdOX.iEdCNx4ND/fqh1UX4aEe18s9gXKh6SDK/IQOMqF/ozR6Hrpw.
+
+    # Generating password string, see:
+    # https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module
+    # Example command: bringTheCornPlease123s | mkpasswd -s --method=sha-512
+
+  tasks:
+      #   - name: Update apt cache
+      #     apt: update_cache=yes
+      #
+      #   - name: Safe aptitude upgrade
+      #     apt: upgrade=safe
+      #     async: 600
+      #     poll: 5
+
+  - name: Add my user
+    user: >
+      name={{ user_name }}
+      password={{ user_pass }}
+      shell=/bin/bash
+      groups=sudo
+      append=yes
+      generate_ssh_key=yes
+      ssh_key_bits=2048
+      state=present
+
+  - name: Add my workstation user's public key to the new user
+    authorized_key:
+      user: "{{ user_name }}"
+      key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+      state: present
+
+  - name: Remove root SSH access
+    lineinfile:
+      dest: /etc/ssh/sshd_config
+      regexp: "^PermitRootLogin"
+      line: "PermitRootLogin no"
+      state: present
+
+      #   - name: Remove password SSH access
+      #     lineinfile:
+      #       dest: /etc/ssh/sshd_config
+      #       regexp: "^PasswordAuthentication"
+      #       line: "PasswordAuthentication no"
+      #       state: present
+
+  - name: No-password sudo for new ansible user
+    template:
+      src: sudoers.j2
+      dest: "/etc/sudoers.d/{{ user_name }}"
+      owner: root
+      group: root
+      mode: 0440
+      validate: visudo -cf %s
+
+  handlers:
+  - name: restart_ssh
+    service: name=ssh state=restarted
+  - name: reboot-server
+    command: /sbin/reboot
+
