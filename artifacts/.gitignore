@@ -1,0 +1,6 @@
+# ingore all
+/*
+
+# except
+!/.gitignore
+!/README.md
