@@ -38,9 +38,8 @@ terraform ## should see it all come to life
     Now when you use the Terraform scripts, the Terraform state file will be saved and pulled from your COS bucket instead of locally
 
 ### 3. Configure your terraform
-
-1. Create a `terraform.tfvars` file that mimics [terraform.tfvars.template](./terraform.tfvars.template). 
-2. Fill in the information:
+ 
+1. Declare the following environment variables required for Terraform to connect to your IBM Cloud instance:
     - `ibmcloud_api_key` is the ibmcloud API key you generated in step 2 above. Run the following to set the environment variable:
         ``` 
         export TF_VAR_ibmcloud_api_key=<your API key>
