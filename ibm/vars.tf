@@ -1,3 +1,5 @@
+variable "ssh_key" {}
+
 variable "ibmcloud_api_key" {
   sensitive = true
 }

@@ -1,5 +1,3 @@
-variable "ssh_key" {}
-
 locals {
     BASENAME = var.base_name
     ZONE =  var.zone
