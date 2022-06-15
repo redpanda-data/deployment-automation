@@ -3,7 +3,6 @@
   - cloudalchemy.node_exporter
 
   tasks:
-
   - name: fedora setup
     when: ansible_os_family == 'RedHat'
     block:
