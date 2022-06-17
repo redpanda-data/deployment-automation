@@ -29,7 +29,7 @@
   roles:
   - cloudalchemy.grafana
   vars:
-    grafana_version: latest
+    grafana_version: 9.0.0
     grafana_security:
       admin_user: admin
       admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
