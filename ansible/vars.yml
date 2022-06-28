@@ -1,0 +1,5 @@
+# If set to true, the redpanda configuraiton will be set such
+# that it listens on the host public IPs rather than the local/VPC
+# IP addresses, which enables access from outside the local network
+# or VPC.
+advertise_public_ips: true
