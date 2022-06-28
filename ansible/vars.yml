@@ -3,3 +3,8 @@
 # IP addresses, which enables access from outside the local network
 # or VPC.
 advertise_public_ips: true
+
+# If set to true, queue depth control will be enabled with values
+# (see start-redpanda.yaml) appropriate for a small cluster
+# when redpanda is deployed
+enable_qdc: false
