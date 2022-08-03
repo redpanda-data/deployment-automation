@@ -18,7 +18,7 @@ After completing these steps, please follow the required steps in the [project r
     - Supported configuration variables (See `vars.tf`):
         - `project_name` (required): The name of the project on GCP to use.
         - `subnet` (required): The name of an existing subnet to deploy the infrastructure on.
-        - `region` (default: `us-west-1`): The region to deploy the infrastructure on.
+        - `region` (default: `us-west1`): The region to deploy the infrastructure on.
         - `zone` (default: `a`): The region's zone to deploy the infrastructure on.
         - `nodes` (default: `1`): The number of nodes to base the cluster on. Keep in mind that one node is used as a monitoring node.
         - `disks` (default: `1`): The number of **local** disks to deploy on each machine
