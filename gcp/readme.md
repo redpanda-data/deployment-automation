@@ -4,7 +4,7 @@ This Terraform module will deploy VMs on GCP Compute Engine.
 
 **Prerequisites:**
 
-- An existing subnet to deploy the VMs into. The subnet's attached firewall should allow inbound traffic on ports `22`, `3000`, `8888`, `8889`, `9090`, `9092`, `9644` and `33145`. This module adds the `rp-cluster` tag to the deployed VMs, which can be used as the target tag for the firewall rule.
+- An existing subnet to deploy the VMs into. The subnet's attached firewall should allow inbound traffic on ports `22`, `3000`, `8888`, `8889`, `9090`, `9092`, `9100`, `9644` and `33145`. This module adds the `rp-cluster` tag to the deployed VMs, which can be used as the target tag for the firewall rule.
 
 - Set the desired GCP project by executing `gcloud projects list` and then `gcloud config set project <PROJECT_ID>`.
 
@@ -20,9 +20,10 @@ After completing these steps, please follow the required steps in the [project r
         - `subnet` (required): The name of an existing subnet to deploy the infrastructure on.
         - `region` (default: `us-west-1`): The region to deploy the infrastructure on.
         - `zone` (default: `a`): The region's zone to deploy the infrastructure on.
-        - `nodes` (default: `1`): The number of nodes to base the cluster on. Keep in mind that one node is used as a monitoring node.
+        - `nodes` (default: `1`): The number of nodes to base the cluster on (Note that one additional node is added as a monitoring node).
+        - `client_nodes` (default: `1`): The number of client nodes
         - `disks` (default: `1`): The number of **local** disks to deploy on each machine
-        - `image` (default: `ubuntu-os-cloud/ubuntu-1804-lts`): The OS image running on the VMs.
+        - `image` (default: `ubuntu-os-cloud/ubuntu-2004-lts`): The OS image running on the VMs.
         - `machine_type` (default: `n2-standard-2`): The machine type.
         - `public_key_path`: Provide the path to the public key of the keypair used to access the nodes.
         - `ssh_user`: The ssh user. Must match the one in the public ssh key's comments.
