@@ -11,11 +11,29 @@ locals {
   deployment_id = "${random_uuid.cluster.result}"
 }
 
+resource "google_compute_resource_policy" "redpanda-rp" {
+  name = "redpanda-rp"
+  region = var.region
+  group_placement_policy {
+    availability_domain_count = var.ha ? min(3, var.nodes) : 1
+  }
+  count = var.ha ? 1 : 0
+  lifecycle {
+    precondition {
+      condition = var.ha && var.nodes <= 8
+      error_message = "GCP does not support resource policies with greater than 8 nodes"
+    }
+  }
+}
+
 resource "google_compute_instance" "redpanda" {
   count        = var.nodes
   name         = "rp-node-${count.index}-${local.deployment_id}"
   tags         = ["rp-cluster", "tf-deployment-${local.deployment_id}"]
   machine_type = var.machine_type
+  resource_policies = (var.ha && var.nodes <= 8) ? [
+    google_compute_resource_policy.redpanda-rp[0].id
+  ] : null
 
   metadata = {
     ssh-keys = <<KEYS
@@ -125,6 +143,7 @@ resource "local_file" "hosts_ini" {
       monitor_private_ip   = google_compute_instance.monitor[0].network_interface.0.network_ip
       ssh_user             = var.ssh_user
       enable_monitoring    = true
+      rack                 = google_compute_instance.redpanda.*.name
     }
   )
   filename = "${path.module}/../hosts.ini"
