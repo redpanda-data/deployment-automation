@@ -8,8 +8,11 @@ resource "azurerm_linux_virtual_machine" "redpanda" {
   count                        = var.vm_instances
   resource_group_name          = azurerm_resource_group.redpanda.name
   location                     = azurerm_resource_group.redpanda.location
-  availability_set_id          = azurerm_availability_set.redpanda.id
+  availability_set_id          = var.use_scale_set ? null : azurerm_availability_set.redpanda.0.id
   proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
+  virtual_machine_scale_set_id = var.use_scale_set ? azurerm_orchestrated_virtual_machine_scale_set.redpanda.0.id : null
+  platform_fault_domain        = var.use_scale_set ? count.index % 3 : null
+  
   zone                         = try(var.zone, null)
   size                         = var.vm_sku
   admin_username               = var.admin_username
@@ -72,7 +75,6 @@ resource "azurerm_linux_virtual_machine" "redpanda_client" {
   count                        = var.client_vm_instances
   resource_group_name          = azurerm_resource_group.redpanda.name
   location                     = azurerm_resource_group.redpanda.location
-  availability_set_id          = azurerm_availability_set.redpanda.id
   proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
   size                         = var.client_vm_sku
   admin_username               = var.admin_username
@@ -109,7 +111,6 @@ resource "azurerm_linux_virtual_machine" "monitoring" {
   count                        = var.enable_monitoring ? 1 : 0
   resource_group_name          = azurerm_resource_group.redpanda.name
   location                     = azurerm_resource_group.redpanda.location
-  availability_set_id          = azurerm_availability_set.redpanda.id
   proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
   size                         = var.monitoring_vm_sku
   admin_username               = var.admin_username

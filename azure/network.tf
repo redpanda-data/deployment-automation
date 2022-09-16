@@ -25,10 +25,24 @@ resource "azurerm_proximity_placement_group" "redpanda" {
 }
 
 resource "azurerm_availability_set" "redpanda" {
-  name                         = "redpanda_availability_set"
+  name                         = "redpanda_availability_set_${local.deployment_id}"
   resource_group_name          = azurerm_resource_group.redpanda.name
   location                     = azurerm_resource_group.redpanda.location
   proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
+  count                        = var.use_scale_set ? 0 : 1
+
+  tags = {
+    deployment_id = local.deployment_id
+  }
+}
+
+resource "azurerm_orchestrated_virtual_machine_scale_set" "redpanda" {
+  name                         = "redpanda_scale_set_${local.deployment_id}"
+  resource_group_name          = azurerm_resource_group.redpanda.name
+  location                     = azurerm_resource_group.redpanda.location
+  proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
+  platform_fault_domain_count  = 3
+  count                        = var.use_scale_set ? 1 : 0
 
   tags = {
     deployment_id = local.deployment_id
