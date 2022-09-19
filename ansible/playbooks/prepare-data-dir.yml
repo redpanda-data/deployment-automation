@@ -9,6 +9,8 @@
     when: device_info[item]["partitions"] | length == 0
   - set_fact:
       nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) }}'
+  - set_fact:
+      ephemeral_disk: '{{ (ephemeral_disk | default(false)) }}'
 
   - block:
     - name: define mdadm_arrays variable
@@ -36,6 +38,9 @@
         path: /mnt/vectorized
         src: '{{ nvme_devices_for_raid[0] }}'
         fstype: xfs
+        opts: "{{ 'defaults,nofail' if ephemeral_disk else 'defaults'}}"
+        dump: "{{ 1 if ephemeral_disk else 0}}"
+        passno: "{{ 2 if ephemeral_disk else 0}}"
         state: mounted
     when: nvme_devices_for_raid|length == 1
 

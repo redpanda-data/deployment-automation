@@ -41,6 +41,7 @@ Available Ansible variables:
 You can pass the following variables as `-e var=value`:
 * `advertise_public_ips=false|true`: Configure Redpanda to advertise the node's public IPs for client communication instead of private IPs. This allows for using the cluster from outside its subnet. **Note**: This is not recommended for production deployments, because it means that your nodes will be public. Use it for testing only. Default `false`
 * `grafana_admin_pass=<password_here>`: Configure Grafana's admin user's password
+* `ephemeral_disk`: Enable filesystem check for attached disk, useful when using attached disks in instances with ephemeral OS disks (i.e Azure L Series). This allows a filesystem repair at boot time and ensures that the drive is remounted automatically after a reboot. Default `false` 
 
 2. Use `rpk` & standard Kafka tools to produce/consume from the Redpanda cluster & access the Grafana installation on the monitor host.
 * The Grafana URL is http://&lt;grafana host&gt;:3000/login
