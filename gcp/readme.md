@@ -4,7 +4,9 @@ This Terraform module will deploy VMs on GCP Compute Engine.
 
 **Prerequisites:**
 
-- An existing subnet to deploy the VMs into. The subnet's attached firewall should allow inbound traffic on ports 22, 3000, 8888, 8889, 9090, 9092, 9644 and 33145. This module adds the `rp-cluster` tag to the deployed VMs, which can be used as the target tag for the firewall rule.
+- An existing subnet to deploy the VMs into. The subnet's attached firewall should allow inbound traffic on ports `22`, `3000`, `8888`, `8889`, `9090`, `9092`, `9644` and `33145`. This module adds the `rp-cluster` tag to the deployed VMs, which can be used as the target tag for the firewall rule.
+
+- Set the desired GCP project by executing `gcloud projects list` and then `gcloud config set project <PROJECT_ID>`.
 
 - The module assumes credentials for GCP have been configured using 
   [User Application Default Credentials](https://cloud.google.com/sdk/gcloud/reference/auth/application-default). This can be done by executing `gcloud auth application-default login`, after which a JSON file is generated that the Terraform GCP provider can automatically find. Consult the [GCP provider documentation](https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/provider_reference) for other alternatives.
@@ -16,7 +18,7 @@ After completing these steps, please follow the required steps in the [project r
     - Supported configuration variables (See `vars.tf`):
         - `project_name` (required): The name of the project on GCP to use.
         - `subnet` (required): The name of an existing subnet to deploy the infrastructure on.
-        - `region` (default: `us-west-1`): The region to deploy the infrastructure on.
+        - `region` (default: `us-west1`): The region to deploy the infrastructure on.
         - `zone` (default: `a`): The region's zone to deploy the infrastructure on.
         - `nodes` (default: `1`): The number of nodes to base the cluster on. Keep in mind that one node is used as a monitoring node.
         - `disks` (default: `1`): The number of **local** disks to deploy on each machine
