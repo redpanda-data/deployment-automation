@@ -7,16 +7,13 @@
       state: directory
 
   - name: configure redpanda
-    notify:
-      - restart redpanda-tuner
-      - restart redpanda
     vars:
       use_public_ips: "{{ advertise_public_ips | d() | bool }}"
     shell: |
       set -e
-      rpk config set cluster_id 'redpanda'
-      rpk config set organization 'redpanda-test'
-      rpk config set redpanda.advertised_kafka_api '{
+      sudo -u redpanda rpk redpanda config set cluster_id 'redpanda'
+      sudo -u redpanda rpk redpanda config set organization 'redpanda-test'
+      sudo -u redpanda rpk redpanda config set redpanda.advertised_kafka_api '{
       {% if use_public_ips %}
         address: {{ inventory_hostname }},
       {% else %}
@@ -24,27 +21,49 @@
       {% endif %}
         port: 9092
       }' --format yaml
-      rpk config set redpanda.advertised_rpc_api '{
+      sudo -u redpanda rpk redpanda config set redpanda.advertised_rpc_api '{
         address: {{ hostvars[inventory_hostname].private_ip }},
         port: 33145
       }' --format yaml
-      sudo rpk mode production
-
-      sudo rpk config set redpanda.rpc_server_tcp_recv_buf 65536
-
+      sudo -u redpanda rpk redpanda mode production
+      sudo -u redpanda rpk redpanda config set redpanda.rpc_server_tcp_recv_buf 65536
       {% if hostvars[groups['redpanda'][0]].id == hostvars[inventory_hostname].id %}
-      sudo rpk config bootstrap \
+      sudo -u redpanda rpk redpanda config bootstrap \
         --id {{ hostvars[inventory_hostname].id }} \
         --self {{ hostvars[inventory_hostname].private_ip }}
-
       {% else %}
-
-      sudo rpk config bootstrap \
+      sudo -u redpanda rpk redpanda config bootstrap \
         --id {{ hostvars[inventory_hostname].id }} \
         --self {{ hostvars[inventory_hostname].private_ip }} \
         --ips {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='private_ip') | join(',') }}
       {% endif %}
 
+  - name: start redpanda-tuner
+    systemd:
+      name: redpanda-tuner
+      state: started
+  - name: start redpanda
+    systemd:
+      name: redpanda
+      state: started
+
+  - name: enable rack awareness
+    notify:
+      - restart redpanda-tuner
+      - restart redpanda
+    vars:
+      use_public_ips: "{{ advertise_public_ips | d() | bool }}"
+    shell: |
+      set -e
+      sudo -u redpanda rpk redpanda config set redpanda.rack {{ rack }}
+      {% if use_public_ips %}
+      sudo -u redpanda rpk cluster config set enable_rack_awareness true \
+        --api-urls {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='inventory_hostname') | product([':9644']) | map('join') | join(',') }}
+      {% else %}
+      sudo -u redpanda rpk cluster config set enable_rack_awareness true \
+        --api-urls {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='private_ip') | product([':9644']) | map('join') | join(',') }}
+      {% endif %}
+    when: rack is defined and rack != -1
 
   handlers:
   - name: restart redpanda-tuner
