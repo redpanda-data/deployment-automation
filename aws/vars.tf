@@ -9,6 +9,12 @@ variable "nodes" {
   default     = "3"
 }
 
+variable "ha" {
+  description = "Whether to use placement groups to create an HA topology"
+  type        = bool
+  default     = false
+}
+
 variable "distro" {
   description = "The default distribution to base the cluster on"
   default     = "ubuntu-focal"
@@ -52,7 +58,7 @@ variable "public_key_path" {
 }
 
 variable "distro_ami" {
-  type = map(string)
+  type    = map(string)
   default = {
     # https://wiki.debian.org/Cloud/AmazonEC2Image/
     "debian-stretch" = "ami-072ad3956e05c814c"
