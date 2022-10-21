@@ -10,6 +10,11 @@
       dest: '{{ playbook_dir }}/grafana_dashboards/redpanda-grafana.json'
       flat: yes
 
+- hosts: monitor
+  tasks:
+  - name: install deps
+    shell: |
+      sudo apt install -y python3-jmespath
 
 - hosts: monitor
   roles:
