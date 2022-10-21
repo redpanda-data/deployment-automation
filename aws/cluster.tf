@@ -96,7 +96,7 @@ resource "aws_security_group" "node_sec_group" {
     from_port   = 9644
     to_port     = 9644
     protocol    = "tcp"
-    self        = true
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # grafana
