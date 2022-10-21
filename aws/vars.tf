@@ -58,7 +58,7 @@ variable "public_key_path" {
 }
 
 variable "distro_ami" {
-  type = map(string)
+  type    = map(string)
   default = {
     # https://wiki.debian.org/Cloud/AmazonEC2Image/
     "debian-stretch" = "ami-072ad3956e05c814c"

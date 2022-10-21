@@ -3,8 +3,8 @@ resource "random_uuid" "cluster" {}
 resource "time_static" "timestamp" {}
 
 locals {
-  uuid = random_uuid.cluster.result
-  timestamp = time_static.timestamp.rfc3339
+  uuid          = random_uuid.cluster.result
+  timestamp     = time_static.timestamp.rfc3339
   deployment_id = "redpanda-${local.uuid}-${local.timestamp}"
 
   # tags shared by all instances
@@ -22,8 +22,7 @@ resource "aws_instance" "redpanda" {
   vpc_security_group_ids     = [aws_security_group.node_sec_group.id]
   placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
   placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
-
-  tags                   = local.instance_tags
+  tags                       = local.instance_tags
 
   connection {
     user        = var.distro_ssh_user[var.distro]
@@ -48,12 +47,12 @@ resource "aws_instance" "prometheus" {
 }
 
 resource "aws_instance" "client" {
-  count                 = var.clients
-  ami                   = var.distro_ami[var.client_distro]
-  instance_type         = var.client_instance_type
-  key_name              = aws_key_pair.ssh.key_name
+  count                  = var.clients
+  ami                    = var.distro_ami[var.client_distro]
+  instance_type          = var.client_instance_type
+  key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
-  tags                  = local.instance_tags
+  tags                   = local.instance_tags
 
   connection {
     user        = var.distro_ssh_user[var.client_distro]
@@ -63,8 +62,8 @@ resource "aws_instance" "client" {
 }
 
 resource "aws_security_group" "node_sec_group" {
-  name = "${local.deployment_id}-node-sec-group"
-  tags = local.instance_tags
+  name        = "${local.deployment_id}-node-sec-group"
+  tags        = local.instance_tags
   description = "redpanda ports"
 
   # SSH access from anywhere
@@ -85,10 +84,10 @@ resource "aws_security_group" "node_sec_group" {
 
   # HTTP access to the RPC port
   ingress {
-    from_port   = 33145
-    to_port     = 33145
-    protocol    = "tcp"
-    self        = true
+    from_port = 33145
+    to_port   = 33145
+    protocol  = "tcp"
+    self      = true
   }
 
   # HTTP access to the Admin port
@@ -117,10 +116,10 @@ resource "aws_security_group" "node_sec_group" {
 
   # node exporter
   ingress {
-    from_port   = 9100
-    to_port     = 9100
-    protocol    = "tcp"
-    self        = true
+    from_port = 9100
+    to_port   = 9100
+    protocol  = "tcp"
+    self      = true
   }
 
   # outbound internet access
@@ -133,12 +132,11 @@ resource "aws_security_group" "node_sec_group" {
 }
 
 resource "aws_placement_group" "redpanda-pg" {
-  name                  = "redpanda-pg"
-  strategy              = "partition"
-  partition_count       = 3
-
-  tags = local.instance_tags
-  count = var.ha ? 1 : 0
+  name            = "redpanda-pg"
+  strategy        = "partition"
+  partition_count = 3
+  tags            = local.instance_tags
+  count           = var.ha ? 1 : 0
 }
 
 
@@ -150,15 +148,15 @@ resource "aws_key_pair" "ssh" {
 resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
-      redpanda_public_ips   = aws_instance.redpanda.*.public_ip
-      redpanda_private_ips  = aws_instance.redpanda.*.private_ip
-      monitor_public_ip  = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
-      monitor_private_ip = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
-      ssh_user              = var.distro_ssh_user[var.distro]
-      enable_monitoring     = var.enable_monitoring
-      client_public_ips     = aws_instance.client.*.public_ip
-      client_private_ips    = aws_instance.client.*.private_ip
-      rack                  = aws_instance.redpanda.*.placement_partition_number
+      redpanda_public_ips  = aws_instance.redpanda.*.public_ip
+      redpanda_private_ips = aws_instance.redpanda.*.private_ip
+      monitor_public_ip    = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
+      monitor_private_ip   = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
+      ssh_user             = var.distro_ssh_user[var.distro]
+      enable_monitoring    = var.enable_monitoring
+      client_public_ips    = aws_instance.client.*.public_ip
+      client_private_ips   = aws_instance.client.*.private_ip
+      rack                 = aws_instance.redpanda.*.placement_partition_number
     }
   )
   filename = "${path.module}/../hosts.ini"
