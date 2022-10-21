@@ -1,6 +1,6 @@
 [redpanda]
 %{ for i, ip in redpanda_public_ips ~}
-${ ip } ansible_user=${ ssh_user } ansible_become=True private_ip=${redpanda_private_ips[i]} id=${i}
+${ ip } ansible_user=${ ssh_user } ansible_become=True private_ip=${redpanda_private_ips[i]} id=${i} %{ if rack[i] != null }rack=${rack[i]}%{ endif }
 %{ endfor ~}
 %{ if enable_monitoring }
 

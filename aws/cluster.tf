@@ -15,11 +15,14 @@ locals {
 }
 
 resource "aws_instance" "redpanda" {
-  count                  = var.nodes
-  ami                    = var.distro_ami[var.distro]
-  instance_type          = var.instance_type
-  key_name               = aws_key_pair.ssh.key_name
-  vpc_security_group_ids = [aws_security_group.node_sec_group.id]
+  count                      = var.nodes
+  ami                        = var.distro_ami[var.distro]
+  instance_type              = var.instance_type
+  key_name                   = aws_key_pair.ssh.key_name
+  vpc_security_group_ids     = [aws_security_group.node_sec_group.id]
+  placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
+  placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
+
   tags                   = local.instance_tags
 
   connection {
@@ -129,6 +132,16 @@ resource "aws_security_group" "node_sec_group" {
   }
 }
 
+resource "aws_placement_group" "redpanda-pg" {
+  name                  = "redpanda-pg"
+  strategy              = "partition"
+  partition_count       = 3
+
+  tags = local.instance_tags
+  count = var.ha ? 1 : 0
+}
+
+
 resource "aws_key_pair" "ssh" {
   key_name   = "${local.deployment_id}-key"
   public_key = file(var.public_key_path)
@@ -144,7 +157,8 @@ resource "local_file" "hosts_ini" {
       ssh_user              = var.distro_ssh_user[var.distro]
       enable_monitoring     = var.enable_monitoring
       client_public_ips     = aws_instance.client.*.public_ip
-      client_private_ips     = aws_instance.client.*.private_ip
+      client_private_ips    = aws_instance.client.*.private_ip
+      rack                  = aws_instance.redpanda.*.placement_partition_number
     }
   )
   filename = "${path.module}/../hosts.ini"

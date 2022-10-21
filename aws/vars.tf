@@ -9,6 +9,12 @@ variable "nodes" {
   default     = "3"
 }
 
+variable "ha" {
+  description = "Whether to use placement groups to create an HA topology"
+  type        = bool
+  default     = false
+}
+
 variable "distro" {
   description = "The default distribution to base the cluster on"
   default     = "ubuntu-focal"
