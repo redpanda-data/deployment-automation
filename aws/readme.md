@@ -50,6 +50,7 @@ No Modules.
 | distro\_ami | n/a | `map(string)` | <pre>{<br>  "amazon-linux-2": "ami-01ce4793a2f45922e",<br>  "debian-buster": "ami-0f7939d313699273c",<br>  "debian-stretch": "ami-072ad3956e05c814c",<br>  "fedora-31": "ami-0e82cc6ce8f393d4b",<br>  "fedora-32": "ami-020405ee5d5747724",<br>  "rhel-8": "ami-087c2c50437d0b80d",<br>  "ubuntu-bionic": "ami-0c1ab2d66f996cd4b",<br>  "ubuntu-focal": "ami-02c45ea799467b51b",<br> "ubuntu-hirsute": "ami-035649ffeb04ce758" <br>}</pre> | no |
 | distro\_ssh\_user | The default user used by the AWS AMIs | `map(string)` | <pre>{<br>  "amazon-linux-2": "ec2-user",<br>  "debian-buster": "admin",<br>  "debian-stretch": "admin",<br>  "fedora-31": "fedora",<br>  "fedora-32": "fedora",<br>  "rhel-8": "ec2-user",<br>  "ubuntu-\*": "ubuntu" <br>}</pre> | no |
 | enable\_monitoring | Setup a prometheus/grafana instance | `bool` | `true` | no |
+| ha | Enable high availability, which ensures each node is on a separate rack and the cluster is rack-aware | `bool` | `false` | no |
 | instance\_type | Default redpanda instance type to create | `string` | `"i3.2xlarge"` | no |
 | nodes | The number of nodes to deploy | `number` | `"3"` | no |
 | prometheus\_instance\_type | Instant type of the prometheus/grafana node | `string` | `"c5.2xlarge"` | no |

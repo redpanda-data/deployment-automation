@@ -48,9 +48,6 @@
       state: started
 
   - name: enable rack awareness
-    notify:
-      - restart redpanda-tuner
-      - restart redpanda
     vars:
       use_public_ips: "{{ advertise_public_ips | d() | bool }}"
     shell: |
@@ -64,13 +61,3 @@
         --api-urls {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='private_ip') | product([':9644']) | map('join') | join(',') }}
       {% endif %}
     when: rack is defined and rack != -1
-
-  handlers:
-  - name: restart redpanda-tuner
-    systemd:
-      name: redpanda-tuner
-      state: restarted
-  - name: restart redpanda
-    systemd:
-      name: redpanda
-      state: restarted
