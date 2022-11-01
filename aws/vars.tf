@@ -86,7 +86,7 @@ variable "ec2_ebs_volume_throughput" {
 
 variable "client_instance_type" {
   description = "Default client instance type to create"
-  default     = "m5n.2xlarge" 
+  default     = "m5n.2xlarge"
 }
 
 variable "prometheus_instance_type" {
