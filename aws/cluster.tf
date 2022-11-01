@@ -31,6 +31,22 @@ resource "aws_instance" "redpanda" {
   }
 }
 
+resource "aws_ebs_volume" "ebs_volume" {
+  count             = "${var.nodes * var.ec2_ebs_volume_count}"
+  availability_zone = "${element(aws_instance.redpanda.*.availability_zone, count.index)}"
+  size              = "${var.ec2_ebs_volume_size}"
+  type              = "${var.ec2_ebs_volume_type}"
+  iops              = "${var.ec2_ebs_volume_iops}"
+  throughput        = "${var.ec2_ebs_volume_throughput}"
+}
+
+resource "aws_volume_attachment" "volume_attachment" {
+  count       = "${var.nodes * var.ec2_ebs_volume_count}"
+  volume_id   = "${aws_ebs_volume.ebs_volume.*.id[count.index]}"
+  device_name = "${element(var.ec2_ebs_device_names, count.index)}"
+  instance_id = "${element(aws_instance.redpanda.*.id, count.index)}"
+}
+
 resource "aws_instance" "prometheus" {
   count                  = var.enable_monitoring ? 1 : 0
   ami                    = var.distro_ami[var.distro]
@@ -102,6 +118,14 @@ resource "aws_security_group" "node_sec_group" {
   ingress {
     from_port   = 3000
     to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # java client for omb
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
