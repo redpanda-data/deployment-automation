@@ -27,6 +27,9 @@
       }' --format yaml
       sudo -u redpanda rpk redpanda mode production
       sudo -u redpanda rpk redpanda config set redpanda.rpc_server_tcp_recv_buf 65536
+      {% if rack is defined and rack != -1 %}
+      sudo rpk redpanda config set redpanda.rack {{ rack }}
+      {% endif %}
       {% if hostvars[groups['redpanda'][0]].id == hostvars[inventory_hostname].id %}
       sudo -u redpanda rpk redpanda config bootstrap \
         --id {{ hostvars[inventory_hostname].id }} \
@@ -52,7 +55,6 @@
       use_public_ips: "{{ advertise_public_ips | d() | bool }}"
     shell: |
       set -e
-      sudo -u redpanda rpk redpanda config set redpanda.rack {{ rack }}
       {% if use_public_ips %}
       sudo -u redpanda rpk cluster config set enable_rack_awareness true \
         --api-urls {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='inventory_hostname') | product([':9644']) | map('join') | join(',') }}
