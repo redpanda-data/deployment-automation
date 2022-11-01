@@ -40,7 +40,7 @@ resource "aws_ebs_volume" "ebs_volume" {
   throughput        = "${var.ec2_ebs_volume_throughput}"
 }
 
-resource "aws_volume_attachment" "volume_attachement" {
+resource "aws_volume_attachment" "volume_attachment" {
   count       = "${var.nodes * var.ec2_ebs_volume_count}"
   volume_id   = "${aws_ebs_volume.ebs_volume.*.id[count.index]}"
   device_name = "${element(var.ec2_ebs_device_names, count.index)}"
