@@ -25,9 +25,68 @@ variable "instance_type" {
   default     = "i3.2xlarge"
 }
 
+## It is important that device names do not get duplicated on hosts, in rare circumstances the choice of nodes * volumes can result in a factor that causes duplication. Modify this field so there is not a common factor.
+## Please pr a more elegant solution if you have one.
+variable "ec2_ebs_device_names" {
+  description = "Device names for EBS volumes"
+  default = [
+    "/dev/xvdba",
+    "/dev/xvdbb",
+    "/dev/xvdbc",
+    "/dev/xvdbd",
+    "/dev/xvdbe",
+    "/dev/xvdbf",
+    "/dev/xvdbg",
+    "/dev/xvdbh",
+    "/dev/xvdbi",
+    "/dev/xvdbj",
+    "/dev/xvdbk",
+    "/dev/xvdbl",
+    "/dev/xvdbm",
+    "/dev/xvdbn",
+    "/dev/xvdbo",
+    "/dev/xvdbp",
+    "/dev/xvdbq",
+    "/dev/xvdbr",
+    "/dev/xvdbs",
+    "/dev/xvdbt",
+    "/dev/xvdbu",
+    "/dev/xvdbv",
+    "/dev/xvdbw",
+    "/dev/xvdbx",
+    "/dev/xvdby",
+    "/dev/xvdbz"
+  ]
+}
+
+variable "ec2_ebs_volume_count" {
+  description = "Number of EBS volumes to attach to each Redpanda node"
+  default = 0
+}
+
+variable "ec2_ebs_volume_type" {
+  description = "EBS Volume Type (gp3 recommended for performance)"
+  default = "gp3"
+}
+
+variable "ec2_ebs_volume_iops" {
+  description = "IOPs for GP3 Volumes"
+  default = 16000
+}
+
+variable "ec2_ebs_volume_size" {
+  description = "Size of each EBS volume"
+  default = 100
+}
+
+variable "ec2_ebs_volume_throughput" {
+  description = "Throughput per volume in MiB"
+  default = 250
+}
+
 variable "client_instance_type" {
   description = "Default client instance type to create"
-  default     = "m5n.2xlarge"
+  default     = "m5n.2xlarge" 
 }
 
 variable "prometheus_instance_type" {
