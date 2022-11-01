@@ -33,13 +33,15 @@ No Modules.
 
 ## Resources
 
-| Name |
-|------|
-| [aws_instance](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/instance) |
-| [aws_key_pair](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/key_pair) |
-| [aws_security_group](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/security_group) |
-| [local_file](https://registry.terraform.io/providers/hashicorp/local/2.1.0/docs/resources/file) |
-| [random_uuid](https://registry.terraform.io/providers/hashicorp/random/3.1.0/docs/resources/uuid) |
+| Name                                                                                                               |
+|--------------------------------------------------------------------------------------------------------------------|
+| [aws_instance](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/instance)               |
+| [aws_key_pair](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/key_pair)               |
+| [aws_security_group](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/security_group)   |
+| [aws_placement_group](https://registry.terraform.io/providers/hashicorp/aws/3.73.0/docs/resources/placement_group) |
+| [local_file](https://registry.terraform.io/providers/hashicorp/local/2.1.0/docs/resources/file)                    |
+| [random_uuid](https://registry.terraform.io/providers/hashicorp/random/3.1.0/docs/resources/uuid)                  |
+| [timestamp_static](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/static)            |
 
 ## Inputs
 

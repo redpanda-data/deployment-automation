@@ -26,6 +26,7 @@ See `vars.tf` for a complete list:
 - `vm_image`: Source image reference for the VMs (default: `Canonical.0001-com-ubuntu-server-focal.20_04-lts.latest`)
 - `admin_username`: Username for the local administrator on each VM (default: `adminpanda`)
 - `public_key`: Public Key file used for authentication (default: `~/.ssh/id_rsa.pub`)
+- `ha`: Whether to use a scale set to enable rack awareness (default: `false`). N.B. By default the Azure module uses an Azure Availability set to ensure that nodes do not have common failure points. Unfortunately with this approach you cannot introspect the fault domain for each instance and therefore we cannot enable rack awareness on Redpanda. With this option we can enable rack awareness in Redpanda (and this option will populate a rack attribute in the `hosts.ini`). 
 
 Examples:
 - `terraform apply -var vm_sku=Standard_L8s_v2 -var vm_instances=3 -var client_vm_instances=2 -auto-approve`

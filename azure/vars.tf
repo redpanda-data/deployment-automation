@@ -19,7 +19,7 @@ variable "vm_instances" {
   default     = 3
 }
 
-variable "use_scale_set" {
+variable "ha" {
   description = "Whether to use a scale set to enable rack awareness"
   type        = bool
   default     = false

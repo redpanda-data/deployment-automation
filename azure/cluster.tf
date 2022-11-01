@@ -8,10 +8,10 @@ resource "azurerm_linux_virtual_machine" "redpanda" {
   count                        = var.vm_instances
   resource_group_name          = azurerm_resource_group.redpanda.name
   location                     = azurerm_resource_group.redpanda.location
-  availability_set_id          = var.use_scale_set ? null : azurerm_availability_set.redpanda.0.id
+  availability_set_id          = var.ha ? null : azurerm_availability_set.redpanda.0.id
   proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
-  virtual_machine_scale_set_id = var.use_scale_set ? azurerm_orchestrated_virtual_machine_scale_set.redpanda.0.id : null
-  platform_fault_domain        = var.use_scale_set ? count.index % 3 : null
+  virtual_machine_scale_set_id = var.ha ? azurerm_orchestrated_virtual_machine_scale_set.redpanda.0.id : null
+  platform_fault_domain        = var.ha ? count.index % 3 : null
   
   zone                         = try(var.zone, null)
   size                         = var.vm_sku

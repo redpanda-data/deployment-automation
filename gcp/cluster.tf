@@ -15,7 +15,7 @@ resource "google_compute_resource_policy" "redpanda-rp" {
   name = "redpanda-rp"
   region = var.region
   group_placement_policy {
-    availability_domain_count = var.ha ? min(3, var.nodes) : 1
+    availability_domain_count = var.ha ? max(3, var.nodes) : 1
   }
   count = var.ha ? 1 : 0
   lifecycle {
