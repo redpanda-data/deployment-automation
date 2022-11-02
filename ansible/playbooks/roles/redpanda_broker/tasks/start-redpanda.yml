@@ -1,0 +1,71 @@
+- name: ensure /etc/redpanda exists
+  file:
+    path: /etc/redpanda
+    state: directory
+
+- name: Reset configuration
+  set_fact:
+    configuration: {}
+
+- name: Generate configurations
+  set_fact:
+    configuration: "{{ configuration | combine(lookup('template', custom_config_template.template) | from_yaml, recursive=True) }}"
+  loop: "{{ custom_config_templates }}"
+  loop_control:
+    loop_var: custom_config_template
+  when: custom_config_template.condition | default(True)
+
+- name: Merge with user-provided overrides (via redpanda variable)
+  set_fact:
+    configuration: "{{ configuration | combine(redpanda | default({}), recursive=True) }}"
+
+- name: Debug
+  debug:
+    var: hostvars[inventory_hostname]
+
+- name: Debug configuration
+  debug:
+    var: configuration
+
+- name: Debug template
+  debug:
+    msg: "{{ lookup('ansible.builtin.template', 'bootstrap.yml') }}"
+
+- name: Debug template
+  debug:
+    msg: "{{ lookup('ansible.builtin.template', 'redpanda.yml') }}"
+
+- name: Generate bootstrap
+  ansible.builtin.template:
+    src: "bootstrap.yml"
+    dest: "/etc/redpanda/.bootstrap.yaml"
+    owner: redpanda
+
+- name: Generate Node config
+  ansible.builtin.template:
+    src: "redpanda.yml"
+    dest: "/etc/redpanda/redpanda.yaml"
+    owner: redpanda
+
+- name: configure redpanda
+  shell: |
+    set -e
+    {% if hostvars[groups['redpanda'][0]].id == hostvars[inventory_hostname].id %}
+    sudo -u redpanda rpk redpanda config bootstrap \
+      --id {{ hostvars[inventory_hostname].id }} \
+      --self {{ hostvars[inventory_hostname].private_ip }}
+    {% else %}
+    sudo -u redpanda rpk redpanda config bootstrap \
+      --id {{ hostvars[inventory_hostname].id }} \
+      --self {{ hostvars[inventory_hostname].private_ip }} \
+      --ips {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='private_ip') | join(',') }}
+    {% endif %}
+
+- name: start redpanda-tuner
+  systemd:
+    name: redpanda-tuner
+    state: started
+- name: start redpanda
+  systemd:
+    name: redpanda
+    state: started
