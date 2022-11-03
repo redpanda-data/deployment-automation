@@ -2,6 +2,7 @@
   file:
     path: /etc/redpanda
     state: directory
+    mode: 0755
 
 - name: Reset configuration
   set_fact:
@@ -19,37 +20,24 @@
   set_fact:
     configuration: "{{ configuration | combine(redpanda | default({}), recursive=True) }}"
 
-- name: Debug
-  debug:
-    var: hostvars[inventory_hostname]
-
-- name: Debug configuration
-  debug:
-    var: configuration
-
-- name: Debug template
-  debug:
-    msg: "{{ lookup('ansible.builtin.template', 'bootstrap.yml') }}"
-
-- name: Debug template
-  debug:
-    msg: "{{ lookup('ansible.builtin.template', 'redpanda.yml') }}"
-
 - name: Generate bootstrap
   ansible.builtin.template:
     src: "bootstrap.yml"
     dest: "/etc/redpanda/.bootstrap.yaml"
     owner: redpanda
+    group: redpanda
 
 - name: Generate Node config
   ansible.builtin.template:
     src: "redpanda.yml"
     dest: "/etc/redpanda/redpanda.yaml"
     owner: redpanda
+    group: redpanda
 
 - name: configure redpanda
   shell: |
     set -e
+    sudo -u redpanda rpk redpanda mode production
     {% if hostvars[groups['redpanda'][0]].id == hostvars[inventory_hostname].id %}
     sudo -u redpanda rpk redpanda config bootstrap \
       --id {{ hostvars[inventory_hostname].id }} \

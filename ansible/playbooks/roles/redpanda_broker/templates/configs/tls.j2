@@ -3,25 +3,25 @@ node:
     admin_api_tls:
       enabled: true,
       require_client_auth: false,
-      key_file: /etc/redpanda/certs/node.key,
-      cert_file: /etc/redpanda/certs/node.crt,
-      truststore_file: /etc/redpanda/certs/truststore.pem
+      key_file: "{{ redpanda_key_file }}"
+      cert_file: "{{ redpanda_cert_file }}"
+      truststore_file: "{{ redpanda_truststore_file }}"
     kafka_api_tls:
-      enabled: true,
-      require_client_auth: false,
-      key_file: /etc/redpanda/certs/node.key,
-      cert_file: /etc/redpanda/certs/node.crt,
-      truststore_file: /etc/redpanda/certs/truststore.pem
+      enabled: true
+      require_client_auth: false
+      key_file: "{{ redpanda_key_file }}"
+      cert_file: "{{ redpanda_cert_file }}"
+      truststore_file: "{{ redpanda_truststore_file }}"
     rpc_server_tls:
       enabled: true,
       require_client_auth: false,
-      key_file: /etc/redpanda/certs/node.key,
-      cert_file: /etc/redpanda/certs/node.crt,
-      truststore_file: /etc/redpanda/certs/truststore.pem
+      key_file: "{{ redpanda_key_file }}"
+      cert_file: "{{ redpanda_cert_file }}"
+      truststore_file: "{{ redpanda_truststore_file }}"
   rpk:
     admin_api:
       tls:
-        truststore_file: /etc/redpanda/certs/truststore.pem
+        truststore_file: "{{ redpanda_truststore_file }}"
     kafka_api:
       tls:
-        truststore_file: /etc/redpanda/certs/truststore.pem
+        truststore_file: "{{ redpanda_truststore_file }}"

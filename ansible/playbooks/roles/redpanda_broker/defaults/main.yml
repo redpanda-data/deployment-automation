@@ -1,12 +1,10 @@
 ---
 
-#default_config:
-#  redpanda:
-#    cluster:
-#      cluster_id: redpanda
-#      organization: redpanda-test
-#      mode: production
-#      rpc_server_tcp_recv_buf: 65536
-#    node:
-#      node_id: "{{ id }}"
+redpanda_mode: production
+redpanda_admin_api_port: 9644
+redpanda_kafka_port: 9092
+redpanda_rpc_port: 33145
 
+redpanda_key_file: /etc/redpanda/certs/node.key
+redpanda_cert_file: /etc/redpanda/certs/node.crt
+redpanda_truststore_file: /etc/redpanda/certs/truststore.pem

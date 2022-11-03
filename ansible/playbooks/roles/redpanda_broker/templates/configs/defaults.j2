@@ -1,41 +1,31 @@
+{% set address_attribute = 'inventory_hostname' if (advertise_public_ips | d() | bool) else 'private_ip' %}
 cluster:
-  cluster_id: redpanda
-  organization: redpanda-test
-  mode: production
   rpc_server_tcp_recv_buf: 65536
   enable_rack_awareness: {{ true if rack is defined and rack != -1 else false }}
 node:
+  cluster_id: redpanda
+  organization: redpanda-test
   redpanda:
     node_id: "{{ id }}"
+    data_directory: "/var/lib/redpanda/data"
     advertised_kafka_api:
-      {% if advertise_public_ips | d() | bool %}
-      address: {{ inventory_hostname }},
-      {% else %}
-      address: {{ hostvars[inventory_hostname].private_ip }},
-      {% endif %}
-      port: 9092
+    - address: {{ hostvars[inventory_hostname][address_attribute] }}
+      port: {{ redpanda_kafka_port }}
     advertised_rpc_api:
-      address: {{ hostvars[inventory_hostname].private_ip }},
-      port: 33145
-    rack: {{ rack | default('') }}
+      address: {{ hostvars[inventory_hostname].private_ip }}
+      port: {{ redpanda_rpc_port }}
+    rpc_server:
+      address: {{ hostvars[inventory_hostname].private_ip }}
+      port: {{ redpanda_rpc_port }}
+    rack: {{ rack | default('null') }}
   rpk:
- ##   kafka_api:
- ##     brokers:
- ##       {% if advertise_public_ips | d() | bool %}
- ##       {% set ip_attr = "inventory_hostname" %}
- ##       {% else %}
- ##       {% set ip_attr = "private_ip" %}
- ##       {% endif %}
- ##       {% for host in groups["redpanda"] %}
- ##       - {{ host }}:9092
- ##       {% endfor %}
     admin_api:
       addresses:
- ##       {% if advertise_public_ips | d() | bool %}
- ##       {% set ip_attr = "inventory_hostname" %}
- ##       {% else %}
- ##       {% set ip_attr = "private_ip" %}
- ##       {% endif %}
-        {% for host in groups["redpanda"] %}
-        - {{ host }}:9644
-        {% endfor %}
+{% for host in groups["redpanda"] %}
+      - {{ hostvars[host][address_attribute] }}:{{ redpanda_admin_api_port }}
+{% endfor %}
+    kafka_api:
+      brokers:
+{% for host in groups["redpanda"] %}
+      - {{ hostvars[host][address_attribute] }}:{{ redpanda_kafka_port }}
+{% endfor %}
