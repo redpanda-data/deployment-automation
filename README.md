@@ -43,6 +43,23 @@ You can pass the following variables as `-e var=value`:
 * `grafana_admin_pass=<password_here>`: Configure Grafana's admin user's password
 * `ephemeral_disk`: Enable filesystem check for attached disk, useful when using attached disks in instances with ephemeral OS disks (i.e Azure L Series). This allows a filesystem repair at boot time and ensures that the drive is remounted automatically after a reboot. Default `false` 
 
+The Redpanda role defines a number of default values which can be overriden using `--extra-vars`. For a full list see the [role defaults file](ansible/playbooks/roles/redpanda_broker/defaults/main.yml).
+
+You can also specify any available Redpanda configuration value (or set of values) by passing a JSON dictionary as an Ansible extra-var. These values will be spliced with the calculated configuration and only override those values that you specify.
+There are two sub-dictionaries that you can specify, `redpanda.cluster` and `redpanda.node`. Check the Redpanda docs for the available [Cluster configuration properties](https://docs.redpanda.com/docs/platform/reference/cluster-properties/) and [Node configuration properties](https://docs.redpanda.com/docs/platform/reference/node-properties/).
+
+An example overriding specific properties would be as follows:
+
+```commandline
+ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini  --extra-vars '{ "redpanda": 
+{"cluster":
+  { "auto_create_topics_enabled": "true"},
+ "node":
+  { "developer_mode": "false"}
+  }
+}'
+```
+
 2. Use `rpk` & standard Kafka tools to produce/consume from the Redpanda cluster & access the Grafana installation on the monitor host.
 * The Grafana URL is http://&lt;grafana host&gt;:3000/login
 
