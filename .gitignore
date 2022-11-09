@@ -8,3 +8,4 @@ ansible/playbooks/tls/ca
 ansible/playbooks/tls/certs
 hosts.ini
 .DS_Store
+.idea/*

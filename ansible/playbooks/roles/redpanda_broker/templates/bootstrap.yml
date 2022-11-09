@@ -1,0 +1,1 @@
+{{ configuration.cluster | to_nice_yaml }}
