@@ -38,16 +38,9 @@
   shell: |
     set -e
     sudo -u redpanda rpk redpanda mode production
-    {% if hostvars[groups['redpanda'][0]].id == hostvars[inventory_hostname].id %}
     sudo -u redpanda rpk redpanda config bootstrap \
-      --id {{ hostvars[inventory_hostname].id }} \
-      --self {{ hostvars[inventory_hostname].private_ip }}
-    {% else %}
-    sudo -u redpanda rpk redpanda config bootstrap \
-      --id {{ hostvars[inventory_hostname].id }} \
       --self {{ hostvars[inventory_hostname].private_ip }} \
       --ips {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='private_ip') | join(',') }}
-    {% endif %}
 
 - name: start redpanda-tuner
   systemd:

@@ -6,7 +6,7 @@ node:
   cluster_id: redpanda
   organization: redpanda-test
   redpanda:
-    node_id: "{{ id }}"
+    empty_seed_starts_cluster: false
     data_directory: "/var/lib/redpanda/data"
     advertised_kafka_api:
     - address: {{ hostvars[inventory_hostname][address_attribute] }}
