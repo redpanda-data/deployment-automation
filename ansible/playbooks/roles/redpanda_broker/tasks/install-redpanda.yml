@@ -22,6 +22,6 @@
 
 - name: set data dir file perms
   file:
-    path: /var/lib/redpanda/data
+    path: "{{ redpanda_data_directory }}"
     owner: redpanda
     group: redpanda

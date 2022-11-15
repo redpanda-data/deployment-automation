@@ -4,6 +4,10 @@
     state: directory
     mode: 0755
 
+- name: Identify advertised ip address
+  set_fact:
+    advertised_ip: "{{ inventory_hostname if (advertise_public_ips | d() | bool) else private_ip }}"
+
 - name: Reset configuration
   set_fact:
     configuration: {}
@@ -20,19 +24,28 @@
   set_fact:
     configuration: "{{ configuration | combine(redpanda | default({}), recursive=True) }}"
 
-- name: Generate bootstrap
-  ansible.builtin.template:
-    src: "bootstrap.yml"
-    dest: "/etc/redpanda/.bootstrap.yaml"
-    owner: redpanda
-    group: redpanda
-
 - name: Generate Node config
   ansible.builtin.template:
     src: "redpanda.yml"
     dest: "/etc/redpanda/redpanda.yaml"
     owner: redpanda
     group: redpanda
+
+- name: Check if node looks like it's been initialized
+  ansible.builtin.stat:
+    path: "{{ redpanda_data_directory }}/redpanda/controller"
+  register: controller_stat
+
+- set_fact:
+    is_initialized: controller_stat.stat.isdir is defined and controller_stat.stat.isdir
+
+- name: Generate bootstrap
+  ansible.builtin.template:
+    src: "bootstrap.yml"
+    dest: "/etc/redpanda/.bootstrap.yaml"
+    owner: redpanda
+    group: redpanda
+  when: not is_initialized
 
 - name: configure redpanda
   shell: |
@@ -48,6 +61,7 @@
       --self {{ hostvars[inventory_hostname].private_ip }} \
       --ips {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='private_ip') | join(',') }}
     {% endif %}
+  when: not is_initialized
 
 - name: start redpanda-tuner
   systemd:
@@ -57,3 +71,31 @@
   systemd:
     name: redpanda
     state: started
+
+- name: Establish Redpanda's current config version
+  ansible.builtin.shell:
+    cmd: "rpk cluster config status | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'"
+  register: config_version
+  changed_when: False
+  run_once: true
+
+- name: Set cluster config
+  ansible.builtin.shell:
+    cmd: "rpk cluster config set {{ item.key }} {{ item.value }}"
+  loop: "{{ configuration.cluster | dict2items }}"
+  register: result
+  changed_when: '"New configuration version is {{ config_version.stdout|int() + 1 }}." in result.stdout'
+  run_once: true
+
+- name: Check if restart needed
+  ansible.builtin.shell:
+    cmd: "rpk cluster config status | awk '{ print $3 }' | grep -q true"
+  register: restart_required_rc
+  changed_when: False
+  run_once: true
+
+- name: Restart Redpanda
+  systemd:
+    name: redpanda
+    state: restarted
+  when: restart_required_rc == 0
