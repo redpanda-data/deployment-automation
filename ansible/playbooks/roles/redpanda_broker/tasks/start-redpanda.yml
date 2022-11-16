@@ -84,12 +84,12 @@
     cmd: "rpk cluster config set {{ item.key }} {{ item.value }}"
   loop: "{{ configuration.cluster | dict2items }}"
   register: result
-  changed_when: '"New configuration version is {{ config_version.stdout|int() + 1 }}." in result.stdout'
+  changed_when: '"New configuration version is {{ config_version.stdout|int() }}." not in result.stdout'
   run_once: true
 
 - name: Check if restart needed
   ansible.builtin.shell:
-    cmd: "rpk cluster config status | awk '{ print $3 }' | grep -q true"
+    cmd: "rpk cluster config status | awk '{ print $3 }' |  grep -E 'true|false'"
   register: restart_required_rc
   changed_when: False
   run_once: true
@@ -98,4 +98,5 @@
   systemd:
     name: redpanda
     state: restarted
-  when: restart_required_rc == 0
+  when: '"true" in restart_required_rc.stdout'
+  throttle: 1
