@@ -24,20 +24,22 @@
   set_fact:
     configuration: "{{ configuration | combine(redpanda | default({}), recursive=True) }}"
 
-- name: Generate Node config
-  ansible.builtin.template:
-    src: "redpanda.yml"
-    dest: "/etc/redpanda/redpanda.yaml"
-    owner: redpanda
-    group: redpanda
-
 - name: Check if node looks like it's been initialized
   ansible.builtin.stat:
     path: "{{ redpanda_data_directory }}/redpanda/controller"
   register: controller_stat
 
 - set_fact:
-    is_initialized: controller_stat.stat.isdir is defined and controller_stat.stat.isdir
+    is_initialized: "{{ controller_stat.stat.isdir is defined and controller_stat.stat.isdir }}"
+
+- name: Generate Node config
+  ansible.builtin.template:
+    src: "redpanda.yml"
+    dest: "/etc/redpanda/redpanda.yaml"
+    owner: redpanda
+    group: redpanda
+  register: nodeconfig_result
+  when: not is_initialized
 
 - name: Generate bootstrap
   ansible.builtin.template:
@@ -94,9 +96,18 @@
   changed_when: False
   run_once: true
 
+- name: Generate Node config
+  ansible.builtin.template:
+    src: "redpanda.yml"
+    dest: "/etc/redpanda/redpanda.yaml"
+    owner: redpanda
+    group: redpanda
+  register: nodeconfig_result
+  when: is_initialized
+
 - name: Restart Redpanda
   systemd:
     name: redpanda
     state: restarted
-  when: '"true" in restart_required_rc.stdout'
+  when: '"true" in restart_required_rc.stdout or (is_initialized and nodeconfig_result.changed)'
   throttle: 1

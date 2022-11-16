@@ -53,5 +53,5 @@
   - name: Fetch CSRs
     fetch:
       src: /etc/redpanda/certs/node.csr
-      dest: certs/{{ansible_hostname}}/node.csr
+      dest: tls/certs/{{ansible_hostname}}/node.csr
       flat: yes

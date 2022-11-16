@@ -1,0 +1,24 @@
+- hosts: redpanda
+
+  tasks:
+  - name: Copy CA Certs
+    copy:
+      src: tls/ca/ca.crt
+      dest: /etc/redpanda/certs/truststore.pem
+      owner: redpanda
+      group: redpanda
+
+  - name: Copy Node Certs
+    copy:
+      src: tls/certs/{{ansible_hostname}}/node.crt
+      dest: /etc/redpanda/certs/node.crt
+      owner: redpanda
+      group: redpanda
+
+  - name: Set Redpanda config
+    set_fact:
+      tls: true
+
+  - name: Apply updated config via reapplying the redpanda_broker role
+    import_role:
+      name: redpanda_broker

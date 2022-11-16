@@ -10,8 +10,8 @@
       -cert ca/ca.crt \
       -policy signing_policy \
       -extensions signing_node_req \
-      -in certs/{{ansible_hostname}}/node.csr \
-      -out certs/{{ansible_hostname}}/node.crt \
+      -in tls/certs/{{ansible_hostname}}/node.csr \
+      -out tls/certs/{{ansible_hostname}}/node.crt \
       -outdir certs/ \
       -batch
     delegate_to: 127.0.0.1

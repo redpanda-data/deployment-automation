@@ -77,25 +77,25 @@ ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini  --extra-vars
 
 ### Optional: Create a Local Certificate Authority
 
-`ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/tls/create-ca.yml`
+`ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/create-ca.yml`
 
 This creates a CA, with data in `ansible/playbook/tls/ca`. This only needs to be done once on your local machine (unless you blow the CA directory away).
 
 ### Generate keypairs and CSRs
 
-`ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/tls/generate-csrs.yml`
+`ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/generate-csrs.yml`
 
 This will generate a keypair and a Certificate Signing Request, and collect the CSRs in the `ansible/playbook/tls/certs` directory. You can use your own CA to issue certificates, or use the local CA that we created in the first step.
 
 ### Optional: Issue certificates with the local CA
 
-`ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/tls/issue-certs.yml`
+`ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/issue-certs.yml`
 
 This will put issued certificates in `ansible/playbook/tls/certs`.
 
 ### Install certificates, configure RedPanda, and restart
 
-`ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/tls/install-certs.yml`
+`ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/install-certs.yml`
 
 ## Troubleshooting
 
