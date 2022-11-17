@@ -1,0 +1,28 @@
+---
+- name: add the redpanda repo
+  shell: |
+    curl -1sLf {{ redpanda_repo_script }} | sudo -E bash
+  args:
+    warn: no
+
+- name: install redpanda from repository
+  apt:
+    name:
+      - redpanda{{ '' if redpanda_version=='latest' else '=' + redpanda_version }}
+    state: "{{ redpanda_install_status }}"
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+- name: install redpanda from repository
+  yum:
+    name:
+      - redpanda{{ '' if redpanda_version=='latest' else '-' + redpanda_version }}
+    state: "{{ redpanda_install_status }}"
+    update_cache: yes
+  when: ansible_os_family == 'RedHat'
+
+- name: set data dir file perms
+  file:
+    path: /var/lib/redpanda/data
+    owner: redpanda
+    group: redpanda
