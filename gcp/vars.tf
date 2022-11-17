@@ -1,5 +1,5 @@
 variable "region" {
-  default = "us-west1"
+  default = "us-west2"
 }
 
 variable "zone" {
@@ -23,7 +23,13 @@ variable "project_name" {
 variable "nodes" {
   description = "The number of nodes to deploy."
   type        = number
-  default     = "1"
+  default     = "3"
+}
+
+variable "ha" {
+  description = "Whether to use placement groups to create an HA topology"
+  type        = bool
+  default     = false
 }
 
 variable "client_nodes" {
@@ -35,7 +41,7 @@ variable "client_nodes" {
 variable "disks" {
   description = "The number of local disks on each machine."
   type        = number
-  default     = 1
+  default     = 1 
 }
 
 variable "image" {
@@ -64,4 +70,8 @@ variable "public_key_path" {
 
 variable "ssh_user" {
   description = "The ssh user. Must match the one in the public ssh key's comments."
+}
+
+variable "enable_monitoring" {
+  default = "yes"
 }
