@@ -5,13 +5,13 @@
   - name: Issue Certs
     command: |
       openssl ca \
-      -config ca/ca.conf \
-      -keyfile ca/ca.key \
-      -cert ca/ca.crt \
+      -config tls/ca/ca.conf \
+      -keyfile tls/ca/ca.key \
+      -cert tls/ca/ca.crt \
       -policy signing_policy \
       -extensions signing_node_req \
       -in tls/certs/{{ansible_hostname}}/node.csr \
       -out tls/certs/{{ansible_hostname}}/node.crt \
-      -outdir certs/ \
+      -outdir tls/certs/ \
       -batch
     delegate_to: 127.0.0.1

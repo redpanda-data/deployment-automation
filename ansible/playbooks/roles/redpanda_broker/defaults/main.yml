@@ -1,5 +1,8 @@
 ---
 
+redpanda_organization: redpanda-test
+redpanda_cluster_id: redpanda
+
 redpanda_mode: production
 redpanda_admin_api_port: 9644
 redpanda_kafka_port: 9092
