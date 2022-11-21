@@ -17,6 +17,8 @@ redpanda_install_status: present # If redpanda_version is set to latest, changin
 
 redpanda_data_directory: /var/lib/redpanda/data
 
-redpanda_key_file: /etc/redpanda/certs/node.key
-redpanda_cert_file: /etc/redpanda/certs/node.crt
-redpanda_truststore_file: /etc/redpanda/certs/truststore.pem
+redpanda_certs_dir: /etc/redpanda/certs
+redpanda_csr_file: "{{ redpanda_certs_dir }}/node.csr"
+redpanda_key_file: "{{ redpanda_certs_dir }}/node.key"
+redpanda_cert_file: "{{ redpanda_certs_dir }}/node.crt"
+redpanda_truststore_file: "{{ redpanda_certs_dir }}/truststore.pem"

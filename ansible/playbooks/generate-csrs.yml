@@ -16,7 +16,7 @@
 
   - name: ensure /etc/redpanda/certs exists
     ansible.builtin.file:
-      path: /etc/redpanda/certs
+      path: "{{ redpanda_certs_dir }}"
       state: directory
       owner: redpanda
       group: redpanda
@@ -25,25 +25,25 @@
   - name: Copy node template
     ansible.builtin.template:
       src: node.conf.tpl
-      dest: /etc/redpanda/certs/node.conf
+      dest: "{{ redpanda_certs_dir }}/node.conf"
       owner: redpanda
       group: redpanda
 
   - name: Generate an OpenSSH keypair on {{ansible_hostname}}
     ansible.builtin.command:
-      creates: /etc/redpanda/certs/node.key
-      chdir: /etc/redpanda/certs
+      creates: "{{ redpanda_key_file }}"
+      chdir: "{{ redpanda_certs_dir }}"
       cmd: openssl genrsa -out node.key 2048
 
   - name: Generate a Certificate Signing Request on {{ansible_hostname}}
     ansible.builtin.command:
-      creates: /etc/redpanda/certs/node.csr
-      chdir: /etc/redpanda/certs
+      creates: "{{ redpanda_csr_file }}"
+      chdir: "{{ redpanda_certs_dir }}"
       cmd: openssl req -new -config node.conf -key node.key -out node.csr -batch
 
   - name: CHOWN to redpanda
     ansible.builtin.file:
-      path: /etc/redpanda/certs
+      path: "{{ redpanda_certs_dir }}"
       state: directory
       owner: redpanda
       group: redpanda
@@ -51,6 +51,11 @@
 
   - name: Fetch CSRs
     fetch:
-      src: /etc/redpanda/certs/node.csr
+      src: "{{ redpanda_csr_file }}"
       dest: tls/certs/{{ansible_hostname}}/node.csr
       flat: yes
+
+  - name: Dummy to import role so that we can use its default variables
+    import_role:
+      name: redpanda_broker
+    when: False
