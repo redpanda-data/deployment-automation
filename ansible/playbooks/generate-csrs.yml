@@ -9,11 +9,10 @@
       - "ansible_hostname: {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
       - "ansible_fqdn    : {{ hostvars[inventory_hostname]['ansible_fqdn'] }}"
 
-  # for debug. get rid of this later
-  - name: rm!
-    file:
-      path: /etc/redpanda/certs
-      state: absent
+  - name: create redpanda user if it doesn't exist already
+    ansible.builtin.user:
+      name: redpanda
+      system: true
 
   - name: ensure /etc/redpanda/certs exists
     ansible.builtin.file:
