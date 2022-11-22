@@ -7,7 +7,7 @@
       dest: "{{ redpanda_truststore_file }}"
       owner: redpanda
       group: redpanda
-      force: no
+      force: "{{ overwrite_certs | default('no') | bool }}"
 
   - name: Copy Node Certs
     copy:
@@ -15,7 +15,7 @@
       dest: "{{ redpanda_cert_file }}"
       owner: redpanda
       group: redpanda
-      force: no
+      force: "{{ overwrite_certs | default('no') | bool }}"
 
   - name: Set Redpanda config
     set_fact:

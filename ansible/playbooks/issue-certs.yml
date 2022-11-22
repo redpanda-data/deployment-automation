@@ -17,7 +17,7 @@
   - name: Check for cert
     ansible.builtin.file:
       path: "{{ node_cert }}"
-      state: file
+      state: "{{ 'absent' if (overwrite_certs | default('no') | bool) else 'file' }}"
     failed_when: False
     register: cert_stat
     delegate_to: 127.0.0.1
@@ -27,6 +27,7 @@
       cmd: openssl req -noout -modulus -in {{ node_csr }}
     register: csr_modulus
     when: cert_stat.state == 'file'
+    changed_when: False
     delegate_to: 127.0.0.1
 
   - name: Check cert modulus
@@ -35,6 +36,7 @@
     register: cert_modulus
     when: cert_stat.state == 'file'
     failed_when: cert_modulus.stdout != csr_modulus.stdout
+    changed_when: False
     delegate_to: 127.0.0.1
 
   - name: Issue Certs
