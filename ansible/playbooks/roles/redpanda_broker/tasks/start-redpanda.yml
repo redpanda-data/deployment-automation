@@ -109,5 +109,5 @@
   systemd:
     name: redpanda
     state: restarted
-  when: '"true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))'
+  when: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("false") | bool)'
   throttle: 1
