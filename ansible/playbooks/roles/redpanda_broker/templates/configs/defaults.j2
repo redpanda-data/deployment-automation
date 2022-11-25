@@ -6,7 +6,6 @@ node:
   cluster_id: "{{ redpanda_cluster_id }}"
   redpanda:
     data_directory: "{{ redpanda_data_directory }}"
-    node_id: "{{ id }}"
     rpc_server:
       address: {{ hostvars[inventory_hostname].private_ip }}
       port: {{ redpanda_rpc_port }}
@@ -29,12 +28,12 @@ node:
     kafka_api:
       brokers:
 {% for host in groups["redpanda"] %}
-      - {{ hostvars[host].advertised_ip }}:{{ redpanda_kafka_port }}
+      - {{ hostvars[host]['inventory_hostname' if (hostvars[host].advertise_public_ips | d() | bool) else 'private_ip'] }}:{{ redpanda_kafka_port }}
 {% endfor %}
     admin_api:
       addresses:
 {% for host in groups["redpanda"] %}
-      - {{ hostvars[host].advertised_ip }}:{{ redpanda_admin_api_port }}
+      - {{ hostvars[host]['inventory_hostname' if (hostvars[host].advertise_public_ips | d() | bool) else 'private_ip'] }}:{{ redpanda_admin_api_port }}
 {% endfor %}
     tune_network: true
     tune_disk_scheduler: true

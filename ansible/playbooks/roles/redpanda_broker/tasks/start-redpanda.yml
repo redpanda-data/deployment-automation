@@ -55,11 +55,9 @@
     sudo -u redpanda rpk redpanda mode production
     {% if hostvars[groups['redpanda'][0]].id == hostvars[inventory_hostname].id %}
     sudo -u redpanda rpk redpanda config bootstrap \
-      --id {{ hostvars[inventory_hostname].id }} \
       --self {{ hostvars[inventory_hostname].private_ip }}
     {% else %}
     sudo -u redpanda rpk redpanda config bootstrap \
-      --id {{ hostvars[inventory_hostname].id }} \
       --self {{ hostvars[inventory_hostname].private_ip }} \
       --ips {{ groups["redpanda"] | map('extract', hostvars) | map(attribute='private_ip') | join(',') }}
     {% endif %}
@@ -105,9 +103,10 @@
   register: nodeconfig_result
   when: is_initialized
 
+
 - name: Restart Redpanda
   systemd:
     name: redpanda
     state: restarted
-  when: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("false") | bool)'
+  when: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool)'
   throttle: 1

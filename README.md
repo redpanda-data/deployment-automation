@@ -32,7 +32,10 @@ To use existing infrastructure, update the `hosts.ini` file with the appropriate
 
 ### Required Steps: Deploying Redpanda
 
+> Note: This playbook is designed to be run repeatedly against a running cluster however be aware that it will cause a rolling restart of the cluster to occur. If you do not want the cluster to restart you can specify `restart_node=false`either globally (as --extra-vars, or on a host-by-host basis in the `hosts.ini` file). If you make changes to the node config and do not perform a restart then you may leave your `rpk` config (and this may inhibit subsequent executions of the playbook). If you re-run the playbook it will overwrite any configurations with those specified in the playbook, so care should be taken to ensure that the playbook contains any desired configuration (for example, if you have enabled TLS on your cluster, any subsequent runs of `provision-node` should be made with `-e tls=true` otherwise the playbook will disable TLS).
+
 Before running these steps, verify that the `hosts.ini` file contains the correct information for your infrastructure. This will be automatically populated if using the terraform steps above.
+
 
 1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml`
 
@@ -57,7 +60,10 @@ You can pass the following variables as `-e var=value`:
 | `redpanda_data_directory`   | /var/lib/redpanda/data             | Path where Redpanda will keep its data                                                                                                                                                                                                                                                                    |
 | `redpanda_key_file`         | /etc/redpanda/certs/node.key       | TLS: path to private key                                                                                                                                                                                                                                                                                  |
 | `redpanda_cert_file`        | /etc/redpanda/certs/node.crt       | TLS: path to signed certificate                                                                                                                                                                                                                                                                           |
- | `redpanda_truststore_file`  | /etc/redpanda/certs/truststore.pem | TLS: path to truststore                                                                                                                                                                                                                                                                                   |
+| `redpanda_truststore_file`  | /etc/redpanda/certs/truststore.pem | TLS: path to truststore                                                                                                                                                                                                                                                                                   |
+| `tls`                       | false                              | Set to true to configure Redpanda to use TLS. This can be set on a per-node basis, although this may lead to errors configuring `rpk`                                                                                                                                                                     |
+| `skip_node`                 | false                              | Per-node config to prevent the Redpanda_broker role being applied to this specific node. Use carefully when adding new nodes to avoid existing nodes from being reconfigured.                                                                                                                             |
+| `restart_node`              | false                              | Per-node config to prevent Redpanda brokers from being restarted after updating. Use with care because this can cause `rpk` to be reconfigured but the node not be restarted and therefore be in an inconsistent state.                                                                                   |                                                                                                                                                                                                                                                               
 
 You can also specify any available Redpanda configuration value (or set of values) by passing a JSON dictionary as an Ansible extra-var. These values will be spliced with the calculated configuration and only override those values that you specify.
 There are two sub-dictionaries that you can specify, `redpanda.cluster` and `redpanda.node`. Check the Redpanda docs for the available [Cluster configuration properties](https://docs.redpanda.com/docs/platform/reference/cluster-properties/) and [Node configuration properties](https://docs.redpanda.com/docs/platform/reference/node-properties/).
@@ -81,6 +87,14 @@ ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini  --extra-vars
 
 ## Configure TLS
 
+There are two options for configuring TLS. The first option would be to use externally provided and signed certificates (possibly via a corporately provided Certmonger) and re-run the `provision_node` playbook but specifying the relevant locations and `tls=true`.
+For example:
+```commandline
+ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini  --extra-vars redpanda_key_file='<path to key file>' --extra-vars redpanda_cert_file='<path to cert file>' --extra-vars redpanda_truststore_file='<path to truststore file>' --extra-vars tls=true
+```
+
+The second option is to deploy a private certificate authority using the playbooks provided below and generating private keys and signed certificates. For this approach, follow the steps below. 
+
 ### Optional: Create a Local Certificate Authority
 
 `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/create-ca.yml`
@@ -99,9 +113,40 @@ This will generate a keypair and a Certificate Signing Request, and collect the 
 
 This will put issued certificates in `ansible/playbook/tls/certs`.
 
+If you need to re-issue certificates (perhaps because the original certificates expired) you can use the per-host (or global) flag `overwrite_certs=true`.
+
 ### Install certificates, configure RedPanda, and restart
 
+If you need to re-issue certificates (perhaps because the original certificates expired) you can use the per-host (or global) flag `overwrite_certs=true`.
+
 `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/install-certs.yml`
+
+## Adding Nodes to an existing cluster
+
+The playbooks can be used to add nodes to an existing cluster however care is required to make sure that they playbooks are executed in the correct order. To add new nodes execute the playbooks in the following order:
+
+1. Add the new host(s) to the `hosts.ini` file. You may add `skip_node=true` to the existing hosts to avoid the playbooks being re-run on those nodes.
+2. `install-node-deps.yml` - this will set up the Prometheus node_exporter and install package dependencies.
+3. `prepare-data-dir.yml` - this will create any RAID devices required and format devices as XFS. Note: This playbook looks for devices presented to the operating system as NVMe devices (which can include EBS volumes built on the Nitro System). You may replace this playbook with your own method of formatting devices and presenting disks.
+4. If managing TLS with the Redpanda playbooks: 
+   1. `generate-csrs.yml` - will create private key and CSR and bring the CSR back to the Ansible host.
+   2. If using the Redpanda provided CA: `issue-certs.yml` - signs the CSR and issues a certificate.
+   3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes. Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
+5. If `install-certs.yml` was not run in step iii above, you will need to run `provision-node.yml` which will install the `redpanda_broker` role onto any nodes without `skip_node=true` set. **Note: If TLS is enabled on the cluster, make sure that `-e tls=true` is set, otherwise this playbook will disable TLS across any nodes that don't have `skip_nodes=true` set.**
+
+## Building a cluster with TLS enabled in one execution
+
+A similar process can be used to build a cluster with TLS in one execution as to adding TLS nodes to an existing cluster:
+
+1. Add the new host(s) to the `hosts.ini` file.
+2. `install-node-deps.yml` - this will set up the Prometheus node_exporter and install package dependencies.
+3. `prepare-data-dir.yml` - this will create any RAID devices required and format devices as XFS. Note: This playbook looks for devices presented to the operating system as NVMe devices (which can include EBS volumes built on the Nitro System). You may replace this playbook with your own method of formatting devices and presenting disks.
+4. If managing TLS with the Redpanda playbooks run the following steps. If you're using externally provided certificates, skip to step 5 remembering to set `tls=true`: 
+   1. `generate-csrs.yml` - will create private key and CSR and bring the CSR back to the Ansible host.
+   2. If using the Redpanda provided CA: `issue-certs.yml` - signs the CSR and issues a certificate.
+   3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes. Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
+5. If `install-certs.yml` was not run in step iii above, you will need to run `provision-node.yml` which will install the `redpanda_broker` role. **Note: If TLS is enabled on the cluster, make sure that `-e tls=true` is set, otherwise this playbook will disable TLS across any nodes that don't have `skip_nodes=true` set.**
+
 
 ## Troubleshooting
 

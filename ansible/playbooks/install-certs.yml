@@ -24,3 +24,4 @@
   - name: Apply updated config via reapplying the redpanda_broker role
     import_role:
       name: redpanda_broker
+    when: not skip_node | default(false) | bool
