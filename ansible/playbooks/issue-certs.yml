@@ -1,0 +1,56 @@
+- hosts: redpanda
+  serial: 1
+
+  tasks:
+  - set_fact:
+     node_cert: tls/certs/{{ansible_hostname}}/node.crt
+     node_csr: tls/certs/{{ansible_hostname}}/node.csr
+
+  - name: Check for csr
+    ansible.builtin.file:
+      path: "{{ node_csr }}"
+      state: file
+    register: csr_stat
+    failed_when: csr_stat.state == 'absent'
+    delegate_to: 127.0.0.1
+
+  - name: Check for cert
+    ansible.builtin.file:
+      path: "{{ node_cert }}"
+      state: "{{ 'absent' if (overwrite_certs | default('no') | bool) else 'file' }}"
+    failed_when: False
+    register: cert_stat
+    delegate_to: 127.0.0.1
+
+  - name: Check csr modulus
+    ansible.builtin.command:
+      cmd: openssl req -noout -modulus -in {{ node_csr }}
+    register: csr_modulus
+    when: cert_stat.state == 'file'
+    changed_when: False
+    delegate_to: 127.0.0.1
+
+  - name: Check cert modulus
+    ansible.builtin.command:
+      cmd: openssl x509 -noout -modulus -in {{ node_cert }}
+    register: cert_modulus
+    when: cert_stat.state == 'file'
+    failed_when: cert_modulus.stdout != csr_modulus.stdout
+    changed_when: False
+    delegate_to: 127.0.0.1
+
+  - name: Issue Certs
+    command:
+      cmd: |
+        openssl ca
+          -config tls/ca/ca.conf
+          -keyfile tls/ca/ca.key
+          -cert tls/ca/ca.crt
+          -policy signing_policy
+          -extensions signing_node_req
+          -in {{ node_csr }}
+          -out {{ node_cert }}
+          -outdir tls/certs/
+          -batch
+      creates: tls/certs/{{ansible_hostname}}/node.crt
+    delegate_to: 127.0.0.1

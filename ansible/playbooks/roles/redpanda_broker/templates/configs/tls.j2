@@ -1,8 +1,8 @@
 node:
   redpanda:
     admin_api_tls:
-      enabled: true,
-      require_client_auth: false,
+      enabled: true
+      require_client_auth: false
       key_file: "{{ redpanda_key_file }}"
       cert_file: "{{ redpanda_cert_file }}"
       truststore_file: "{{ redpanda_truststore_file }}"
@@ -13,8 +13,8 @@ node:
       cert_file: "{{ redpanda_cert_file }}"
       truststore_file: "{{ redpanda_truststore_file }}"
     rpc_server_tls:
-      enabled: true,
-      require_client_auth: false,
+      enabled: true
+      require_client_auth: false
       key_file: "{{ redpanda_key_file }}"
       cert_file: "{{ redpanda_cert_file }}"
       truststore_file: "{{ redpanda_truststore_file }}"

@@ -4,6 +4,7 @@
 
 - hosts: redpanda
   roles:
-    - redpanda_broker
+    - role: redpanda_broker
+      when: not skip_node | default(false) | bool
 
 - import_playbook: deploy-prometheus-grafana.yml
