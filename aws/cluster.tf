@@ -16,7 +16,7 @@ locals {
 
 resource "aws_instance" "redpanda" {
   count                      = var.nodes
-  ami                        = var.distro_ami[var.distro]
+  ami                        = coalesce(var.cluster_ami, data.aws_ami.ami.image_id)
   instance_type              = var.instance_type
   key_name                   = aws_key_pair.ssh.key_name
   vpc_security_group_ids     = [aws_security_group.node_sec_group.id]
@@ -28,6 +28,10 @@ resource "aws_instance" "redpanda" {
     user        = var.distro_ssh_user[var.distro]
     host        = self.public_ip
     private_key = file(var.private_key_path)
+  }
+
+  lifecycle {
+    ignore_changes = [ami]
   }
 }
 
@@ -49,7 +53,7 @@ resource "aws_volume_attachment" "volume_attachment" {
 
 resource "aws_instance" "prometheus" {
   count                  = var.enable_monitoring ? 1 : 0
-  ami                    = var.distro_ami[var.distro]
+  ami                    = coalesce(var.prometheus_ami, data.aws_ami.ami.image_id)
   instance_type          = var.prometheus_instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
@@ -60,11 +64,15 @@ resource "aws_instance" "prometheus" {
     host        = self.public_ip
     private_key = file(var.private_key_path)
   }
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }
 
 resource "aws_instance" "client" {
   count                  = var.clients
-  ami                    = var.distro_ami[var.client_distro]
+  ami                    = coalesce(var.client_ami, data.aws_ami.ami.image_id)
   instance_type          = var.client_instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
@@ -74,6 +82,10 @@ resource "aws_instance" "client" {
     user        = var.distro_ssh_user[var.client_distro]
     host        = self.public_ip
     private_key = file(var.private_key_path)
+  }
+
+  lifecycle {
+    ignore_changes = [ami]
   }
 }
 
