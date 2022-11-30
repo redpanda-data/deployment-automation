@@ -27,5 +27,6 @@ After completing these steps, please follow the required steps in the [project r
         - `machine_type` (default: `n2-standard-2`): The machine type.
         - `public_key_path`: Provide the path to the public key of the keypair used to access the nodes.
         - `ssh_user`: The ssh user. Must match the one in the public ssh key's comments.
+        - `ha`: Enable high availability mode. In this mode (which supports up to 8 nodes), instances will be deployed into a Compute Resource Policy with an availability domain for each node. N.B. GCP does not currently have a mode which allows you to knowingly co-locate specific nodes into a smaller number of availability domains (see [Google Issue 256993209](https://issuetracker.google.com/issues/256993209)). 
 
   Example: `terraform apply -var nodes=3 -var project_name=myproject -var subnet=redpanda-cluster-subnet -var public_key_path=~/.ssh/id_rsa.pub -var ssh_user=$USER`

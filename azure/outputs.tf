@@ -41,6 +41,7 @@ resource "local_file" "hosts_ini" {
       monitor_private_ip   = var.enable_monitoring ? "${azurerm_network_interface.monitoring.0.private_ip_address}" : ""
       enable_monitoring    = "${var.enable_monitoring}"
       ssh_user             = "${var.admin_username}"
+      rack                 = "${azurerm_linux_virtual_machine.redpanda.*.platform_fault_domain}"
     }
   )
   filename = "${path.module}/../hosts.ini"

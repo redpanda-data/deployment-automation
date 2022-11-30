@@ -1,10 +1,24 @@
 ---
 
+redpanda_organization: redpanda-test
+redpanda_cluster_id: redpanda
+
 redpanda_mode: production
 redpanda_admin_api_port: 9644
 redpanda_kafka_port: 9092
 redpanda_rpc_port: 33145
 
-redpanda_key_file: /etc/redpanda/certs/node.key
-redpanda_cert_file: /etc/redpanda/certs/node.crt
-redpanda_truststore_file: /etc/redpanda/certs/truststore.pem
+redpanda_use_staging_repo: False
+redpanda_repo_debian: "{{ 'https://packages.vectorized.io/sMIXnoa7DK12JW4A/redpanda/cfg/setup/bash.deb.sh' if not redpanda_use_staging_repo|bool else 'https://dl.redpanda.com/E4xN1tVe3Xy60GTx/redpanda-unstable/setup.deb.sh' }}"
+redpanda_repo_redhat: "{{ 'https://dl.redpanda.com/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash.rpm.sh' if not redpanda_use_staging_repo|bool else 'https://dl.redpanda.com/E4xN1tVe3Xy60GTx/redpanda-unstable/setup.rpm.sh' }}"
+redpanda_repo_script: "{{ redpanda_repo_debian if ansible_os_family == 'Debian' else redpanda_repo_redhat }}"
+redpanda_version: latest # For example 22.2.2-1 or 22.3.1~rc1-1. If this value is set then the package will be upgraded if the installed version is lower than what has been specified.
+redpanda_install_status: present # If redpanda_version is set to latest, changing redpanda_install_status to latest will effect an upgrade, otherwise the currently installed version will remain
+
+redpanda_data_directory: /var/lib/redpanda/data
+
+redpanda_certs_dir: /etc/redpanda/certs
+redpanda_csr_file: "{{ redpanda_certs_dir }}/node.csr"
+redpanda_key_file: "{{ redpanda_certs_dir }}/node.key"
+redpanda_cert_file: "{{ redpanda_certs_dir }}/node.crt"
+redpanda_truststore_file: "{{ redpanda_certs_dir }}/truststore.pem"

@@ -1,6 +1,6 @@
 variable "region" {
   description = "Azure Region where the Resource Group will exist"
-  default     = "North Europe"
+  default     = "centralus"
 }
 
 variable "zone" {
@@ -10,13 +10,19 @@ variable "zone" {
 
 variable "vm_sku" {
   description = "Azure VM SKU to use for the Redpanda nodes"
-  default     = "Standard_L8s_v2" # Lsv2-series sizes have local NVMe disks
+  default     = "Standard_L8s_v3" # Lsv3-series sizes have local NVMe disks
 }
 
 variable "vm_instances" {
   description = "Number of Redpanda nodes to create"
   type        = number
   default     = 3
+}
+
+variable "ha" {
+  description = "Whether to use a scale set to enable rack awareness"
+  type        = bool
+  default     = false
 }
 
 variable "vm_add_data_disk" {

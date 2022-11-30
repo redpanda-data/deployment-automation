@@ -4,7 +4,7 @@
 
 - hosts: localhost
   vars:
-    root_ca_dir: "{{ playbook_dir }}/ca"
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
 
   tasks:
   - name: Check that Root CA directory {{ root_ca_dir }} exists
