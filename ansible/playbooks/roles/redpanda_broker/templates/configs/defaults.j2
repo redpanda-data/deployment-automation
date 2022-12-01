@@ -5,6 +5,13 @@ node:
   organization: "{{ redpanda_organization }}"
   cluster_id: "{{ redpanda_cluster_id }}"
   redpanda:
+    empty_seed_starts_cluster: false
+    advertised_kafka_api:
+    - address: {{ hostvars[inventory_hostname].advertised_ip }}
+      port: {{ redpanda_kafka_port }}
+    advertised_rpc_api:
+    - address: {{ hostvars[inventory_hostname].advertised_ip }}
+      port: {{ redpanda_rpc_port }}
     data_directory: "{{ redpanda_data_directory }}"
     rpc_server:
       address: {{ hostvars[inventory_hostname].private_ip }}
@@ -21,6 +28,12 @@ node:
     advertised_kafka_api:
     - address: {{ hostvars[inventory_hostname].advertised_ip }}
       port: {{ redpanda_kafka_port }}
+    seed_servers:
+{% for host in groups["redpanda"] %}
+      - host:
+        address: {{ hostvars[host]['inventory_hostname' if (hostvars[host].advertise_public_ips | d() | bool) else 'private_ip'] }}
+        port: {{ redpanda_rpc_port }}
+{% endfor %}
 {% if rack is defined %}
     rack: "{{ rack | default('null') }}"
 {% endif %}
