@@ -22,12 +22,6 @@ node:
     admin:
     - address: {{ hostvars[inventory_hostname].private_ip }}
       port: {{ redpanda_admin_api_port }}
-    advertised_rpc_api:
-      address: {{ hostvars[inventory_hostname].private_ip }}
-      port: {{ redpanda_rpc_port }}
-    advertised_kafka_api:
-    - address: {{ hostvars[inventory_hostname].advertised_ip }}
-      port: {{ redpanda_kafka_port }}
     seed_servers:
 {% for host in groups["redpanda"] %}
       - host:
