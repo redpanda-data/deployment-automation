@@ -1,6 +1,6 @@
 # Terraform and Ansible Deployment for Redpanda
 
-Terraform and Ansible configuration to easily provision a [Redpanda](https://vectorized.io) cluster on AWS, GCP, Azure, or IBM .
+Terraform and Ansible configuration to easily provision a [Redpanda](https://www.redpanda.com/) cluster on AWS, GCP, Azure, or IBM.
 
 ## Installation Prerequisites
 
@@ -11,12 +11,12 @@ Terraform and Ansible configuration to easily provision a [Redpanda](https://vec
 
 ### On Mac OS X:
 You can use brew to install the prerequisites. You will also need to install gnu-tar:
-```
- brew tap hashicorp/tap
- brew install hashicorp/tap/terraform
- brew install ansible
- brew install gnu-tar
- ansible-galaxy install -r ansible/requirements.yml
+```commandline
+brew tap hashicorp/tap
+brew install hashicorp/tap/terraform
+brew install ansible
+brew install gnu-tar
+ansible-galaxy install -r ansible/requirements.yml
 ```
 
 ## Usage
@@ -43,27 +43,27 @@ Available Ansible variables:
 
 You can pass the following variables as `-e var=value`:
 
-| Property                    | Default value                      | Description                                                                                                                                                                                                                                                                                               |
-|-----------------------------|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
- | `redpanda_organization`     | redpanda-test                      | Set this to identify your organization in the asset management system.                                                                                                                                                                                                                                    |
-| `redpanda_cluster_id`       | redpanda                           | Helps identify the cluster.                                                                                                                                                                                                                                                                               |
-| `advertise_public_ips`      | `false`                            | Configure Redpanda to advertise the node's public IPs for client communication instead of private IPs. This allows for using the cluster from outside its subnet. **Note**: This is not recommended for production deployments, because it means that your nodes will be public. Use it for testing only. |
-| `grafana_admin_pass`        | enter_your_secure_password         | Configure Grafana's admin user's password                                                                                                                                                                                                                                                                 |
-| `ephemeral_disk`            | `false`                            | Enable filesystem check for attached disk, useful when using attached disks in instances with ephemeral OS disks (i.e Azure L Series). This allows a filesystem repair at boot time and ensures that the drive is remounted automatically after a reboot.                                                 |
-| `redpanda_mode`             | production                         | [Enables hardware optimization](https://docs.redpanda.com/docs/platform/deployment/production-deployment/#set-redpanda-production-mode)                                                                                                                                                                   |                                                                                                                                                                  |                                                                                                            
-| `redpanda_admin_api_port`   | 9644                               |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                                                          |                                                                                                                  
-| `redpanda_kafka_port`       | 9092                               |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                  |                                                                                                                  
-| `redpanda_rpc_port`         | 33145                              |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                |                                                                                                                 
-| `redpanda_use_staging_repo` | `false`                            | Enables access to unstable builds                                                                                                                                                                                                                                                                         |                                                                                                                                                                                                                                                                        | False                                                                                                                                                                                                                                                                                                     
-| `redpanda_version`          | latest                             | For example 22.2.2-1 or 22.3.1~rc1-1. If this value is set then the package will be upgraded if the installed version is lower than what has been specified.                                                                                                                                              |
-| `redpanda_install_status`   | present                            | If redpanda_version is set to latest, changing redpanda_install_status to latest will effect an upgrade, otherwise the currently installed version will remain                                                                                                                                            |
-| `redpanda_data_directory`   | /var/lib/redpanda/data             | Path where Redpanda will keep its data                                                                                                                                                                                                                                                                    |
-| `redpanda_key_file`         | /etc/redpanda/certs/node.key       | TLS: path to private key                                                                                                                                                                                                                                                                                  |
-| `redpanda_cert_file`        | /etc/redpanda/certs/node.crt       | TLS: path to signed certificate                                                                                                                                                                                                                                                                           |
-| `redpanda_truststore_file`  | /etc/redpanda/certs/truststore.pem | TLS: path to truststore                                                                                                                                                                                                                                                                                   |
-| `tls`                       | false                              | Set to true to configure Redpanda to use TLS. This can be set on a per-node basis, although this may lead to errors configuring `rpk`                                                                                                                                                                     |
-| `skip_node`                 | false                              | Per-node config to prevent the Redpanda_broker role being applied to this specific node. Use carefully when adding new nodes to avoid existing nodes from being reconfigured.                                                                                                                             |
-| `restart_node`              | false                              | Per-node config to prevent Redpanda brokers from being restarted after updating. Use with care because this can cause `rpk` to be reconfigured but the node not be restarted and therefore be in an inconsistent state.                                                                                   |                                                                                                                                                                                                                                                               
+| Property | Default value | Description |
+|---|---|---|
+| `advertise_public_ips` | `false` | Configure Redpanda to advertise the node's public IPs for client communication instead of private IPs. This allows for using the cluster from outside its subnet. **Note**: This is not recommended for production deployments, because it means that your nodes will be public. Use it for testing only. |
+| `grafana_admin_pass` | enter_your_secure_password | Configure Grafana's admin user's password |
+| `ephemeral_disk` | `false` | Enable filesystem check for attached disk, useful when using attached disks in instances with ephemeral OS disks (i.e Azure L Series). This allows a filesystem repair at boot time and ensures that the drive is remounted automatically after a reboot. |
+| `skip_node` | false | Per-node config to prevent the Redpanda_broker role being applied to this specific node. Use carefully when adding new nodes to avoid existing nodes from being reconfigured. |
+| `tls` | false | Set to true to configure Redpanda to use TLS. This can be set on a per-node basis, although this may lead to errors configuring `rpk` |
+| `redpanda_admin_api_port` | 9644 | |
+| `redpanda_cert_file` | /etc/redpanda/certs/node.crt | TLS: path to signed certificate |
+| `redpanda_cluster_id` | redpanda | Helps identify the cluster. |
+| `redpanda_data_directory` | /var/lib/redpanda/data | Path where Redpanda will keep its data |
+| `redpanda_install_status` | present | If redpanda_version is set to latest, changing redpanda_install_status to latest will effect an upgrade, otherwise the currently installed version will remain |
+| `redpanda_kafka_port` |9092 | |
+| `redpanda_key_file` | /etc/redpanda/certs/node.key | TLS: path to private key |
+| `redpanda_mode` | production | [Enables hardware optimization](https://docs.redpanda.com/docs/platform/deployment/production-deployment/#set-redpanda-production-mode) |
+| `redpanda_organization` | redpanda-test | Set this to identify your organization in the asset management system. |
+| `redpanda_rpc_port` | 33145 | |
+| `redpanda_truststore_file` | /etc/redpanda/certs/truststore.pem | TLS: path to truststore |
+| `redpanda_use_staging_repo` | `false` | Enables access to unstable builds |
+| `redpanda_version` | latest | For example 22.2.2-1 or 22.3.1~rc1-1. If this value is set then the package will be upgraded if the installed version is lower than what has been specified. |
+| `restart_node` | false | Per-node config to prevent Redpanda brokers from being restarted after updating. Use with care because this can cause `rpk` to be reconfigured but the node not be restarted and therefore be in an inconsistent state. |
 
 You can also specify any available Redpanda configuration value (or set of values) by passing a JSON dictionary as an Ansible extra-var. These values will be spliced with the calculated configuration and only override those values that you specify.
 There are two sub-dictionaries that you can specify, `redpanda.cluster` and `redpanda.node`. Check the Redpanda docs for the available [Cluster configuration properties](https://docs.redpanda.com/docs/platform/reference/cluster-properties/) and [Node configuration properties](https://docs.redpanda.com/docs/platform/reference/node-properties/).
@@ -71,14 +71,15 @@ There are two sub-dictionaries that you can specify, `redpanda.cluster` and `red
 An example overriding specific properties would be as follows:
 
 ```commandline
-ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini  --extra-vars '{ "redpanda": 
- {"cluster":
-   { "auto_create_topics_enabled": "true"
-   },
-  "node":
-   { "developer_mode": "false"
-   }
- }
+ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars '{
+  "redpanda": {
+    "cluster": {
+      "auto_create_topics_enabled": "true"
+    },
+    "node": {
+      "developer_mode": "false"
+    }
+  }
 }'
 ```
 
@@ -87,13 +88,13 @@ ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini  --extra-vars
 
 ## Configure TLS
 
-There are two options for configuring TLS. The first option would be to use externally provided and signed certificates (possibly via a corporately provided Certmonger) and re-run the `provision_node` playbook but specifying the relevant locations and `tls=true`.
-For example:
+There are two options for configuring TLS. The first option would be to use externally provided and signed certificates (possibly via a corporately provided Certmonger) and re-run the `provision_node` playbook but specifying the relevant locations and `tls=true`. For example:
+
 ```commandline
-ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini  --extra-vars redpanda_key_file='<path to key file>' --extra-vars redpanda_cert_file='<path to cert file>' --extra-vars redpanda_truststore_file='<path to truststore file>' --extra-vars tls=true
+ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars redpanda_key_file='<path to key file>' --extra-vars redpanda_cert_file='<path to cert file>' --extra-vars redpanda_truststore_file='<path to truststore file>' --extra-vars tls=true
 ```
 
-The second option is to deploy a private certificate authority using the playbooks provided below and generating private keys and signed certificates. For this approach, follow the steps below. 
+The second option is to deploy a private certificate authority using the playbooks provided below and generating private keys and signed certificates. For this approach, follow the steps below.
 
 ### Optional: Create a Local Certificate Authority
 
@@ -128,10 +129,10 @@ The playbooks can be used to add nodes to an existing cluster however care is re
 1. Add the new host(s) to the `hosts.ini` file. You may add `skip_node=true` to the existing hosts to avoid the playbooks being re-run on those nodes.
 2. `install-node-deps.yml` - this will set up the Prometheus node_exporter and install package dependencies.
 3. `prepare-data-dir.yml` - this will create any RAID devices required and format devices as XFS. Note: This playbook looks for devices presented to the operating system as NVMe devices (which can include EBS volumes built on the Nitro System). You may replace this playbook with your own method of formatting devices and presenting disks.
-4. If managing TLS with the Redpanda playbooks: 
-   1. `generate-csrs.yml` - will create private key and CSR and bring the CSR back to the Ansible host.
-   2. If using the Redpanda provided CA: `issue-certs.yml` - signs the CSR and issues a certificate.
-   3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes. Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
+4. If managing TLS with the Redpanda playbooks:
+  1. `generate-csrs.yml` - will create private key and CSR and bring the CSR back to the Ansible host.
+  2. If using the Redpanda provided CA: `issue-certs.yml` - signs the CSR and issues a certificate.
+  3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes. Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
 5. If `install-certs.yml` was not run in step iii above, you will need to run `provision-node.yml` which will install the `redpanda_broker` role onto any nodes without `skip_node=true` set. **Note: If TLS is enabled on the cluster, make sure that `-e tls=true` is set, otherwise this playbook will disable TLS across any nodes that don't have `skip_nodes=true` set.**
 
 ## Building a cluster with TLS enabled in one execution
@@ -142,9 +143,9 @@ A similar process can be used to build a cluster with TLS in one execution as to
 2. `install-node-deps.yml` - this will set up the Prometheus node_exporter and install package dependencies.
 3. `prepare-data-dir.yml` - this will create any RAID devices required and format devices as XFS. Note: This playbook looks for devices presented to the operating system as NVMe devices (which can include EBS volumes built on the Nitro System). You may replace this playbook with your own method of formatting devices and presenting disks.
 4. If managing TLS with the Redpanda playbooks run the following steps. If you're using externally provided certificates, skip to step 5 remembering to set `tls=true`: 
-   1. `generate-csrs.yml` - will create private key and CSR and bring the CSR back to the Ansible host.
-   2. If using the Redpanda provided CA: `issue-certs.yml` - signs the CSR and issues a certificate.
-   3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes. Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
+  1. `generate-csrs.yml` - will create private key and CSR and bring the CSR back to the Ansible host.
+  2. If using the Redpanda provided CA: `issue-certs.yml` - signs the CSR and issues a certificate.
+  3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes. Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
 5. If `install-certs.yml` was not run in step iii above, you will need to run `provision-node.yml` which will install the `redpanda_broker` role. **Note: If TLS is enabled on the cluster, make sure that `-e tls=true` is set, otherwise this playbook will disable TLS across any nodes that don't have `skip_nodes=true` set.**
 
 
@@ -164,4 +165,3 @@ You might try resolving by setting an environment variable:
 `export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`
 
 See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-to-crash-and-gives-an-error-may-have-been-in-progr
-

@@ -75,7 +75,7 @@
 
 - name: Check if restart needed
   ansible.builtin.shell:
-    cmd: "rpk cluster config status | awk '{ print $3 }' |  grep -E 'true|false'"
+    cmd: "rpk cluster config status | awk '{ print $3 }' | grep -E 'true|false'"
   register: restart_required_rc
   changed_when: False
   run_once: true

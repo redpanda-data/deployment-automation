@@ -1,0 +1,10 @@
+cluster:
+  cloud_storage_access_key: THISVALUENOTUSED
+  cloud_storage_bucket: {{ tiered_storage_bucket_name if tiered_storage_bucket_name is defined }}
+  cloud_storage_enable_remote_read: true
+  cloud_storage_enable_remote_write: true
+  cloud_storage_region: {{ aws_region if aws_region is defined }}
+  cloud_storage_secret_key: THISVALUENOTUSED
+  cloud_storage_credentials_source: aws_instance_metadata
+  # cloud_storage_enabled must be after other cloud_storage parameters
+  cloud_storage_enabled: {{ true if tiered_storage_bucket_name is defined and tiered_storage_bucket_name|d('')|length > 0 else false }}
