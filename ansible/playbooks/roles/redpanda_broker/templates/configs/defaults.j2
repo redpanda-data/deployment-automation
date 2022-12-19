@@ -10,7 +10,7 @@ node:
     - address: {{ hostvars[inventory_hostname].advertised_ip }}
       port: {{ redpanda_kafka_port }}
     advertised_rpc_api:
-    - address: {{ hostvars[inventory_hostname].advertised_ip }}
+      address: {{ hostvars[inventory_hostname].advertised_ip }}
       port: {{ redpanda_rpc_port }}
     data_directory: "{{ redpanda_data_directory }}"
     rpc_server:
