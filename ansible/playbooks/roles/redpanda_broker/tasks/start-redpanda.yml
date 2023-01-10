@@ -58,6 +58,16 @@
     name: redpanda
     state: started
 
+- name: Establish node id
+  ansible.builtin.shell:
+    cmd: "rpk cluster status | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'"
+  register: node_id_out
+  changed_when: False
+
+- name: Set node id
+  set_fact:
+    node_id: "{{ node_id_out.stdout | int() }}"
+
 - name: Establish Redpanda's current config version
   ansible.builtin.shell:
     cmd: "rpk cluster config status | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'"
@@ -75,10 +85,9 @@
 
 - name: Check if restart needed
   ansible.builtin.shell:
-    cmd: "rpk cluster config status | awk '{ print $3 }' |  grep -E 'true|false'"
+    cmd: "rpk cluster config status | grep '^{{ node_id }} ' | awk '{ print $3 }' |  grep -E 'true|false'"
   register: restart_required_rc
   changed_when: False
-  run_once: true
 
 - name: Generate Node config
   ansible.builtin.template:
@@ -89,10 +98,29 @@
   register: nodeconfig_result
   when: is_initialized
 
+# Logic for this - restart if:
+#   (
+#     The rpk cluster config status says that this node requires restarting
+#     OR
+#     (
+#      The node has been initialized (i.e. it's not a new install)
+#      AND
+#        (
+#        The /etc/redpanda/redpanda.yaml file was changed as part of this run
+#        OR
+#        The package has been upgraded via apt or yum
+#        )
+#      )
+#    )
+#    AND
+#    The restart_node variable has not been set to false by the user
 
-- name: Restart Redpanda
-  systemd:
-    name: redpanda
-    state: restarted
-  when: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool)'
+- name: Establish whether restart required
+  set_fact:
+    restart_required: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool)'
+
+- name: Safe restart
+  ansible.builtin.shell:
+    cmd: "rpk cluster maintenance enable {{ node_id }} --wait && systemctl restart redpanda && rpk cluster maintenance disable {{ node_id }}"
+  when: restart_required
   throttle: 1
