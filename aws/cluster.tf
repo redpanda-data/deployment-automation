@@ -93,7 +93,7 @@ resource "aws_security_group" "node_sec_group" {
 
   # HTTP access from anywhere to port 9092
   ingress {
-    description = "Allow anywhere to access the Redpanda Kafka endpoint"
+    description = "Allow anywhere inbound to access the Redpanda Kafka endpoint"
     from_port   = 9092
     to_port     = 9092
     protocol    = "tcp"
@@ -111,7 +111,7 @@ resource "aws_security_group" "node_sec_group" {
 
   # HTTP access to the Admin port
   ingress {
-    description = "Allow anywhere to access Redpanda Admin endpoint"
+    description = "Allow anywhere inbound to access Redpanda Admin endpoint"
     from_port   = 9644
     to_port     = 9644
     protocol    = "tcp"
@@ -120,7 +120,7 @@ resource "aws_security_group" "node_sec_group" {
 
   # grafana
   ingress {
-    description = "Allow anywhere to access grafana end point for monitoring"
+    description = "Allow anywhere inbound to access grafana end point for monitoring"
     from_port   = 3000
     to_port     = 3000
     protocol    = "tcp"
@@ -129,7 +129,7 @@ resource "aws_security_group" "node_sec_group" {
 
   # java client for open messaging benchmark (omb)
   ingress {
-    description = "Allow anywhere to access for Open Messaging Benchmark"
+    description = "Allow anywhere inbound to access for Open Messaging Benchmark"
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
@@ -138,7 +138,7 @@ resource "aws_security_group" "node_sec_group" {
 
   # prometheus
   ingress {
-    description = "Allow anywhere to access Prometheus end point for monitoring"
+    description = "Allow anywhere inbound to access Prometheus end point for monitoring"
     from_port   = 9090
     to_port     = 9090
     protocol    = "tcp"
