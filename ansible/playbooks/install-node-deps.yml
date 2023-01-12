@@ -1,6 +1,6 @@
 - hosts: redpanda
   roles:
-  - cloudalchemy.node_exporter
+  - geerlingguy.node_exporter
 
   tasks:
   - name: fedora setup
