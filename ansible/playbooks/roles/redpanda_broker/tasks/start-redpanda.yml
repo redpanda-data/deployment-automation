@@ -171,6 +171,9 @@
 # once the cluster is initialized, this handles subsequent config update operations
 # for future ansible runs.
 #
+# changes to the on-disk config at this point will trigger a safe restart to occur
+# with ansible if restart handling is configured in the role settings.
+#
 - name: Generate Node config - post-bootstrap runs
   ansible.builtin.template:
     src: "redpanda.yml"
