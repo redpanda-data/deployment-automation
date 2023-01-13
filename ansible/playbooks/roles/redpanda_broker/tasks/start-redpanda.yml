@@ -156,11 +156,22 @@
   register: restart_required_rc
   changed_when: False
 
-# We need to run the node config again after first run because some things
-# could have changed out-of-band. Since rpk can modify the config on your
-# behalf, we want to reset it back to a known templated state.
+# this instance of node config generation only runs after a cluster has been
+# initialized. This is used to update configurations post-cluster setup when
+# the user adds new configurations. For example, this would fire off after the
+# user adds TLS support to the cluster. 
 #
-- name: Generate Node config - subsequent runs
+# Ideally, there's only one task that runs node configuration and we trigger it
+# to re-run as appropriate. We do it this way right now mostly because of task
+# ordering that has to occur during cluster provisioning and then during normal
+# operation. Having only one instance of node configuration causes certain rpk
+# cluster commands to fail because we haven't gotten the cluster up enough at
+# that point to be entirely useful.
+#
+# once the cluster is initialized, this handles subsequent config update operations
+# for future ansible runs.
+#
+- name: Generate Node config - post-bootstrap runs
   ansible.builtin.template:
     src: "redpanda.yml"
     dest: "/etc/redpanda/redpanda.yaml"
