@@ -3,9 +3,10 @@ resource "random_uuid" "cluster" {}
 resource "time_static" "timestamp" {}
 
 locals {
-  uuid          = random_uuid.cluster.result
-  timestamp     = time_static.timestamp.rfc3339
-  deployment_id = "redpanda-${local.uuid}-${local.timestamp}"
+  uuid                       = random_uuid.cluster.result
+  timestamp                  = time_static.timestamp.unix
+  deployment_id              = length(var.deployment_prefix) > 0 ? var.deployment_prefix : "redpanda-${substr(local.uuid, 0, 8)}-${local.timestamp}"
+  tiered_storage_bucket_name = "${local.deployment_id}-bucket"
 
   # tags shared by all instances
   instance_tags = {
@@ -14,15 +15,73 @@ locals {
   }
 }
 
+resource "aws_iam_policy" "redpanda" {
+  count  = var.tiered_storage_enabled ? 1 : 0
+  name   = local.deployment_id
+  path   = "/"
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "s3:*",
+          "s3-object-lambda:*",
+        ],
+        "Resource": [
+          "arn:aws:s3:::${local.tiered_storage_bucket_name}/*"
+        ]
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role" "redpanda" {
+  count              = var.tiered_storage_enabled ? 1 : 0
+  name               = local.deployment_id
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Sid       = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_policy_attachment" "redpanda" {
+  count      = var.tiered_storage_enabled ? 1 : 0
+  name       = local.deployment_id
+  roles      = [aws_iam_role.redpanda[count.index].name]
+  policy_arn = aws_iam_policy.redpanda[count.index].arn
+}
+
+resource "aws_iam_instance_profile" "redpanda" {
+  count  = var.tiered_storage_enabled ? 1 : 0
+  name   = local.deployment_id
+  role   = aws_iam_role.redpanda[count.index].name
+}
+
 resource "aws_instance" "redpanda" {
   count                      = var.nodes
   ami                        = var.distro_ami[var.distro]
   instance_type              = var.instance_type
   key_name                   = aws_key_pair.ssh.key_name
+  iam_instance_profile       = var.tiered_storage_enabled ? aws_iam_instance_profile.redpanda[0].name : null
   vpc_security_group_ids     = [aws_security_group.node_sec_group.id]
   placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
   placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
-  tags                       = local.instance_tags
+  tags                       = merge(
+    local.instance_tags,
+    {
+      Name = "${local.deployment_id}-node-${count.index}",
+    }
+  )
 
   connection {
     user        = var.distro_ssh_user[var.distro]
@@ -53,7 +112,12 @@ resource "aws_instance" "prometheus" {
   instance_type          = var.prometheus_instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
-  tags                   = local.instance_tags
+  tags                   = merge(
+    local.instance_tags,
+    {
+      Name = "${local.deployment_id}-prometheus",
+    }
+  )
 
   connection {
     user        = var.distro_ssh_user[var.distro]
@@ -68,7 +132,12 @@ resource "aws_instance" "client" {
   instance_type          = var.client_instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
-  tags                   = local.instance_tags
+  tags                   = merge(
+    local.instance_tags,
+    {
+      Name = "${local.deployment_id}-client",
+    }
+  )
 
   connection {
     user        = var.distro_ssh_user[var.client_distro]
@@ -176,20 +245,25 @@ resource "aws_placement_group" "redpanda-pg" {
 resource "aws_key_pair" "ssh" {
   key_name   = "${local.deployment_id}-key"
   public_key = file(var.public_key_path)
+  tags       = local.instance_tags
 }
 
 resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
-      redpanda_public_ips  = aws_instance.redpanda.*.public_ip
-      redpanda_private_ips = aws_instance.redpanda.*.private_ip
-      monitor_public_ip    = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
-      monitor_private_ip   = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
-      ssh_user             = var.distro_ssh_user[var.distro]
-      enable_monitoring    = var.enable_monitoring
-      client_public_ips    = aws_instance.client.*.public_ip
-      client_private_ips   = aws_instance.client.*.private_ip
-      rack                 = aws_instance.redpanda.*.placement_partition_number
+      aws_region                 = var.aws_region
+      client_count               = var.clients
+      client_public_ips          = aws_instance.client.*.public_ip
+      client_private_ips         = aws_instance.client.*.private_ip
+      enable_monitoring          = var.enable_monitoring
+      monitor_public_ip          = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
+      monitor_private_ip         = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
+      rack                       = aws_instance.redpanda.*.placement_partition_number
+      redpanda_public_ips        = aws_instance.redpanda.*.public_ip
+      redpanda_private_ips       = aws_instance.redpanda.*.private_ip
+      ssh_user                   = var.distro_ssh_user[var.distro]
+      tiered_storage_bucket_name = local.tiered_storage_bucket_name
+      tiered_storage_enabled     = var.tiered_storage_enabled
     }
   )
   filename = "${path.module}/../hosts.ini"
