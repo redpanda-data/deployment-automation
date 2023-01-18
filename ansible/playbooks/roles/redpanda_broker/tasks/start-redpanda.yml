@@ -8,10 +8,18 @@
   set_fact:
     advertised_ip: "{{ inventory_hostname if (advertise_public_ips | d() | bool) else private_ip }}"
 
+# start out with an empty configuration object so we can fill in later based on
+# jinja templates or ansible variables defined by the user in
+# custom_config_template
+#
 - name: Reset configuration
   set_fact:
     configuration: {}
 
+# fill out the empty configuration object and merge all appropriate templates
+# together this is used to make it easier to have the tls details in a separate
+# template, but coalesce into a single configuration object
+#
 - name: Generate configurations
   set_fact:
     configuration: "{{ configuration | combine(lookup('template', custom_config_template.template) | from_yaml, recursive=True) }}"
@@ -20,19 +28,32 @@
     loop_var: custom_config_template
   when: custom_config_template.condition | default(True)
 
+# merge in user's overrides of items in the templates
+#
 - name: Merge with user-provided overrides (via redpanda variable)
   set_fact:
     configuration: "{{ configuration | combine(redpanda | default({}), recursive=True) }}"
 
+# on first startup, the redpanda process will create this directory and
+# populate.  we need to use this as a trigger to restart redpanda after
+# bootstrapping the first time.
+#
 - name: Check if node looks like it's been initialized
   ansible.builtin.stat:
     path: "{{ redpanda_data_directory }}/redpanda/controller"
   register: controller_stat
 
+# a node is only considered initialized if the controller directory 
+# exists and is populated.
 - set_fact:
     is_initialized: "{{ controller_stat.stat.isdir is defined and controller_stat.stat.isdir }}"
 
-- name: Generate Node config
+# first run of Generate Node config
+#
+# This run occurs during initial bootstrapping where rpk can push some
+# configurations into the file directly
+#
+- name: Generate Node config - first run
   ansible.builtin.template:
     src: "redpanda.yml"
     dest: "/etc/redpanda/redpanda.yaml"
@@ -41,6 +62,11 @@
   register: nodeconfig_result
   when: not is_initialized
 
+# Related to first run of Generate Node config
+#
+# contains some initial bootstrapping configurations required to get
+# redpanda to startup the first time
+#
 - name: Generate bootstrap
   ansible.builtin.template:
     src: "bootstrap.yml"
@@ -49,15 +75,50 @@
     group: redpanda
   when: not is_initialized
 
+
+# This starts up the tuner process which modifies various redpanda items and
+# os-level sysctls to optimize the node.
+#
+# tuner settings are in the rpk.tune_* hierarchy.
+#
+# For more information on the tuners, go to 
+#   https://docs.redpanda.com/docs/platform/reference/rpk/rpk-redpanda/rpk-redpanda-tune/
+#
 - name: start redpanda-tuner
   systemd:
     name: redpanda-tuner
     state: started
+
+# ensure that systemd starts up redpanda
 - name: start redpanda
   systemd:
     name: redpanda
     state: started
 
+# every node must have a unique node id. we extract it for use elsewhere
+#
+- name: Establish node id
+  ansible.builtin.shell:
+    cmd: "rpk cluster status | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'"
+  register: node_id_out
+  changed_when: False
+
+# make the node id a reusable fact
+#
+- name: Set node id
+  set_fact:
+    node_id: "{{ node_id_out.stdout | int() }}"
+
+# query the redpanda cluster configuration versions so we can determine later
+# if a cluster config change operation require node restarts.
+#
+# this grabs the published configuration version off each node in the cluster
+# and shows the highest version
+#
+# NOTE: the cluster configuration is different than the per-node redpanda.yaml
+# configuration.  cluster configuration is set through rpk commands and propogates
+# to each node in the cluster via an internal topic
+#
 - name: Establish Redpanda's current config version
   ansible.builtin.shell:
     cmd: "rpk cluster config status | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'"
@@ -65,6 +126,19 @@
   changed_when: False
   run_once: true
 
+# set cluster-wide configurations
+#
+# `config set` operations trigger a version update to occur, if and only if the
+# config value was different. The tool always logs that the configuration was
+# successfully set, requiring us to track the version change for other
+# operations like restarts
+#
+# NOTE: the cluster configuration is different than the per-node redpanda.yaml
+# configuration.  cluster configuration is set through rpk commands and
+# propogates to each node in the cluster via an internal topic
+#
+# TODO: fix changed_when to stop throwing ansible warnings on the jinja {{}} parsing
+# 
 - name: Set cluster config
   ansible.builtin.shell:
     cmd: "rpk cluster config set {{ item.key }} {{ item.value }}"
@@ -73,14 +147,34 @@
   changed_when: '"New configuration version is {{ config_version.stdout|int() }}." not in result.stdout'
   run_once: true
 
+# see if a cluster config operation should trigger ansible to restart each
+# redpanda instance in the cluster
+#
 - name: Check if restart needed
   ansible.builtin.shell:
-    cmd: "rpk cluster config status | awk '{ print $3 }' | grep -E 'true|false'"
+    cmd: "rpk cluster config status | grep '^{{ node_id }} ' | awk '{ print $3 }' |  grep -E 'true|false'"
   register: restart_required_rc
   changed_when: False
-  run_once: true
 
-- name: Generate Node config
+# this instance of node config generation only runs after a cluster has been
+# initialized. This is used to update configurations post-cluster setup when
+# the user adds new configurations. For example, this would fire off after the
+# user adds TLS support to the cluster. 
+#
+# Ideally, there's only one task that runs node configuration and we trigger it
+# to re-run as appropriate. We do it this way right now mostly because of task
+# ordering that has to occur during cluster provisioning and then during normal
+# operation. Having only one instance of node configuration causes certain rpk
+# cluster commands to fail because we haven't gotten the cluster up enough at
+# that point to be entirely useful.
+#
+# once the cluster is initialized, this handles subsequent config update operations
+# for future ansible runs.
+#
+# changes to the on-disk config at this point will trigger a safe restart to occur
+# with ansible if restart handling is configured in the role settings.
+#
+- name: Generate Node config - post-bootstrap runs
   ansible.builtin.template:
     src: "redpanda.yml"
     dest: "/etc/redpanda/redpanda.yaml"
@@ -89,10 +183,37 @@
   register: nodeconfig_result
   when: is_initialized
 
+# Determine if a restart is necessary based on the following logic
+# 
+# set restart_node to false in your Ansible variables if you want to manage
+# restarts on your own. 
+#
+#   (
+#     The rpk cluster config status says that this node requires restarting
+#     OR
+#     (
+#      The node has been initialized (i.e. it's not a new install)
+#      AND
+#        (
+#        The /etc/redpanda/redpanda.yaml file was changed as part of this run
+#        OR
+#        The package has been upgraded via apt or yum
+#        )
+#      )
+#    )
+#    AND
+#    The restart_node variable has not been set to false by the user
+#
+- name: Establish whether restart required
+  set_fact:
+    restart_required: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool)'
 
-- name: Restart Redpanda
-  systemd:
-    name: redpanda
-    state: restarted
-  when: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool)'
+# attempt to do a rolling, serial restart by putting each node into maintenance
+# mode, restarting, and putting it back into service. This is throttled to allow
+# only one node out of service at a time.
+#
+- name: Safe restart
+  ansible.builtin.shell:
+    cmd: "rpk cluster maintenance enable {{ node_id }} --wait && systemctl restart redpanda && rpk cluster maintenance disable {{ node_id }}"
+  when: restart_required
   throttle: 1

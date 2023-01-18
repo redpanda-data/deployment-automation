@@ -2,8 +2,6 @@
 - name: add the redpanda repo
   shell: |
     curl -1sLf {{ redpanda_repo_script }} | sudo -E bash
-  args:
-    warn: no
 
 - name: install redpanda from repository
   apt:
