@@ -76,6 +76,7 @@ resource "aws_instance" "redpanda" {
   vpc_security_group_ids     = [aws_security_group.node_sec_group.id]
   placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
   placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
+  availability_zone          = var.availability_zone[count.index % length(var.availability_zone)]
   tags                       = merge(
     local.instance_tags,
     {
@@ -270,6 +271,8 @@ resource "local_file" "hosts_ini" {
       monitor_public_ip          = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
       monitor_private_ip         = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
       rack                       = aws_instance.redpanda.*.placement_partition_number
+      availability_zone          = aws_instance.redpanda.*.availability_zone
+      rack_awareness             = var.ha || length(var.availability_zone) > 1
       redpanda_public_ips        = aws_instance.redpanda.*.public_ip
       redpanda_private_ips       = aws_instance.redpanda.*.private_ip
       ssh_user                   = var.distro_ssh_user[var.distro]
