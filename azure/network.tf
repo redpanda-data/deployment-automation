@@ -1,7 +1,7 @@
 resource "random_uuid" "cluster" {}
 
 locals {
-  uuid = random_uuid.cluster.result
+  uuid          = random_uuid.cluster.result
   deployment_id = "${random_uuid.cluster.result}"
 }
 
@@ -184,7 +184,7 @@ resource "azurerm_virtual_network" "redpanda" {
   address_space       = ["10.0.0.0/16"]
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
-  
+
   tags = {
     deployment_id = local.deployment_id
   }
@@ -194,7 +194,7 @@ resource "azurerm_subnet" "redpanda" {
   name                 = "redpanda_subnet"
   resource_group_name  = azurerm_resource_group.redpanda.name
   virtual_network_name = azurerm_virtual_network.redpanda.name
-  address_prefixes       = ["10.0.1.0/24"]
+  address_prefixes     = ["10.0.1.0/24"]
 }
 
 resource "azurerm_subnet_network_security_group_association" "redpanda" {
@@ -253,7 +253,7 @@ resource "azurerm_public_ip" "redpanda_client" {
   allocation_method   = "Static"
   zones               = try([var.availability_zones[count.index % length(var.availability_zones)]], [])
   sku                 = "Standard"
-  
+
   tags = {
     deployment_id = local.deployment_id
   }

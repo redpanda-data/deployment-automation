@@ -63,7 +63,7 @@ variable "monitoring_vm_sku" {
 
 variable "vm_image" {
   description = "Source image reference for the VMs"
-  type = object({
+  type        = object({
     publisher = string
     offer     = string
     sku       = string
@@ -76,7 +76,7 @@ variable "vm_image" {
     offer     = "0001-com-ubuntu-server-focal"
     sku       = "20_04-lts"
     version   = "latest"
-  } 
+  }
 }
 
 variable "admin_username" {
