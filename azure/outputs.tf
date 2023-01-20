@@ -43,9 +43,9 @@ resource "local_file" "hosts_ini" {
       ssh_user                   = "${var.admin_username}"
       availability_zone          = "${azurerm_linux_virtual_machine.redpanda.*.zone}"
       rack                       = "${azurerm_linux_virtual_machine.redpanda.*.platform_fault_domain}"
+      cloud_storage_region       = var.region
       tiered_storage_enabled     = false
-      tiered_storage_bucket_name = null
-      cloud_storage_region       = ""
+      tiered_storage_bucket_name = ""
     }
   )
   filename = "${path.module}/../hosts.ini"

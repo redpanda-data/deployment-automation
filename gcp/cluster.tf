@@ -159,9 +159,9 @@ resource "local_file" "hosts_ini" {
       rack                       = length(var.availability_zone) == 1 ? google_compute_instance.redpanda.*.name : google_compute_instance.redpanda.*.zone
       rack_awareness             = var.ha || length(var.availability_zone) > 1
       availability_zone          = google_compute_instance.redpanda.*.zone
+      cloud_storage_region       = var.region
       tiered_storage_enabled     = false
       tiered_storage_bucket_name = ""
-      cloud_storage_region       = var.region
     }
   )
   filename = "${path.module}/../hosts.ini"
