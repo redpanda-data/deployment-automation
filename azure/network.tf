@@ -209,7 +209,7 @@ resource "azurerm_public_ip" "redpanda" {
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
-  availability_zone   = try(var.zone, "Zone-Redundant")
+  availability_zone   = try(var.availability_zone[count.index % length(var.availability_zone)], "Zone-Redundant")
   sku                 = "Standard"
 
   tags = {
@@ -248,7 +248,7 @@ resource "azurerm_public_ip" "redpanda_client" {
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
-  availability_zone   = try(var.zone, "Zone-Redundant")
+  availability_zone   = try(var.availability_zone[count.index % length(var.availability_zone)], "Zone-Redundant")
   sku                 = "Standard"
   
   tags = {
@@ -287,7 +287,7 @@ resource "azurerm_public_ip" "monitoring" {
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
-  availability_zone   = try(var.zone, "Zone-Redundant")
+  availability_zone   = try(var.availability_zone[count.index % length(var.availability_zone)], "Zone-Redundant")
   sku                 = "Standard"
 
   tags = {

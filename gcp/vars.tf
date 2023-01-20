@@ -2,9 +2,9 @@ variable "region" {
   default = "us-west2"
 }
 
-variable "zone" {
+variable "availability_zone" {
   description = "The zone where the cluster will be deployed [a,b,...]"
-  default     = "a"
+  default     = ["us-west2-a", "us-west2-b"]
 }
 
 variable "instance_group_name" {

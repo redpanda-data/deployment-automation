@@ -3,9 +3,9 @@ variable "region" {
   default     = "centralus"
 }
 
-variable "zone" {
+variable "availability_zone" {
   description = "Availability Zone"
-  default     = null
+  default     = []
 }
 
 variable "vm_sku" {
