@@ -25,6 +25,10 @@ resource "google_compute_instance" "redpanda" {
   name         = "rp-node-${count.index}-${local.deployment_id}"
   tags         = ["rp-cluster", "tf-deployment-${local.deployment_id}"]
   machine_type = var.machine_type
+  // GCP does not give you visibility nor control over which failure domain a resource has been placed into
+  // (https://issuetracker.google.com/issues/256993209?pli=1). So the only way that we can guarantee that
+  // specific nodes are in separate racks is to put them into entirely separate failure domains - basically one
+  // broker per failure domain, and we are limited by the number of failure domains (at the moment 8).
   resource_policies = (var.ha && var.nodes <= 8) ? [
     google_compute_resource_policy.redpanda-rp[0].id
   ] : null
