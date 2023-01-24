@@ -84,7 +84,7 @@ variable "admin_username" {
   default     = "adminpanda"
 }
 
-variable "public_key" {
-  description = "Public Key file used for authentication"
+variable "public_key_path" {
+  description = "Public Key file used for authentication (must be RSA key on Azure)"
   default     = "~/.ssh/id_rsa.pub"
 }
