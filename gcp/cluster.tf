@@ -18,12 +18,6 @@ resource "google_compute_resource_policy" "redpanda-rp" {
     availability_domain_count = var.ha ? max(3, var.nodes) : 1
   }
   count = var.ha ? 1 : 0
-  lifecycle {
-    precondition {
-      condition = var.ha && var.nodes <= 8
-      error_message = "GCP does not support resource policies with greater than 8 nodes"
-    }
-  }
 }
 
 resource "google_compute_instance" "redpanda" {
@@ -31,6 +25,10 @@ resource "google_compute_instance" "redpanda" {
   name         = "rp-node-${count.index}-${local.deployment_id}"
   tags         = ["rp-cluster", "tf-deployment-${local.deployment_id}"]
   machine_type = var.machine_type
+  // GCP does not give you visibility nor control over which failure domain a resource has been placed into
+  // (https://issuetracker.google.com/issues/256993209?pli=1). So the only way that we can guarantee that
+  // specific nodes are in separate racks is to put them into entirely separate failure domains - basically one
+  // broker per failure domain, and we are limited by the number of failure domains (at the moment 8).
   resource_policies = (var.ha && var.nodes <= 8) ? [
     google_compute_resource_policy.redpanda-rp[0].id
   ] : null
@@ -60,7 +58,6 @@ KEYS
     access_config {
     }
   }
-
 }
 
 resource "google_compute_instance" "monitor" {
@@ -135,15 +132,18 @@ resource "google_compute_instance_group" "redpanda" {
 resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
-      redpanda_public_ips  = google_compute_instance.redpanda.*.network_interface.0.access_config.0.nat_ip
-      redpanda_private_ips = google_compute_instance.redpanda.*.network_interface.0.network_ip
-      client_public_ips    = google_compute_instance.client.*.network_interface.0.access_config.0.nat_ip
-      client_private_ips   = google_compute_instance.client.*.network_interface.0.network_ip
-      monitor_public_ip    = google_compute_instance.monitor[0].network_interface.0.access_config.0.nat_ip
-      monitor_private_ip   = google_compute_instance.monitor[0].network_interface.0.network_ip
-      ssh_user             = var.ssh_user
-      enable_monitoring    = true
-      rack                 = google_compute_instance.redpanda.*.name
+      redpanda_public_ips        = google_compute_instance.redpanda.*.network_interface.0.access_config.0.nat_ip
+      redpanda_private_ips       = google_compute_instance.redpanda.*.network_interface.0.network_ip
+      client_public_ips          = google_compute_instance.client.*.network_interface.0.access_config.0.nat_ip
+      client_private_ips         = google_compute_instance.client.*.network_interface.0.network_ip
+      monitor_public_ip          = google_compute_instance.monitor[0].network_interface.0.access_config.0.nat_ip
+      monitor_private_ip         = google_compute_instance.monitor[0].network_interface.0.network_ip
+      ssh_user                   = var.ssh_user
+      enable_monitoring          = true
+      rack                       = google_compute_instance.redpanda.*.name
+      cloud_storage_region       = var.region
+      tiered_storage_enabled     = false
+      tiered_storage_bucket_name = ""
     }
   )
   filename = "${path.module}/../hosts.ini"

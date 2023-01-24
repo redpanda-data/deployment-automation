@@ -251,8 +251,7 @@ resource "aws_key_pair" "ssh" {
 resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
-      aws_region                 = var.aws_region
-      client_count               = var.clients
+      cloud_storage_region       = var.aws_region
       client_public_ips          = aws_instance.client.*.public_ip
       client_private_ips         = aws_instance.client.*.private_ip
       enable_monitoring          = var.enable_monitoring
