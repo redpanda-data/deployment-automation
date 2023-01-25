@@ -122,6 +122,21 @@ variable "prometheus_instance_type" {
   default     = "c5.2xlarge"
 }
 
+variable "cluster_ami" {
+  description = "AMI for Redpanda broker nodes (if not set, will select based on the client_distro variable"
+  default     = null
+}
+
+variable "prometheus_ami" {
+  description = "AMI for prometheus nodes (if not set, will select based on the client_distro variable"
+  default     = null
+}
+
+variable "client_ami" {
+  description = "AMI for Redpanda client nodes (if not set, will select based on the client_distro variable"
+  default     = null
+}
+
 variable "public_key_path" {
   description = "The public key used to ssh to the hosts"
   default     = "~/.ssh/id_rsa.pub"
