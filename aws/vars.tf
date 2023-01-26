@@ -147,7 +147,7 @@ data "aws_ami" "ami" {
 
     filter {
         name   = "name"
-        values = ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*", "Fedora-Cloud-Base-*.x86_64-hvm-us-west-2-gp2-0", "debian-*-amd64-*", "debian-*-hvm-x86_64-gp2-*'", "amzn2-ami-hvm-2.0.*.0-x86_64-gp2", "RHEL*HVM-*-x86_64*Hourly2-GP2"]
+        values = ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*", "Fedora-Cloud-Base-*.x86_64-hvm-us-west-2-gp2-0", "debian-*-amd64-*", "debian-*-hvm-x86_64-gp2-*'", "amzn2-ami-hvm-2.0.*-x86_64-gp2", "RHEL*HVM-*-x86_64*Hourly2-GP2"]
     }
 
     filter {
@@ -165,15 +165,14 @@ data "aws_ami" "ami" {
         values = ["hvm"]
     }
 
-    owners = ["099720109477", "125523088429", "136693071363", "379101102735", "137112412989", "309956199498"] # Canonical, Fedora, Debian (new), Debian (old), Amazon, RedHat
+    owners = ["099720109477", "125523088429", "136693071363", "137112412989", "309956199498"] # Canonical, Fedora, Debian (new),for i in debian-stretch debian-buster debian-10 debian-11 ubuntu-bionic ubuntu-focal ubuntu-hirsute ubuntu-kinetic RHEL-8 amazon-linux-2 Fedora-Cloud-Base-34 Fedora-Cloud-Base-35 ; do
+for> echo $i ; terraform plan -var="instance_type=t2.micro" -var="nodes=1"  -var=distro=$i  2>&1 | grep ami; echo; echo; echo; done Amazon, RedHat
 }
 
 variable "distro_ssh_user" {
   description = "The default user used by the AWS AMIs"
   type        = map(string)
   default     = {
-    "debian-stretch"       = "admin"
-    "debian-buster"        = "admin"
     "debian-10"            = "admin"
     "debian-11"            = "admin"
     "Fedora-Cloud-Base-34" = "fedora"
@@ -187,7 +186,7 @@ variable "distro_ssh_user" {
     "ubuntu-kinetic"       = "ubuntu"
     "RHEL-8"               = "ec2-user"
     #"RHEL-9"              = "ec2-user"
-    "amazon-linux-2"       = "ec2-user"
+    "amzn2"                = "ec2-user"
   }
 }
 
