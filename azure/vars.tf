@@ -47,7 +47,7 @@ variable "client_vm_sku" {
 variable "client_vm_instances" {
   description = "Number of client nodes to create"
   type        = number
-  default     = 1
+  default     = 0
 }
 
 variable "enable_monitoring" {

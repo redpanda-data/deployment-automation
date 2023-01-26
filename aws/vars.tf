@@ -30,45 +30,6 @@ variable "distro" {
   default     = "ubuntu-focal"
 }
 
-variable "distro_ami" {
-  type    = map(string)
-  default = {
-    # https://wiki.debian.org/Cloud/AmazonEC2Image/
-    "debian-stretch" = "ami-072ad3956e05c814c"
-    "debian-buster"  = "ami-0f7939d313699273c"
-
-    # https://alt.fedoraproject.org/cloud/
-    "fedora-31"      = "ami-0e82cc6ce8f393d4b"
-    "fedora-32"      = "ami-020405ee5d5747724"
-
-    # https://cloud-images.ubuntu.com/locator/ec2/
-    "ubuntu-focal"   = "ami-02c45ea799467b51b"
-    "ubuntu-bionic"  = "ami-0c1ab2d66f996cd4b"
-    # non-LTS for development
-    "ubuntu-hirsute" = "ami-035649ffeb04ce758"
-
-    # https://us-west-2.console.aws.amazon.com/ec2/v2/home?region=us-west-2#LaunchInstanceWizard:
-    "rhel-8"         = "ami-087c2c50437d0b80d"
-    "amazon-linux-2" = "ami-01ce4793a2f45922e"
-  }
-}
-
-variable "distro_ssh_user" {
-  description = "The default user used by the AWS AMIs"
-  type        = map(string)
-  default     = {
-    "debian-stretch" = "admin"
-    "debian-buster"  = "admin"
-    "fedora-31"      = "fedora"
-    "fedora-32"      = "fedora"
-    "ubuntu-bionic"  = "ubuntu"
-    "ubuntu-focal"   = "ubuntu"
-    "ubuntu-hirsute" = "ubuntu"
-    "rhel-8"         = "ec2-user"
-    "amazon-linux-2" = "ec2-user"
-  }
-}
-
 variable "enable_monitoring" {
   description = "Setup a prometheus/grafana instance"
   type        = bool
@@ -145,6 +106,11 @@ variable "instance_type" {
   default     = "i3.2xlarge"
 }
 
+variable "machine_architecture" {
+  description = "Architecture used for selecting the AMI - change this if using ARM based instances"
+  default     = "x86_64"
+}
+
 variable "nodes" {
   description = "The number of nodes to deploy"
   type        = number
@@ -156,9 +122,72 @@ variable "prometheus_instance_type" {
   default     = "c5.2xlarge"
 }
 
+variable "cluster_ami" {
+  description = "AMI for Redpanda broker nodes (if not set, will select based on the client_distro variable"
+  default     = null
+}
+
+variable "prometheus_ami" {
+  description = "AMI for prometheus nodes (if not set, will select based on the client_distro variable"
+  default     = null
+}
+
+variable "client_ami" {
+  description = "AMI for Redpanda client nodes (if not set, will select based on the client_distro variable"
+  default     = null
+}
+
 variable "public_key_path" {
   description = "The public key used to ssh to the hosts"
   default     = "~/.ssh/id_rsa.pub"
+}
+
+data "aws_ami" "ami" {
+    most_recent = true
+
+    filter {
+        name   = "name"
+        values = ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*", "Fedora-Cloud-Base-*.x86_64-hvm-us-west-2-gp2-0", "debian-*-amd64-*", "debian-*-hvm-x86_64-gp2-*'", "amzn2-ami-hvm-2.0.*-x86_64-gp2", "RHEL*HVM-*-x86_64*Hourly2-GP2"]
+    }
+
+    filter {
+        name  = "architecture"
+        values = [var.machine_architecture]
+    }
+
+    filter {
+        name = "name"
+        values = ["*${var.distro}*"]
+    }
+
+    filter {
+        name   = "virtualization-type"
+        values = ["hvm"]
+    }
+
+    owners = ["099720109477", "125523088429", "136693071363", "137112412989", "309956199498"] # Canonical, Fedora, Debian (new),for i in debian-stretch debian-buster debian-10 debian-11 ubuntu-bionic ubuntu-focal ubuntu-hirsute ubuntu-kinetic RHEL-8 amazon-linux-2 Fedora-Cloud-Base-34 Fedora-Cloud-Base-35 ; do
+for> echo $i ; terraform plan -var="instance_type=t2.micro" -var="nodes=1"  -var=distro=$i  2>&1 | grep ami; echo; echo; echo; done Amazon, RedHat
+}
+
+variable "distro_ssh_user" {
+  description = "The default user used by the AWS AMIs"
+  type        = map(string)
+  default     = {
+    "debian-10"            = "admin"
+    "debian-11"            = "admin"
+    "Fedora-Cloud-Base-34" = "fedora"
+    "Fedora-Cloud-Base-35" = "fedora"
+    #"Fedora-Cloud-Base-36" = "fedora"
+    #"Fedora-Cloud-Base-37" = "fedora"
+    "ubuntu-bionic"        = "ubuntu"
+    "ubuntu-focal"         = "ubuntu"
+    "ubuntu-hirsute"       = "ubuntu"
+    "ubuntu-jammy"         = "ubuntu"
+    "ubuntu-kinetic"       = "ubuntu"
+    "RHEL-8"               = "ec2-user"
+    #"RHEL-9"              = "ec2-user"
+    "amzn2"                = "ec2-user"
+  }
 }
 
 variable "tiered_storage_enabled" {
