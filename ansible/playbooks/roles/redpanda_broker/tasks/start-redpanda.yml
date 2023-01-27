@@ -159,7 +159,7 @@
 # this instance of node config generation only runs after a cluster has been
 # initialized. This is used to update configurations post-cluster setup when
 # the user adds new configurations. For example, this would fire off after the
-# user adds TLS support to the cluster. 
+# user adds TLS support to the cluster.
 #
 # Ideally, there's only one task that runs node configuration and we trigger it
 # to re-run as appropriate. We do it this way right now mostly because of task
@@ -185,9 +185,9 @@
   when: is_initialized
 
 # Determine if a restart is necessary based on the following logic
-# 
+#
 # set restart_node to false in your Ansible variables if you want to manage
-# restarts on your own. 
+# restarts on your own.
 #
 #   (
 #     The rpk cluster config status says that this node requires restarting
