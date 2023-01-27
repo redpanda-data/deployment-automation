@@ -1,15 +1,3 @@
-
-- name: Generate Node config - post-bootstrap runs
-  ansible.builtin.template:
-    src: "redpanda.yml"
-    dest: "/etc/redpanda/redpanda.yaml"
-    owner: redpanda
-    group: redpanda
-  register: nodeconfig_result
-  when:
-    - is_initialized
-    - inventory_hostname == cluster_host
-
 # attempt to do a rolling, serial restart by putting each node into maintenance
 # mode, restarting, and putting it back into service. This is throttled to allow
 # only one node out of service at a time.
@@ -20,6 +8,19 @@
   when:
    - restart_required
    - inventory_hostname == cluster_host
+
+# We need to (actually) generate the node config once the node is in MM, otherwise the `rpk cluster maintenance` command
+# will fail
+- name: Generate Node config - post-bootstrap runs
+  ansible.builtin.template:
+    src: "redpanda.yml"
+    dest: "/etc/redpanda/redpanda.yaml"
+    owner: redpanda
+    group: redpanda
+  register: nodeconfig_result
+  when:
+    - is_initialized
+    - inventory_hostname == cluster_host
 
 - name: Restart Process
   ansible.builtin.shell:
