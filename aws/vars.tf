@@ -165,8 +165,7 @@ data "aws_ami" "ami" {
         values = ["hvm"]
     }
 
-    owners = ["099720109477", "125523088429", "136693071363", "137112412989", "309956199498"] # Canonical, Fedora, Debian (new),for i in debian-stretch debian-buster debian-10 debian-11 ubuntu-bionic ubuntu-focal ubuntu-hirsute ubuntu-kinetic RHEL-8 amazon-linux-2 Fedora-Cloud-Base-34 Fedora-Cloud-Base-35 ; do
-for> echo $i ; terraform plan -var="instance_type=t2.micro" -var="nodes=1"  -var=distro=$i  2>&1 | grep ami; echo; echo; echo; done Amazon, RedHat
+    owners = ["099720109477", "125523088429", "136693071363", "137112412989", "309956199498"] # Canonical, Fedora, Debian (new), Amazon, RedHat
 }
 
 variable "distro_ssh_user" {
