@@ -3,11 +3,11 @@
 # only one node out of service at a time.
 #
 - name: Enable Maintenance Mode
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: "rpk cluster maintenance enable {{ node_id }} --wait"
   when:
-   - restart_required
-   - inventory_hostname == cluster_host
+    - restart_required
+    - inventory_hostname == cluster_host
 
 # We need to (actually) generate the node config once the node is in MM, otherwise the `rpk cluster maintenance` command
 # will fail
@@ -17,21 +17,23 @@
     dest: "/etc/redpanda/redpanda.yaml"
     owner: redpanda
     group: redpanda
+    mode: 0755
   register: nodeconfig_result
   when:
     - is_initialized
     - inventory_hostname == cluster_host
 
-- name: Restart Process
-  ansible.builtin.shell:
-    cmd: "systemctl restart redpanda"
+- name: Restart Redpanda
+  ansible.builtin.systemd:
+    name: redpanda
+    state: restarted
   when:
-   - restart_required
-   - inventory_hostname == cluster_host
+    - restart_required
+    - inventory_hostname == cluster_host
 
 - name: Disable Maintenance Mode
-  ansible.builtin.shell:
+  ansible.builtin.command:
     cmd: "rpk cluster maintenance disable {{ node_id }}"
   when:
-   - restart_required
-   - inventory_hostname == cluster_host
+    - restart_required
+    - inventory_hostname == cluster_host
