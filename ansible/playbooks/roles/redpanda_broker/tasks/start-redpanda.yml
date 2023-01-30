@@ -159,7 +159,7 @@
 # this instance of node config generation only runs after a cluster has been
 # initialized. This is used to update configurations post-cluster setup when
 # the user adds new configurations. For example, this would fire off after the
-# user adds TLS support to the cluster. 
+# user adds TLS support to the cluster.
 #
 # Ideally, there's only one task that runs node configuration and we trigger it
 # to re-run as appropriate. We do it this way right now mostly because of task
@@ -180,13 +180,14 @@
     dest: "/etc/redpanda/redpanda.yaml"
     owner: redpanda
     group: redpanda
+  check_mode: true
   register: nodeconfig_result
   when: is_initialized
 
 # Determine if a restart is necessary based on the following logic
-# 
+#
 # set restart_node to false in your Ansible variables if you want to manage
-# restarts on your own. 
+# restarts on your own.
 #
 #   (
 #     The rpk cluster config status says that this node requires restarting
@@ -208,12 +209,18 @@
   set_fact:
     restart_required: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool)'
 
-# attempt to do a rolling, serial restart by putting each node into maintenance
-# mode, restarting, and putting it back into service. This is throttled to allow
-# only one node out of service at a time.
-#
-- name: Safe restart
-  ansible.builtin.shell:
-    cmd: "rpk cluster maintenance enable {{ node_id }} --wait && systemctl restart redpanda && rpk cluster maintenance disable {{ node_id }}"
-  when: restart_required
-  throttle: 1
+
+# serial: 1 would be the proper solution here, but that can only be set on play level
+# upstream issue: https://github.com/ansible/ansible/issues/12170
+# See this comment for an example of how this works:
+# https://github.com/ansible/ansible/issues/12170#issuecomment-358229274
+# Essentially we're looping through the hosts to run the tasks in safe-restart.yml.
+# Within safe-restart.yml we need to put inventory_hostname == cluster_host because other options
+# (delegate_to with run_once) meant that things like inventory_hostname get screwed up, and we don't get host facts.
+# It is known that the chosen method is O(n^2) but most people won't be deploying 100s of nodes via this route.
+
+- name: Safe Restart
+  include_tasks: safe-restart.yml
+  with_items: "{{ ansible_play_hosts }}"
+  loop_control:
+    loop_var: cluster_host
