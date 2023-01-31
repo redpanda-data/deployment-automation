@@ -36,15 +36,5 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
-
-      - name: Install dependencies
-        run: |
-          pip install ansible-lint
-
-      - name: Run Ansible Linter
-        run: |
-          ansible-lint
+      - name: run ansible lint
+        uses: ansible/ansible-lint-action@main
