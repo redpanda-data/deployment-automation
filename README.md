@@ -2,6 +2,10 @@
 
 Terraform and Ansible configuration to easily provision a [Redpanda](https://www.redpanda.com/) cluster on AWS, GCP, Azure, or IBM.
 
+# Goal of this project
+
+1 command to a production cluster
+
 ## Installation Prerequisites
 
 * Install Terraform in your preferred way: https://www.terraform.io/downloads.html
