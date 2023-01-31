@@ -1,44 +1,45 @@
+---
 - hosts: redpanda
   roles:
-  - geerlingguy.node_exporter
+    - geerlingguy.node_exporter
 
   tasks:
-  - name: fedora setup
-    when: ansible_os_family == 'RedHat'
-    block:
-    - name: delete unused repos
-      file:
-        name: "{{item}}"
-        state: absent
-      with_items:
-        - /etc/yum.repos.d/fedora-updates-modular.repo
-        - /etc/yum.repos.d/fedora-cisco-openh264.repo
-    - name: install base deps
-      package:
+    - name: fedora setup
+      when: ansible_os_family == 'RedHat'
+      block:
+        - name: delete unused repos
+          file:
+            name: "{{item}}"
+            state: absent
+          with_items:
+            - /etc/yum.repos.d/fedora-updates-modular.repo
+            - /etc/yum.repos.d/fedora-cisco-openh264.repo
+        - name: install base deps
+          package:
+            name:
+              - iotop
+              - mdadm
+              - xfsprogs
+            state: present
+
+    - name: add additional debian repos
+      when: ansible_distribution == 'Debian'
+      apt_repository:
+        repo: deb http://deb.debian.org/debian stretch-backports main
+        state: present
+
+    - name: update packages - debian
+      apt:
+        update_cache: true
+        force_apt_get: true
+      when: ansible_os_family == 'Debian'
+
+    - name: install base deps - debian
+      apt:
         name:
           - iotop
           - mdadm
           - xfsprogs
         state: present
-
-  - name: add additional debian repos
-    when: ansible_distribution == 'Debian'
-    apt_repository:
-      repo: deb http://deb.debian.org/debian stretch-backports main
-      state: present
-
-  - name: update packages - debian
-    apt:
-      update_cache: yes
-      force_apt_get: yes
-    when: ansible_os_family == 'Debian'
-
-  - name: install base deps - debian
-    apt:
-      name:
-        - iotop
-        - mdadm
-        - xfsprogs
-      state: present
-      update_cache: yes
-    when: ansible_os_family == 'Debian'
+        update_cache: true
+      when: ansible_os_family == 'Debian'
