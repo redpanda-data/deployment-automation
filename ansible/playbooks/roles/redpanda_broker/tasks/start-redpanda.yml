@@ -207,7 +207,7 @@
 #
 - name: Establish whether restart required
   set_fact:
-    restart_required: '("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool)'
+    restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool) }}'
 
 
 # serial: 1 would be the proper solution here, but that can only be set on play level
