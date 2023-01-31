@@ -1,25 +1,25 @@
 - hosts: redpanda[0]
   tasks:
-  - name: generate the redpanda grafana dashboard
-    shell: |
-      rpk generate grafana-dashboard --datasource prometheus --metrics-endpoint 'http{{ 's' if tls|default(false) else '' }}://{{hostvars[inventory_hostname].private_ip}}:9644/metrics' > '/tmp/redpanda-grafana.json'
+    - name: generate the redpanda grafana dashboard
+      shell: |
+        rpk generate grafana-dashboard --datasource prometheus --metrics-endpoint 'http{{ 's' if tls|default(false) else '' }}://{{hostvars[inventory_hostname].private_ip}}:9644/metrics' > '/tmp/redpanda-grafana.json'
 
-  - name: fetch grafana dashboard
-    fetch:
-      src: /tmp/redpanda-grafana.json
-      dest: '{{ playbook_dir }}/grafana_dashboards/redpanda-grafana.json'
-      flat: yes
+    - name: fetch grafana dashboard
+      fetch:
+        src: /tmp/redpanda-grafana.json
+        dest: '{{ playbook_dir }}/grafana_dashboards/redpanda-grafana.json'
+        flat: true
 
 - hosts: monitor
   tasks:
-  - name: install deps
-    package:
-      name: python3-jmespath
-      state: present
+    - name: install deps
+      package:
+        name: python3-jmespath
+        state: present
 
 - hosts: monitor
   roles:
-  - cloudalchemy.prometheus
+    - cloudalchemy.prometheus
   vars:
     prometheus_scrape_configs:
       - job_name: "redpanda"
@@ -33,22 +33,22 @@
 
 - hosts: monitor
   roles:
-  - cloudalchemy.grafana
+    - cloudalchemy.grafana
   vars:
     grafana_version: 9.0.0
     grafana_security:
       admin_user: admin
       admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
     grafana_datasources:
-    - name: prometheus
-      type: prometheus
-      access: proxy
-      url: 'http://localhost:9090'
-      basicAuth: false
+      - name: prometheus
+        type: prometheus
+        access: proxy
+        url: 'http://localhost:9090'
+        basicAuth: false
     grafana_dashboards_dir: '{{ playbook_dir }}/grafana_dashboards'
 
 - hosts: localhost
   tasks:
-  - file:
-      path: '{{ playbook_dir }}/grafana_dashboards/redpanda-grafana.json'
-      state: absent
+    - file:
+        path: '{{ playbook_dir }}/grafana_dashboards/redpanda-grafana.json'
+        state: absent
