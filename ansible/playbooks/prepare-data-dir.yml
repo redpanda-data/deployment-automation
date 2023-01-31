@@ -1,21 +1,21 @@
 ---
 - hosts: redpanda
   tasks:
-    - set_fact:
+    - ansible.builtin.set_fact:
         device_info: "{{ hostvars[inventory_hostname].ansible_devices }}"
         nvme_device_ids: "{{ hostvars[inventory_hostname].ansible_devices.keys() | map('regex_search', 'nvme.*') | select('string') | list }}"
-    - set_fact:
+    - ansible.builtin.set_fact:
         nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) + ["/dev/" + item] }}'
       loop: "{{ nvme_device_ids }}"
       when: device_info[item]["partitions"] | length == 0
-    - set_fact:
+    - ansible.builtin.set_fact:
         nvme_devices_for_raid: "{{ (nvme_devices_for_raid | default([])) }}"
-    - set_fact:
+    - ansible.builtin.set_fact:
         ephemeral_disk: "{{ (ephemeral_disk | default(false)) }}"
 
     - block:
         - name: define mdadm_arrays variable
-          set_fact:
+          ansible.builtin.set_fact:
             mdadm_arrays:
               - name: md0
                 devices: "{{ nvme_devices_for_raid }}"
@@ -25,7 +25,7 @@
                 state: present
 
         - name: run mdadm
-          include_role:
+          ansible.builtin.include_role:
             name: mrlesmithjr.mdadm
       when: nvme_devices_for_raid|length > 1
 
@@ -46,14 +46,14 @@
       when: nvme_devices_for_raid|length == 1
 
     - name: data path
-      file:
+      ansible.builtin.file:
         path: /mnt/vectorized/redpanda
         state: directory
         owner: root
         group: root
         mode: ugo=rwx
     - name: set permissions
-      file:
+      ansible.builtin.file:
         dest: /var/lib/redpanda
         src: /mnt/vectorized/redpanda
         state: link
