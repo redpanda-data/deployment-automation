@@ -9,12 +9,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-#      - uses: actions/cache@v3
-#        name: Cache plugin dir
-#        with:
-#          path: ~/.tflint.d/plugins
-#          key: ubuntu-latest-tflint-${{ hashFiles('.tflint.hcl') }}
-
       - uses: terraform-linters/setup-tflint@v3
         name: Setup TFLint
         with:
