@@ -43,7 +43,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install ansible-lint
+          pip install ansible && pip install ansible-lint
 
       - name: Run Ansible Linter
         run: |
