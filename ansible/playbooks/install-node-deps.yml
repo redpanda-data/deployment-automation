@@ -8,14 +8,14 @@
       when: ansible_os_family == 'RedHat'
       block:
         - name: delete unused repos
-          file:
+          ansible.builtin.file:
             name: "{{item}}"
             state: absent
           with_items:
             - /etc/yum.repos.d/fedora-updates-modular.repo
             - /etc/yum.repos.d/fedora-cisco-openh264.repo
         - name: install base deps
-          package:
+          ansible.builtin.package:
             name:
               - iotop
               - mdadm
@@ -24,18 +24,18 @@
 
     - name: add additional debian repos
       when: ansible_distribution == 'Debian'
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: deb http://deb.debian.org/debian stretch-backports main
         state: present
 
     - name: update packages - debian
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         force_apt_get: true
       when: ansible_os_family == 'Debian'
 
     - name: install base deps - debian
-      apt:
+      ansible.builtin.apt:
         name:
           - iotop
           - mdadm

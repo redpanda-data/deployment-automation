@@ -1,12 +1,12 @@
 ---
 - name: ensure /etc/redpanda exists
-  file:
+  ansible.builtin.file:
     path: /etc/redpanda
     state: directory
     mode: 0755
 
 - name: Identify advertised ip address
-  set_fact:
+  ansible.builtin.set_fact:
     advertised_ip: "{{ inventory_hostname if (advertise_public_ips | d() | bool) else private_ip }}"
 
 # start out with an empty configuration object so we can fill in later based on
@@ -14,14 +14,14 @@
 # custom_config_template
 #
 - name: Reset configuration
-  set_fact:
+  ansible.builtin.set_fact:
     configuration: {}
 # fill out the empty configuration object and merge all appropriate templates
 # together this is used to make it easier to have the tls details in a separate
 # template, but coalesce into a single configuration object
 #
 - name: Generate configurations
-  set_fact:
+  ansible.builtin.set_fact:
     configuration: "{{ configuration | combine(lookup('template', custom_config_template.template) | from_yaml, recursive=True) }}"
   loop: "{{ custom_config_templates }}"
   loop_control:
@@ -31,7 +31,7 @@
 # merge in user's overrides of items in the templates
 #
 - name: Merge with user-provided overrides (via redpanda variable)
-  set_fact:
+  ansible.builtin.set_fact:
     configuration: "{{ configuration | combine(redpanda | default({}), recursive=True) }}"
 
 # on first startup, the redpanda process will create this directory and
@@ -45,7 +45,7 @@
 
 # a node is only considered initialized if the controller directory
 # exists and is populated.
-- set_fact:
+- ansible.builtin.set_fact:
     is_initialized: "{{ controller_stat.stat.isdir is defined and controller_stat.stat.isdir }}"
 
 # first run of Generate Node config
@@ -84,13 +84,13 @@
 #   https://docs.redpanda.com/docs/platform/reference/rpk/rpk-redpanda/rpk-redpanda-tune/
 #
 - name: start redpanda-tuner
-  systemd:
+  ansible.builtin.systemd:
     name: redpanda-tuner
     state: started
 
 # ensure that systemd starts up redpanda
 - name: start redpanda
-  systemd:
+  ansible.builtin.systemd:
     name: redpanda
     state: started
 
@@ -105,7 +105,7 @@
 # make the node id a reusable fact
 #
 - name: Set node id
-  set_fact:
+  ansible.builtin.set_fact:
     node_id: "{{ node_id_out.stdout | int() }}"
 
 # query the redpanda cluster configuration versions so we can determine later
@@ -204,7 +204,7 @@
 #    The restart_node variable has not been set to false by the user
 #
 - name: Establish whether restart required
-  set_fact:
+  ansible.builtin.set_fact:
     restart_required: ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded"
       in package_result.results))) and (restart_node | default("true") | bool)
 
