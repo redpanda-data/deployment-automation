@@ -1,28 +1,28 @@
 ---
 - name: add the redpanda repo
-  shell: |
+  ansible.builtin.shell: |
     curl -1sLf {{ redpanda_repo_script }} | sudo -E bash
 
 - name: install redpanda from repository
-  apt:
+  ansible.builtin.apt:
     name:
       - redpanda{{ '' if redpanda_version=='latest' else '=' + redpanda_version }}
     state: "{{ redpanda_install_status }}"
-    update_cache: yes
+    update_cache: true
   register: package_result
   when: ansible_os_family == 'Debian'
 
 - name: install redpanda from repository
-  yum:
+  ansible.builtin.yum:
     name:
       - redpanda{{ '' if redpanda_version=='latest' else '-' + redpanda_version }}
     state: "{{ redpanda_install_status }}"
-    update_cache: yes
+    update_cache: true
   register: package_result
   when: ansible_os_family == 'RedHat'
 
 - name: set data dir file perms
-  file:
+  ansible.builtin.file:
     path: "{{ redpanda_data_directory }}"
     owner: redpanda
     group: redpanda

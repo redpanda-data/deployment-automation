@@ -8,7 +8,7 @@ redpanda_admin_api_port: 9644
 redpanda_kafka_port: 9092
 redpanda_rpc_port: 33145
 
-redpanda_use_staging_repo: False
+redpanda_use_staging_repo: false
 redpanda_repo_debian: "{{ 'https://packages.vectorized.io/sMIXnoa7DK12JW4A/redpanda/cfg/setup/bash.deb.sh' if not redpanda_use_staging_repo|bool else 'https://dl.redpanda.com/E4xN1tVe3Xy60GTx/redpanda-unstable/setup.deb.sh' }}"
 redpanda_repo_redhat: "{{ 'https://dl.redpanda.com/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash.rpm.sh' if not redpanda_use_staging_repo|bool else 'https://dl.redpanda.com/E4xN1tVe3Xy60GTx/redpanda-unstable/setup.rpm.sh' }}"
 redpanda_repo_script: "{{ redpanda_repo_debian if ansible_os_family == 'Debian' else redpanda_repo_redhat }}"
