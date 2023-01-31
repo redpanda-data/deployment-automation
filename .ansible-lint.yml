@@ -1,6 +1,5 @@
 exclude_paths:
   - .github/
-  - .config/
   - artifacts/
   - aws/
   - azure/
