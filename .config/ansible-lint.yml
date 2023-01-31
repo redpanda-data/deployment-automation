@@ -1,12 +1,12 @@
 exclude_paths:
-  - .github
-  - .config
-  - artifacts
-  - aws
-  - azure
-  - gcp
-  - ibm
-  - templates
+  - .github/
+  - .config/
+  - artifacts/
+  - aws/
+  - azure/
+  - gcp/
+  - ibm/
+  - templates/
 
 enable_list:
   - yaml
