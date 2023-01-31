@@ -41,4 +41,4 @@ jobs:
 
       - name: Run Ansible Linter
         run: |
-          ansible-galaxy install -r ansible/requirements.yml && ansible-lint -c .config/ansible-lint.yml
+          ansible-galaxy install -r ansible/requirements.yml && ansible-lint -c .ansible-lint.yml
