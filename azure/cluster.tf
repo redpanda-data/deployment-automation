@@ -25,7 +25,7 @@ resource "azurerm_linux_virtual_machine" "redpanda" {
   
   admin_ssh_key {
     username   = var.admin_username
-    public_key = file(var.public_key)
+    public_key = file(var.public_key_path)
   }
 
   source_image_reference {
@@ -87,7 +87,7 @@ resource "azurerm_linux_virtual_machine" "redpanda_client" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = file(var.public_key)
+    public_key = file(var.public_key_path)
   }
 
   source_image_reference {
@@ -123,7 +123,7 @@ resource "azurerm_linux_virtual_machine" "monitoring" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = file(var.public_key)
+    public_key = file(var.public_key_path)
   }
 
   source_image_reference {

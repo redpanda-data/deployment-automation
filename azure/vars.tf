@@ -47,7 +47,7 @@ variable "client_vm_sku" {
 variable "client_vm_instances" {
   description = "Number of client nodes to create"
   type        = number
-  default     = 1
+  default     = 0
 }
 
 variable "enable_monitoring" {
@@ -84,7 +84,7 @@ variable "admin_username" {
   default     = "adminpanda"
 }
 
-variable "public_key" {
-  description = "Public Key file used for authentication"
+variable "public_key_path" {
+  description = "Public Key file used for authentication (must be RSA key on Azure)"
   default     = "~/.ssh/id_rsa.pub"
 }
