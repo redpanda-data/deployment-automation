@@ -1,7 +1,7 @@
 ---
 
 - name: Install Redpanda
-  include_tasks: install-redpanda.yml
+  ansible.builtin.include_tasks: install-redpanda.yml
 
 - name: Start Redpanda
-  include_tasks: start-redpanda.yml
+  ansible.builtin.include_tasks: start-redpanda.yml

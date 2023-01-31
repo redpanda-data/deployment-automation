@@ -1,11 +1,12 @@
+---
 - name: ensure /etc/redpanda exists
-  file:
+  ansible.builtin.file:
     path: /etc/redpanda
     state: directory
     mode: 0755
 
 - name: Identify advertised ip address
-  set_fact:
+  ansible.builtin.set_fact:
     advertised_ip: "{{ inventory_hostname if (advertise_public_ips | d() | bool) else private_ip }}"
 
 # start out with an empty configuration object so we can fill in later based on
@@ -13,15 +14,14 @@
 # custom_config_template
 #
 - name: Reset configuration
-  set_fact:
+  ansible.builtin.set_fact:
     configuration: {}
-
 # fill out the empty configuration object and merge all appropriate templates
 # together this is used to make it easier to have the tls details in a separate
 # template, but coalesce into a single configuration object
 #
 - name: Generate configurations
-  set_fact:
+  ansible.builtin.set_fact:
     configuration: "{{ configuration | combine(lookup('template', custom_config_template.template) | from_yaml, recursive=True) }}"
   loop: "{{ custom_config_templates }}"
   loop_control:
@@ -31,7 +31,7 @@
 # merge in user's overrides of items in the templates
 #
 - name: Merge with user-provided overrides (via redpanda variable)
-  set_fact:
+  ansible.builtin.set_fact:
     configuration: "{{ configuration | combine(redpanda | default({}), recursive=True) }}"
 
 # on first startup, the redpanda process will create this directory and
@@ -43,9 +43,9 @@
     path: "{{ redpanda_data_directory }}/redpanda/controller"
   register: controller_stat
 
-# a node is only considered initialized if the controller directory 
+# a node is only considered initialized if the controller directory
 # exists and is populated.
-- set_fact:
+- ansible.builtin.set_fact:
     is_initialized: "{{ controller_stat.stat.isdir is defined and controller_stat.stat.isdir }}"
 
 # first run of Generate Node config
@@ -55,8 +55,8 @@
 #
 - name: Generate Node config - first run
   ansible.builtin.template:
-    src: "redpanda.yml"
-    dest: "/etc/redpanda/redpanda.yaml"
+    src: redpanda.yml
+    dest: /etc/redpanda/redpanda.yaml
     owner: redpanda
     group: redpanda
   register: nodeconfig_result
@@ -69,29 +69,28 @@
 #
 - name: Generate bootstrap
   ansible.builtin.template:
-    src: "bootstrap.yml"
-    dest: "/etc/redpanda/.bootstrap.yaml"
+    src: bootstrap.yml
+    dest: /etc/redpanda/.bootstrap.yaml
     owner: redpanda
     group: redpanda
   when: not is_initialized
-
 
 # This starts up the tuner process which modifies various redpanda items and
 # os-level sysctls to optimize the node.
 #
 # tuner settings are in the rpk.tune_* hierarchy.
 #
-# For more information on the tuners, go to 
+# For more information on the tuners, go to
 #   https://docs.redpanda.com/docs/platform/reference/rpk/rpk-redpanda/rpk-redpanda-tune/
 #
 - name: start redpanda-tuner
-  systemd:
+  ansible.builtin.systemd:
     name: redpanda-tuner
     state: started
 
 # ensure that systemd starts up redpanda
 - name: start redpanda
-  systemd:
+  ansible.builtin.systemd:
     name: redpanda
     state: started
 
@@ -99,14 +98,14 @@
 #
 - name: Establish node id
   ansible.builtin.shell:
-    cmd: "rpk cluster status | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'"
+    cmd: rpk cluster status | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'
   register: node_id_out
-  changed_when: False
+  changed_when: false
 
 # make the node id a reusable fact
 #
 - name: Set node id
-  set_fact:
+  ansible.builtin.set_fact:
     node_id: "{{ node_id_out.stdout | int() }}"
 
 # query the redpanda cluster configuration versions so we can determine later
@@ -121,9 +120,9 @@
 #
 - name: Establish Redpanda's current config version
   ansible.builtin.shell:
-    cmd: "rpk cluster config status | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'"
+    cmd: rpk cluster config status | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'
   register: config_version
-  changed_when: False
+  changed_when: false
   run_once: true
 
 # set cluster-wide configurations
@@ -138,10 +137,10 @@
 # propogates to each node in the cluster via an internal topic
 #
 # TODO: fix changed_when to stop throwing ansible warnings on the jinja {{}} parsing
-# 
+#
 - name: Set cluster config
   ansible.builtin.shell:
-    cmd: "rpk cluster config set {{ item.key }} {{ item.value }}"
+    cmd: rpk cluster config set {{ item.key }} {{ item.value }}
   loop: "{{ configuration.cluster | dict2items }}"
   register: result
   changed_when: '"New configuration version is {{ config_version.stdout|int() }}." not in result.stdout'
@@ -152,9 +151,9 @@
 #
 - name: Check if restart needed
   ansible.builtin.shell:
-    cmd: "rpk cluster config status | grep '^{{ node_id }} ' | awk '{ print $3 }' |  grep -E 'true|false'"
+    cmd: rpk cluster config status | grep '^{{ node_id }} ' | awk '{ print $3 }' |  grep -E 'true|false'
   register: restart_required_rc
-  changed_when: False
+  changed_when: false
 
 # this instance of node config generation only runs after a cluster has been
 # initialized. This is used to update configurations post-cluster setup when
@@ -176,8 +175,8 @@
 #
 - name: Generate Node config - post-bootstrap runs
   ansible.builtin.template:
-    src: "redpanda.yml"
-    dest: "/etc/redpanda/redpanda.yaml"
+    src: redpanda.yml
+    dest: /etc/redpanda/redpanda.yaml
     owner: redpanda
     group: redpanda
   check_mode: true
@@ -206,7 +205,7 @@
 #    The restart_node variable has not been set to false by the user
 #
 - name: Establish whether restart required
-  set_fact:
+  ansible.builtin.set_fact:
     restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool) }}'
 
 

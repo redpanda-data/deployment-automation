@@ -1,61 +1,62 @@
+---
 - hosts: redpanda
   tasks:
-  - set_fact:
-      device_info: "{{ hostvars[inventory_hostname].ansible_devices }}"
-      nvme_device_ids: "{{ hostvars[inventory_hostname].ansible_devices.keys() | map('regex_search', 'nvme.*') | select('string') | list }}"
-  - set_fact:
-      nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) + ["/dev/" + item] }}'
-    loop: '{{ nvme_device_ids }}'
-    when: device_info[item]["partitions"] | length == 0
-  - set_fact:
-      nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) }}'
-  - set_fact:
-      ephemeral_disk: '{{ (ephemeral_disk | default(false)) }}'
+    - ansible.builtin.set_fact:
+        device_info: "{{ hostvars[inventory_hostname].ansible_devices }}"
+        nvme_device_ids: "{{ hostvars[inventory_hostname].ansible_devices.keys() | map('regex_search', 'nvme.*') | select('string') | list }}"
+    - ansible.builtin.set_fact:
+        nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) + ["/dev/" + item] }}'
+      loop: "{{ nvme_device_ids }}"
+      when: device_info[item]["partitions"] | length == 0
+    - ansible.builtin.set_fact:
+        nvme_devices_for_raid: "{{ (nvme_devices_for_raid | default([])) }}"
+    - ansible.builtin.set_fact:
+        ephemeral_disk: "{{ (ephemeral_disk | default(false)) }}"
 
-  - block:
-    - name: define mdadm_arrays variable
-      set_fact:
-        mdadm_arrays:
-        - name: md0
-          devices: '{{ nvme_devices_for_raid }}'
-          filesystem: xfs
-          level: 0
-          mountpoint: /mnt/vectorized
-          state: present
+    - block:
+        - name: define mdadm_arrays variable
+          ansible.builtin.set_fact:
+            mdadm_arrays:
+              - name: md0
+                devices: "{{ nvme_devices_for_raid }}"
+                filesystem: xfs
+                level: 0
+                mountpoint: /mnt/vectorized
+                state: present
 
-    - name: run mdadm
-      include_role:
-        name: mrlesmithjr.mdadm
-    when: nvme_devices_for_raid|length > 1
+        - name: run mdadm
+          ansible.builtin.include_role:
+            name: mrlesmithjr.mdadm
+      when: nvme_devices_for_raid|length > 1
 
-  - block:
-    - name: create xfs file system
-      filesystem:
-        fstype: xfs
-        dev: '{{ nvme_devices_for_raid[0] }}'
-    - name: mount nvme device
-      mount:
-        path: /mnt/vectorized
-        src: '{{ nvme_devices_for_raid[0] }}'
-        fstype: xfs
-        opts: "{{ 'defaults,nofail' if ephemeral_disk else 'defaults'}}"
-        dump: "{{ 1 if ephemeral_disk else 0}}"
-        passno: "{{ 2 if ephemeral_disk else 0}}"
-        state: mounted
-    when: nvme_devices_for_raid|length == 1
+    - block:
+        - name: create xfs file system
+          filesystem:
+            fstype: xfs
+            dev: "{{ nvme_devices_for_raid[0] }}"
+        - name: mount nvme device
+          mount:
+            path: /mnt/vectorized
+            src: "{{ nvme_devices_for_raid[0] }}"
+            fstype: xfs
+            opts: "{{ 'defaults,nofail' if ephemeral_disk else 'defaults'}}"
+            dump: "{{ 1 if ephemeral_disk else 0}}"
+            passno: "{{ 2 if ephemeral_disk else 0}}"
+            state: mounted
+      when: nvme_devices_for_raid|length == 1
 
-  - name: data path
-    file:
-      path: /mnt/vectorized/redpanda
-      state: directory
-      owner: root
-      group: root
-      mode: ugo=rwx
-  - name: set permissions
-    file:
-      dest: /var/lib/redpanda
-      src: /mnt/vectorized/redpanda
-      state: link
-      owner: root
-      group: root
-      mode: ugo=rwx
+    - name: data path
+      ansible.builtin.file:
+        path: /mnt/vectorized/redpanda
+        state: directory
+        owner: root
+        group: root
+        mode: ugo=rwx
+    - name: set permissions
+      ansible.builtin.file:
+        dest: /var/lib/redpanda
+        src: /mnt/vectorized/redpanda
+        state: link
+        owner: root
+        group: root
+        mode: ugo=rwx
