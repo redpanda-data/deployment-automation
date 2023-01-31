@@ -1,0 +1,15 @@
+exclude_paths:
+  - .github/
+  - artifacts/
+  - aws/
+  - azure/
+  - gcp/
+  - ibm/
+  - templates/
+
+enable_list:
+  - yaml
+  - empty-string-compare
+  - args
+
+profile: production
