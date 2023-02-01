@@ -12,3 +12,4 @@ hosts.ini
 aws/_override.tf
 gcp/_override.tf
 azure/_override.tf
+*.tfvars
