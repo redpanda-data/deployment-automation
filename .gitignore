@@ -9,3 +9,6 @@ ansible/playbooks/tls/certs
 hosts.ini
 .DS_Store
 .idea/*
+aws/_override.tf
+gcp/_override.tf
+azure/_override.tf
