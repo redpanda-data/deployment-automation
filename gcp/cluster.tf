@@ -1,14 +1,8 @@
-provider "google" {
-  project     = var.project_name
-  region      = var.region
-  zone        = "${var.region}-${var.zone}"
-}
-
 resource "random_uuid" "cluster" {}
 
 locals {
   uuid = random_uuid.cluster.result
-  deployment_id = "${random_uuid.cluster.result}"
+  deployment_id = random_uuid.cluster.result
 }
 
 resource "google_compute_resource_policy" "redpanda-rp" {
@@ -58,6 +52,8 @@ KEYS
     access_config {
     }
   }
+
+  labels = tomap(var.labels)
 }
 
 resource "google_compute_instance" "monitor" {
@@ -89,6 +85,7 @@ KEYS
     }
   }
 
+  labels = tomap(var.labels)
 }
 
 resource "google_compute_instance" "client" {
@@ -119,14 +116,15 @@ KEYS
     access_config {
     }
   }
+  labels = tomap(var.labels)
 }
 
 resource "google_compute_instance_group" "redpanda" {
   name      = "redpanda-group-${local.deployment_id}"
   zone      = "${var.region}-${var.zone}"
-  instances = "${concat(google_compute_instance.redpanda.*.self_link,
+  instances = concat(google_compute_instance.redpanda.*.self_link,
                         google_compute_instance.client.*.self_link,
-                        [google_compute_instance.monitor[0].self_link])}"
+                        [google_compute_instance.monitor[0].self_link])
 }
 
 resource "local_file" "hosts_ini" {
