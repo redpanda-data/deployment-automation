@@ -182,6 +182,10 @@ ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.ym
 }"
 ```
 
+Similarly, you can put the `redpanda_rpk_opts` into a yaml file [protected with Ansible vault](https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html#creating-encrypted-files).
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
+```
 
 ## Troubleshooting
 
