@@ -4,7 +4,8 @@
 #
 - name: Enable Maintenance Mode
   ansible.builtin.command:
-    cmd: "rpk cluster maintenance enable {{ node_id }} --wait"
+    cmd: "rpk cluster maintenance enable {{ node_id }} --wait {{ redpanda_rpk_opts }}"
+  no_log: true
   when:
     - restart_required
     - inventory_hostname == cluster_host
@@ -33,7 +34,8 @@
 
 - name: Disable Maintenance Mode
   ansible.builtin.command:
-    cmd: "rpk cluster maintenance disable {{ node_id }}"
+    cmd: "rpk cluster maintenance disable {{ node_id }} {{ redpanda_rpk_opts }}"
+  no_log: true
   when:
     - restart_required
     - inventory_hostname == cluster_host
