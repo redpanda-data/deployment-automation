@@ -143,29 +143,34 @@ variable "public_key_path" {
 }
 
 data "aws_ami" "ami" {
-    most_recent = true
+  most_recent = true
 
-    filter {
-        name   = "name"
-        values = ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*", "Fedora-Cloud-Base-*.x86_64-hvm-us-west-2-gp2-0", "debian-*-amd64-*", "debian-*-hvm-x86_64-gp2-*'", "amzn2-ami-hvm-2.0.*-x86_64-gp2", "RHEL*HVM-*-x86_64*Hourly2-GP2"]
-    }
+  filter {
+    name   = "name"
+    values = [
+      "ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*", "Fedora-Cloud-Base-*.x86_64-hvm-us-west-2-gp2-0",
+      "debian-*-amd64-*", "debian-*-hvm-x86_64-gp2-*'", "amzn2-ami-hvm-2.0.*-x86_64-gp2",
+      "RHEL*HVM-*-x86_64*Hourly2-GP2"
+    ]
+  }
 
-    filter {
-        name  = "architecture"
-        values = [var.machine_architecture]
-    }
+  filter {
+    name   = "architecture"
+    values = [var.machine_architecture]
+  }
 
-    filter {
-        name = "name"
-        values = ["*${var.distro}*"]
-    }
+  filter {
+    name   = "name"
+    values = ["*${var.distro}*"]
+  }
 
-    filter {
-        name   = "virtualization-type"
-        values = ["hvm"]
-    }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
 
-    owners = ["099720109477", "125523088429", "136693071363", "137112412989", "309956199498"] # Canonical, Fedora, Debian (new), Amazon, RedHat
+  owners = ["099720109477", "125523088429", "136693071363", "137112412989", "309956199498"]
+  # Canonical, Fedora, Debian (new), Amazon, RedHat
 }
 
 variable "distro_ssh_user" {
@@ -193,4 +198,16 @@ variable "tiered_storage_enabled" {
   description = "Enables or disables tiered storage"
   type        = bool
   default     = false
+}
+
+variable "private_key_path" {
+  type        = string
+  description = "The contents of an SSH key to use for the connection. These can be loaded from a file on disk using the file function. This takes preference over password if provided."
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "A map of key value pairs passed through to AWS tags on resources"
+  nullable    = true
+  default     = null
 }

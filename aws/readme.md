@@ -74,12 +74,12 @@ testing tools installed. This may be added in the future.
 
 ## Outputs
 
-| Name | Description |
-|------|-------------|
-| prometheus | n/a |
-| public\_key\_path | n/a |
-| redpanda | n/a |
-| ssh\_user | n/a |
+| Name              | Description |
+|-------------------|-------------|
+| prometheus        | n/a         |
+| public\_key\_path | n/a         |
+| redpanda          | n/a         |
+| ssh\_user         | n/a         |
 
 ## Test
 
@@ -87,9 +87,9 @@ testing tools installed. This may be added in the future.
 
 You must have Go installed in order to run infrastructure tests.
 
-| Name | Version |
-|------|---------|
-| go | >1.13 |
+| Name      | Version |
+|-----------|---------|
+| go        | >1.13   |
 | terraform | >0.13.X |
 
 Test the infrastructure with the following command:
