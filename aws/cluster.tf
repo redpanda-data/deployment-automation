@@ -99,7 +99,7 @@ resource "aws_instance" "redpanda" {
 
 resource "aws_ebs_volume" "ebs_volume" {
   count             = var.nodes * var.ec2_ebs_volume_count
-  availability_zone = element(aws_instance.redpanda.*.availability_zone, count.index)
+  availability_zone = aws_instance.redpanda.*.availability_zone[count.index]
   size              = var.ec2_ebs_volume_size
   type              = var.ec2_ebs_volume_type
   iops              = var.ec2_ebs_volume_iops
@@ -109,8 +109,8 @@ resource "aws_ebs_volume" "ebs_volume" {
 resource "aws_volume_attachment" "volume_attachment" {
   count       = var.nodes * var.ec2_ebs_volume_count
   volume_id   = aws_ebs_volume.ebs_volume.*.id[count.index]
-  device_name = element(var.ec2_ebs_device_names, count.index)
-  instance_id = element(aws_instance.redpanda.*.id, count.index)
+  device_name = var.ec2_ebs_device_names[count.index]
+  instance_id = aws_instance.redpanda.*.id[count.index]
 }
 
 resource "aws_instance" "prometheus" {
