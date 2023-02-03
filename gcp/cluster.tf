@@ -1,12 +1,12 @@
 resource "random_uuid" "cluster" {}
 
 locals {
-  uuid = random_uuid.cluster.result
+  uuid          = random_uuid.cluster.result
   deployment_id = random_uuid.cluster.result
 }
 
 resource "google_compute_resource_policy" "redpanda-rp" {
-  name = "redpanda-rp"
+  name   = "redpanda-rp"
   region = var.region
   group_placement_policy {
     availability_domain_count = var.ha ? max(3, var.nodes) : 1
@@ -15,10 +15,10 @@ resource "google_compute_resource_policy" "redpanda-rp" {
 }
 
 resource "google_compute_instance" "redpanda" {
-  count        = var.nodes
-  name         = "rp-node-${count.index}-${local.deployment_id}"
-  tags         = ["rp-cluster", "tf-deployment-${local.deployment_id}"]
-  machine_type = var.machine_type
+  count             = var.nodes
+  name              = "rp-node-${count.index}-${local.deployment_id}"
+  tags              = ["rp-cluster", "tf-deployment-${local.deployment_id}"]
+  machine_type      = var.machine_type
   // GCP does not give you visibility nor control over which failure domain a resource has been placed into
   // (https://issuetracker.google.com/issues/256993209?pli=1). So the only way that we can guarantee that
   // specific nodes are in separate racks is to put them into entirely separate failure domains - basically one
@@ -122,23 +122,23 @@ KEYS
 resource "google_compute_instance_group" "redpanda" {
   name      = "redpanda-group-${local.deployment_id}"
   zone      = "${var.region}-${var.zone}"
-  instances = concat(google_compute_instance.redpanda.*.self_link,
-                        google_compute_instance.client.*.self_link,
-                        [google_compute_instance.monitor[0].self_link])
+  instances = concat(google_compute_instance.redpanda[*].self_link,
+    google_compute_instance.client[*].self_link,
+    [google_compute_instance.monitor[0].self_link])
 }
 
 resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
-      redpanda_public_ips        = google_compute_instance.redpanda.*.network_interface.0.access_config.0.nat_ip
-      redpanda_private_ips       = google_compute_instance.redpanda.*.network_interface.0.network_ip
-      client_public_ips          = google_compute_instance.client.*.network_interface.0.access_config.0.nat_ip
-      client_private_ips         = google_compute_instance.client.*.network_interface.0.network_ip
+      redpanda_public_ips        = google_compute_instance.redpanda[*].network_interface.0.access_config.0.nat_ip
+      redpanda_private_ips       = google_compute_instance.redpanda[*].network_interface.0.network_ip
+      client_public_ips          = google_compute_instance.client[*].network_interface.0.access_config.0.nat_ip
+      client_private_ips         = google_compute_instance.client[*].network_interface.0.network_ip
       monitor_public_ip          = google_compute_instance.monitor[0].network_interface.0.access_config.0.nat_ip
       monitor_private_ip         = google_compute_instance.monitor[0].network_interface.0.network_ip
       ssh_user                   = var.ssh_user
       enable_monitoring          = true
-      rack                       = google_compute_instance.redpanda.*.name
+      rack                       = google_compute_instance.redpanda[*].name
       cloud_storage_region       = var.region
       tiered_storage_enabled     = false
       tiered_storage_bucket_name = ""
