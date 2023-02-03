@@ -148,8 +148,11 @@ data "aws_ami" "ami" {
   filter {
     name   = "name"
     values = [
-      "ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*", "Fedora-Cloud-Base-*.x86_64-hvm-us-west-2-gp2-0",
-      "debian-*-amd64-*", "debian-*-hvm-x86_64-gp2-*'", "amzn2-ami-hvm-2.0.*-x86_64-gp2",
+      "ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*",
+      "Fedora-Cloud-Base-*.x86_64-hvm-us-west-2-gp2-0",
+      "debian-*-amd64-*",
+      "debian-*-hvm-x86_64-gp2-*'",
+      "amzn2-ami-hvm-2.0.*-x86_64-gp2",
       "RHEL*HVM-*-x86_64*Hourly2-GP2"
     ]
   }
