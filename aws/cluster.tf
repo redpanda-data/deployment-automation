@@ -99,7 +99,7 @@ resource "aws_instance" "redpanda" {
 
 resource "aws_ebs_volume" "ebs_volume" {
   count             = var.nodes * var.ec2_ebs_volume_count
-  availability_zone = aws_instance.redpanda.*.availability_zone[count.index]
+  availability_zone = aws_instance.redpanda[*].availability_zone[count.index]
   size              = var.ec2_ebs_volume_size
   type              = var.ec2_ebs_volume_type
   iops              = var.ec2_ebs_volume_iops
@@ -108,9 +108,9 @@ resource "aws_ebs_volume" "ebs_volume" {
 
 resource "aws_volume_attachment" "volume_attachment" {
   count       = var.nodes * var.ec2_ebs_volume_count
-  volume_id   = aws_ebs_volume.ebs_volume.*.id[count.index]
+  volume_id   = aws_ebs_volume.ebs_volume[*].id[count.index]
   device_name = var.ec2_ebs_device_names[count.index]
-  instance_id = aws_instance.redpanda.*.id[count.index]
+  instance_id = aws_instance.redpanda[*].id[count.index]
 }
 
 resource "aws_instance" "prometheus" {
@@ -267,14 +267,14 @@ resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
       cloud_storage_region       = var.aws_region
-      client_public_ips          = aws_instance.client.*.public_ip
-      client_private_ips         = aws_instance.client.*.private_ip
+      client_public_ips          = aws_instance.client[*].public_ip
+      client_private_ips         = aws_instance.client[*].private_ip
       enable_monitoring          = var.enable_monitoring
       monitor_public_ip          = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
       monitor_private_ip         = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
-      rack                       = aws_instance.redpanda.*.placement_partition_number
-      redpanda_public_ips        = aws_instance.redpanda.*.public_ip
-      redpanda_private_ips       = aws_instance.redpanda.*.private_ip
+      rack                       = aws_instance.redpanda[*].placement_partition_number
+      redpanda_public_ips        = aws_instance.redpanda[*].public_ip
+      redpanda_private_ips       = aws_instance.redpanda[*].private_ip
       ssh_user                   = var.distro_ssh_user[var.distro]
       tiered_storage_bucket_name = local.tiered_storage_bucket_name
       tiered_storage_enabled     = var.tiered_storage_enabled

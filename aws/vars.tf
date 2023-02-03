@@ -1,4 +1,5 @@
 variable "aws_region" {
+  type        = string
   description = "The AWS region to deploy the infrastructure on"
   default     = "us-west-2"
 }
@@ -10,11 +11,13 @@ variable "clients" {
 }
 
 variable "client_distro" {
+  type        = string
   description = "Linux distribution to use for clients."
   default     = "ubuntu-focal"
 }
 
 variable "client_instance_type" {
+  type        = string
   description = "Default client instance type to create"
   default     = "m5n.2xlarge"
 }
@@ -26,6 +29,7 @@ variable "deployment_prefix" {
 }
 
 variable "distro" {
+  type        = string
   description = "The default distribution to base the cluster on"
   default     = "ubuntu-focal"
 }
@@ -39,6 +43,7 @@ variable "enable_monitoring" {
 ## It is important that device names do not get duplicated on hosts, in rare circumstances the choice of nodes * volumes can result in a factor that causes duplication. Modify this field so there is not a common factor.
 ## Please pr a more elegant solution if you have one.
 variable "ec2_ebs_device_names" {
+  type        = list(string)
   description = "Device names for EBS volumes"
   default     = [
     "/dev/xvdba",
@@ -71,26 +76,31 @@ variable "ec2_ebs_device_names" {
 }
 
 variable "ec2_ebs_volume_count" {
+  type        = number
   description = "Number of EBS volumes to attach to each Redpanda node"
   default     = 0
 }
 
 variable "ec2_ebs_volume_iops" {
+  type        = number
   description = "IOPs for GP3 Volumes"
   default     = 16000
 }
 
 variable "ec2_ebs_volume_size" {
+  type        = number
   description = "Size of each EBS volume"
   default     = 100
 }
 
 variable "ec2_ebs_volume_throughput" {
+  type        = number
   description = "Throughput per volume in MiB"
   default     = 250
 }
 
 variable "ec2_ebs_volume_type" {
+  type        = string
   description = "EBS Volume Type (gp3 recommended for performance)"
   default     = "gp3"
 }
@@ -102,11 +112,13 @@ variable "ha" {
 }
 
 variable "instance_type" {
+  type        = string
   description = "Default redpanda instance type to create"
   default     = "i3.2xlarge"
 }
 
 variable "machine_architecture" {
+  type        = string
   description = "Architecture used for selecting the AMI - change this if using ARM based instances"
   default     = "x86_64"
 }
@@ -118,26 +130,31 @@ variable "nodes" {
 }
 
 variable "prometheus_instance_type" {
+  type        = string
   description = "Instant type of the prometheus/grafana node"
   default     = "c5.2xlarge"
 }
 
 variable "cluster_ami" {
+  type        = string
   description = "AMI for Redpanda broker nodes (if not set, will select based on the client_distro variable"
   default     = null
 }
 
 variable "prometheus_ami" {
+  type        = string
   description = "AMI for prometheus nodes (if not set, will select based on the client_distro variable"
   default     = null
 }
 
 variable "client_ami" {
+  type        = string
   description = "AMI for Redpanda client nodes (if not set, will select based on the client_distro variable"
   default     = null
 }
 
 variable "public_key_path" {
+  type        = string
   description = "The public key used to ssh to the hosts"
   default     = "~/.ssh/id_rsa.pub"
 }
