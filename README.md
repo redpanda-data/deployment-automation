@@ -60,6 +60,7 @@ You can pass the following variables as `-e var=value`:
 | `redpanda_rpc_port`          | 33145                              |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                |                                                                                                                 
 | `redpanda_use_staging_repo`  | `false`                            | Enables access to unstable builds                                                                                                                                                                                                                                                                         |                                                                                                                                                                                                                                                                        | False                                                                                                                                                                                                                                                                                                     
 | `redpanda_version`           | latest                             | For example 22.2.2-1 or 22.3.1~rc1-1. If this value is set then the package will be upgraded if the installed version is lower than what has been specified.                                                                                                                                              |
+| `redpanda_rpk_opts`          |                                    | Command line options to be passed to instances where `rpk` is used on the playbook, for example superuser credentials may be specified as "--user myuser --password mypassword"                                                                                                                           |
 | `redpanda_install_status`    | present                            | If redpanda_version is set to latest, changing redpanda_install_status to latest will effect an upgrade, otherwise the currently installed version will remain                                                                                                                                            |
 | `redpanda_data_directory`    | /var/lib/redpanda/data             | Path where Redpanda will keep its data                                                                                                                                                                                                                                                                    |
 | `redpanda_key_file`          | /etc/redpanda/certs/node.key       | TLS: path to private key                                                                                                                                                                                                                                                                                  |
@@ -69,8 +70,8 @@ You can pass the following variables as `-e var=value`:
 | `skip_node`                  | false                              | Per-node config to prevent the Redpanda_broker role being applied to this specific node. Use carefully when adding new nodes to avoid existing nodes from being reconfigured.                                                                                                                             |
 | `restart_node`               | false                              | Per-node config to prevent Redpanda brokers from being restarted after updating. Use with care because this can cause `rpk` to be reconfigured but the node not be restarted and therefore be in an inconsistent state.                                                                                   |
 | `rack`                       | `undefined`                        | Per-node config to enable rack awareness. N.B. Rack awareness will be enabled cluster-wide if at least one node has the `rack` variable set.                                                                                                                                                              |
-| `tiered_storage_bucket_name` |                                    | Set bucket name to enable tiered storage                                                                                                                                                                                                                                                                  |
-| `aws_region`                 |                                    | The region to be used if tiered storage is enabled                                                                                                                                                                                                                                                        |
+| `tiered_storage_bucket_name` |                                    | Set bucket name to enable tiered storage                                                                                                                                                                                                                                                                  
+| `aws_region`                 |                                    | The region to be used if tiered storage is enabled                                                                                                                                                                                                                                                        
 
 You can also specify any available Redpanda configuration value (or set of values) by passing a JSON dictionary as an Ansible extra-var. These values will be spliced with the calculated configuration and only override those values that you specify.
 There are two sub-dictionaries that you can specify, `redpanda.cluster` and `redpanda.node`. Check the Redpanda docs for the available [Cluster configuration properties](https://docs.redpanda.com/docs/platform/reference/cluster-properties/) and [Node configuration properties](https://docs.redpanda.com/docs/platform/reference/node-properties/).
@@ -155,6 +156,36 @@ A similar process can be used to build a cluster with TLS in one execution as to
   3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes. Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
 5. If `install-certs.yml` was not run in step iii above, you will need to run `provision-node.yml` which will install the `redpanda_broker` role. **Note: If TLS is enabled on the cluster, make sure that `-e tls=true` is set, otherwise this playbook will disable TLS across any nodes that don't have `skip_nodes=true` set.**
 
+## Upgrading a cluster
+
+The playbook is designed to be idempotent so should be suitable for running as part of a CI/CD pipeline or via Ansible Tower.
+Upgrade support is built in and the playbook is capable of upgrading the packages and then performing [a rolling upgrade](https://docs.redpanda.com/docs/manage/cluster-maintenance/rolling-upgrade/) across the cluster.
+
+> Note: Please be aware that any changes that have been made to cluster or node configuration parameters outside of the playbook may be overwritten by this procedure, and therefore these settings should be incorporated as part of the provided `--extra-vars` (for example `--extra-vars=tls=true`).
+
+There are two ways of enacting an upgrade on a cluster:
+
+1. By running the playbook with a specific target version. If the target version is higher than the currently installed version then the cluster will be upgraded and restarted automatically:
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
+```
+2. By default the playbook will select the latest version of the Redpanda packages, but an upgrade will only be enacted if the `redpanda_install_status` variable is set to `latest`:
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
+```
+
+It is also possible to upgrade clusters where SASL authentication has been turned on. For this, you will need to additionally specify the `redpanda_rpk_opts` variable to include to username and password or a superuser or appropriately privileged user. An example follows:
+
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
+\"redpanda_rpk_opts\": \"--user ${MY_USER} --password ${MY_USER_PASSWORD}\"
+}"
+```
+
+Similarly, you can put the `redpanda_rpk_opts` into a yaml file [protected with Ansible vault](https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html#creating-encrypted-files).
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
+```
 
 ## Troubleshooting
 

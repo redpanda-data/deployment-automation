@@ -98,9 +98,10 @@
 #
 - name: Establish node id
   ansible.builtin.shell:
-    cmd: rpk cluster status | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'
+    cmd: rpk cluster status {{ redpanda_rpk_opts }} | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'
   register: node_id_out
   changed_when: false
+  no_log: true
 
 # make the node id a reusable fact
 #
@@ -120,10 +121,11 @@
 #
 - name: Establish Redpanda's current config version
   ansible.builtin.shell:
-    cmd: rpk cluster config status | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'
+    cmd: rpk cluster config status {{ redpanda_rpk_opts }} | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'
   register: config_version
   changed_when: false
   run_once: true
+  no_log: true
 
 # set cluster-wide configurations
 #
@@ -140,20 +142,22 @@
 #
 - name: Set cluster config
   ansible.builtin.shell:
-    cmd: rpk cluster config set {{ item.key }} {{ item.value }}
+    cmd: rpk cluster config set {{ item.key }} {{ item.value }} {{ redpanda_rpk_opts }}
   loop: "{{ configuration.cluster | dict2items }}"
   register: result
   changed_when: '"New configuration version is {{ config_version.stdout|int() }}." not in result.stdout'
   run_once: true
+  no_log: true
 
 # see if a cluster config operation should trigger ansible to restart each
 # redpanda instance in the cluster
 #
 - name: Check if restart needed
   ansible.builtin.shell:
-    cmd: rpk cluster config status | grep '^{{ node_id }} ' | awk '{ print $3 }' |  grep -E 'true|false'
+    cmd: rpk cluster config status {{ redpanda_rpk_opts }} | grep '^{{ node_id }} ' | awk '{ print $3 }' |  grep -E 'true|false'
   register: restart_required_rc
   changed_when: false
+  no_log: true
 
 # this instance of node config generation only runs after a cluster has been
 # initialized. This is used to update configurations post-cluster setup when
