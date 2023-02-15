@@ -184,6 +184,15 @@ resource "aws_security_group" "node_sec_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+    ingress {
+    description = "Allow anywhere inbound to access the second Redpanda Kafka endpoint (for external access with TLS)"
+    from_port   = 9093
+    to_port     = 9093
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+
   # HTTP access to the RPC port
   ingress {
     description = "Allow security-group only to access Redpanda RPC endpoint for intra-cluster communication"

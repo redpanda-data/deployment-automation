@@ -7,11 +7,26 @@ node:
       cert_file: "{{ redpanda_cert_file }}"
       truststore_file: "{{ redpanda_truststore_file }}"
     kafka_api_tls:
+{% if advertise_public_ips is defined %}
+{% if advertise_public_ips %}
+    - name: external
+{% endif %}
+{% endif %}
       enabled: true
       require_client_auth: false
       key_file: "{{ redpanda_key_file }}"
       cert_file: "{{ redpanda_cert_file }}"
       truststore_file: "{{ redpanda_truststore_file }}"
+{% if advertise_public_ips is defined %}
+{% if advertise_public_ips %}
+    - name: internal
+      enabled: true
+      require_client_auth: false
+      key_file: "{{ redpanda_key_file }}"
+      cert_file: "{{ redpanda_cert_file }}"
+      truststore_file: "{{ redpanda_truststore_file }}"
+{% endif %}
+{% endif %}
     rpc_server_tls:
       enabled: true
       require_client_auth: false

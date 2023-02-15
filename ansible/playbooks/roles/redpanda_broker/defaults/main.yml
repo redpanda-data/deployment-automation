@@ -6,6 +6,7 @@ redpanda_cluster_id: redpanda
 redpanda_mode: production
 redpanda_admin_api_port: 9644
 redpanda_kafka_port: 9092
+redpanda_external_kafka_port: 9093
 redpanda_rpc_port: 33145
 
 redpanda_use_staging_repo: false

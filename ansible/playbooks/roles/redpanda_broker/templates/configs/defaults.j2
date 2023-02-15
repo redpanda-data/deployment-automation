@@ -7,10 +7,22 @@ node:
   redpanda:
     empty_seed_starts_cluster: false
     advertised_kafka_api:
-    - address: {{ hostvars[inventory_hostname].advertised_ip }}
+    - address: {{ hostvars[inventory_hostname].private_ip }}
       port: {{ redpanda_kafka_port }}
+{% if advertise_public_ips is defined %}
+{% if advertise_public_ips %}
+      name: internal
+{% endif %}
+{% endif %}
+{% if advertise_public_ips is defined %}
+{% if advertise_public_ips %}
+    - address: {{ hostvars[inventory_hostname].advertised_ip }}
+      port: {{ redpanda_external_kafka_port }}
+      name: external
+{% endif %}
+{% endif %}
     advertised_rpc_api:
-      address: {{ hostvars[inventory_hostname].advertised_ip }}
+      address: {{ hostvars[inventory_hostname].private_ip }}
       port: {{ redpanda_rpc_port }}
     data_directory: "{{ redpanda_data_directory }}"
     rpc_server:
@@ -19,13 +31,25 @@ node:
     kafka_api:
     - address: {{ hostvars[inventory_hostname].private_ip }}
       port: {{ redpanda_kafka_port }}
+{% if advertise_public_ips is defined %}
+{% if advertise_public_ips %}
+      name: internal
+{% endif %}
+{% endif %}
+{% if advertise_public_ips is defined %}
+{% if advertise_public_ips %}
+    - address: 0.0.0.0
+      port: {{ redpanda_external_kafka_port }}
+      name: external
+{% endif %}
+{% endif %}
     admin:
     - address: {{ hostvars[inventory_hostname].private_ip }}
       port: {{ redpanda_admin_api_port }}
     seed_servers:
 {% for host in groups["redpanda"] %}
       - host:
-        address: {{ hostvars[host]['inventory_hostname' if (hostvars[host].advertise_public_ips | d() | bool) else 'private_ip'] }}
+        address: {{ hostvars[host]['private_ip'] }}
         port: {{ redpanda_rpc_port }}
 {% endfor %}
 {% if rack is defined %}
@@ -35,12 +59,12 @@ node:
     kafka_api:
       brokers:
 {% for host in groups["redpanda"] %}
-      - {{ hostvars[host]['inventory_hostname' if (hostvars[host].advertise_public_ips | d() | bool) else 'private_ip'] }}:{{ redpanda_kafka_port }}
+      - {{ hostvars[host]['private_ip'] }}:{{ redpanda_kafka_port }}
 {% endfor %}
     admin_api:
       addresses:
 {% for host in groups["redpanda"] %}
-      - {{ hostvars[host]['inventory_hostname' if (hostvars[host].advertise_public_ips | d() | bool) else 'private_ip'] }}:{{ redpanda_admin_api_port }}
+      - {{ hostvars[host]['private_ip'] }}:{{ redpanda_admin_api_port }}
 {% endfor %}
     tune_network: true
     tune_disk_scheduler: true
