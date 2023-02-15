@@ -1,26 +1,31 @@
 cd ../aws || exit
 
-## get these from AWS directly or provide your own auth method for terraform
+## env vars
+
+# get these from AWS directly or provide your own auth method for terraform
 export AWS_ACCESS_KEY_ID=KEY
 export AWS_SECRET_ACCESS_KEY=KEY
 export AWS_SESSION_TOKEN=KEY
 
-## path to the ssh private key you are using to log into nodes
+# path to the ssh private key you are using to log into nodes
 export SSH_KEY_LOC=KEY
 
+## terraform
 echo "start tf work"
 terraform destroy --auto-approve && terraform apply --auto-approve || exit
 
 cd ..
 
-# node pre-install work
+## node pre-install work
+
+# this fixes a bug on Mac. if you're running on linux, comment this out
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 echo "install node deps"
 ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/install-node-deps.yml || exit
 echo "prepare data dir"
 ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/prepare-data-dir.yml || exit
 
-# populate hosts.ini with relevant global variables
+## populate hosts.ini with relevant global variables
 echo "copy host file"
 cat <(echo '[all:vars]
 tls=true
@@ -32,7 +37,7 @@ advertise_public_ips=true
 rm hosts.ini
 mv tmp.ini hosts.ini
 
-# prep for ansible apply
+## prep for ansible apply
 export CA_PATH="ansible/playbooks/tls/ca"
 echo "generate csrs"
 ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/generate-csrs.yml || exit
