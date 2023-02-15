@@ -49,8 +49,8 @@ node:
     seed_servers:
 {% for host in groups["redpanda"] %}
       - host:
-        address: {{ hostvars[host]['private_ip'] }}
-        port: {{ redpanda_rpc_port }}
+          address: {{ hostvars[host]['private_ip'] }}
+          port: {{ redpanda_rpc_port }}
 {% endfor %}
 {% if rack is defined %}
     rack: "{{ rack | default('null') }}"
