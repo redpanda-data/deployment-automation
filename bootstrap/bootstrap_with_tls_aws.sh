@@ -59,7 +59,7 @@ rpk cluster status \
 --tls-truststore ansible/playbooks/tls/ca/ca.crt \
 -v
 
-rpk topic create testtopic2 \
+rpk topic create testtopic2      \
 --brokers "${REDPANDA_BROKERS}" \
 --tls-truststore ansible/playbooks/tls/ca/ca.crt \
 -v
