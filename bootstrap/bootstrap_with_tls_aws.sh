@@ -16,15 +16,15 @@ cd ..
 # node pre-install work
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 echo "install node deps"
-ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/install-node-deps.yml
+ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/install-node-deps.yml || exit
 echo "prepare data dir"
-ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/prepare-data-dir.yml
+ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/prepare-data-dir.yml || exit
 
 # populate hosts.ini with relevant global variables
 echo "copy host file"
 cat <(echo '[all:vars]
 tls=true
-#advertise_public_ips=true
+advertise_public_ips=true
 
 '
 ) hosts.ini > tmp.ini
@@ -35,11 +35,11 @@ mv tmp.ini hosts.ini
 # prep for ansible apply
 export CA_PATH="ansible/playbooks/tls/ca"
 echo "generate csrs"
-ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/generate-csrs.yml
+ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/generate-csrs.yml || exit
 echo "issue certs"
-ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/issue-certs.yml
+ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/issue-certs.yml || exit
 echo "install certs"
-ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/install-certs.yml
+ansible-playbook --private-key $SSH_KEY_LOC -i hosts.ini -v ansible/playbooks/install-certs.yml || exit
 echo "done"
 
 # parse hosts.ini public ips into a redpanda_brokers compatible format for public and private ips for testing
@@ -57,7 +57,7 @@ awk '/\[redpanda\]/{a=1;next}/\[monitor\]/{a=0}a{if($1~/^[0-9]+\.[0-9]+\.[0-9]+\
 rpk cluster status \
 --brokers "${REDPANDA_BROKERS}" \
 --tls-truststore ansible/playbooks/tls/ca/ca.crt \
--v
+-v || exit
 
 rpk topic create testtopic2      \
 --brokers "${REDPANDA_BROKERS}" \
