@@ -17,7 +17,7 @@ node:
       address: {{ hostvars[inventory_hostname].private_ip }}
       port: {{ redpanda_rpc_port }}
     kafka_api:
-    - address: 0.0.0.0
+    - address: {{ hostvars[inventory_hostname].private_ip }}
       port: {{ redpanda_kafka_port }}
     admin:
     - address: {{ hostvars[inventory_hostname].private_ip }}
