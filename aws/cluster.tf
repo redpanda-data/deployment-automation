@@ -6,7 +6,7 @@ locals {
   uuid                       = random_uuid.cluster.result
   timestamp                  = time_static.timestamp.unix
   deployment_id              = length(var.deployment_prefix) > 0 ? var.deployment_prefix : "redpanda-${substr(local.uuid, 0, 8)}-${local.timestamp}"
-  tiered_storage_bucket_name = "${local.deployment_id}-bucket"
+  tiered_storage_bucket_name = replace("${local.deployment_id}-bucket", "_", "-")
 
   # tags shared by all instances
   instance_tags = {
@@ -263,6 +263,27 @@ resource "aws_key_pair" "ssh" {
   tags       = local.merged_tags
 }
 
+resource "local_file" "hosts_ini_for_ci" {
+  content = templatefile("${path.module}/../templates/hosts_ini.tpl",
+    {
+      cloud_storage_region       = var.aws_region
+      client_public_ips          = aws_instance.client[*].public_ip
+      client_private_ips         = aws_instance.client[*].private_ip
+      enable_monitoring          = var.enable_monitoring
+      monitor_public_ip          = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
+      monitor_private_ip         = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
+      rack                       = aws_instance.redpanda[*].placement_partition_number
+      redpanda_public_ips        = aws_instance.redpanda[*].public_ip
+      redpanda_private_ips       = aws_instance.redpanda[*].private_ip
+      ssh_user                   = var.distro_ssh_user[var.distro]
+      tiered_storage_bucket_name = local.tiered_storage_bucket_name
+      tiered_storage_enabled     = var.tiered_storage_enabled
+    }
+  )
+  filename = "${path.module}/../artifacts/hosts_${var.cloud_provider}_${var.deployment_prefix}.ini"
+}
+
+## TODO remove this and update docs accordingly
 resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {

@@ -232,3 +232,9 @@ variable "tags" {
   nullable    = true
   default     = null
 }
+
+variable "cloud_provider" {
+  type = string
+  description = "the short, lower case form of the cloud provider"
+  default = "aws"
+}
