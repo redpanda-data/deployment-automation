@@ -79,6 +79,7 @@ resource "aws_instance" "redpanda" {
   vpc_security_group_ids     = [aws_security_group.node_sec_group.id]
   placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
   placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
+  subnet_id                  = var.subnet_id   
   tags                       = merge(
     local.merged_tags,
     {
@@ -118,6 +119,7 @@ resource "aws_instance" "prometheus" {
   ami                    = coalesce(var.prometheus_ami, data.aws_ami.ami.image_id)
   instance_type          = var.prometheus_instance_type
   key_name               = aws_key_pair.ssh.key_name
+  subnet_id              = var.subnet_id   
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
   tags                   = merge(
     local.merged_tags,
@@ -142,6 +144,7 @@ resource "aws_instance" "client" {
   ami                    = coalesce(var.client_ami, data.aws_ami.ami.image_id)
   instance_type          = var.client_instance_type
   key_name               = aws_key_pair.ssh.key_name
+  subnet_id              = var.subnet_id   
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
   tags                   = merge(
     local.merged_tags,
@@ -165,6 +168,7 @@ resource "aws_security_group" "node_sec_group" {
   name        = "${local.deployment_id}-node-sec-group"
   tags        = local.merged_tags
   description = "redpanda ports"
+  vpc_id      = var.vpc_id != "" ? var.vpc_id : data.aws_vpc.default.id
 
   # SSH access from anywhere
   ingress {
@@ -290,4 +294,9 @@ data "aws_caller_identity" "current" {}
 
 data "aws_arn" "caller_arn" {
   arn = data.aws_caller_identity.current.arn
+}
+
+# retrieve the default vpc ID
+data "aws_vpc" "default" {
+  default = true
 }

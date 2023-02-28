@@ -226,9 +226,21 @@ variable "private_key_path" {
   default     = null
 }
 
+variable "subnet_id" {
+  type        = string
+  description = "The ID ID of the subnet where the EC2 instances will be deployed. An empty string will deploy to the default VPC. If provided, it must be in the same VPC as vpc_id"
+  default     = ""
+}
+
 variable "tags" {
   type        = map(string)
   description = "A map of key value pairs passed through to AWS tags on resources"
   nullable    = true
   default     = null
+}
+
+variable "vpc_id" {
+  type        = string
+  description = "The ID of the VPC to deploy. If an ID is an empty string, the default VPC is used. If provided, the subnet_id must also be provided."
+  default     = ""
 }
