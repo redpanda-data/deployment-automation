@@ -241,6 +241,6 @@ variable "tags" {
 
 variable "vpc_id" {
   type        = string
-  description = "The ID of the VPC to deploy. If an ID is an empty string, the default VPC is used. If provided, the subnet_id must also be provided."
+  description = "The ID of the VPC to deploy the instances. If an ID is an empty string, the default VPC is used. If provided, the subnet_id must also be provided."
   default     = ""
 }
