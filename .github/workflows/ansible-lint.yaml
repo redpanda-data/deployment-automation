@@ -7,12 +7,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Install dependencies
-        run: ansible-galaxy install -r "ansible/requirements.yml"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
 
-      - name: Run ansible-lint
-        uses: ansible/ansible-lint-action@v6.11.0
+      - name: Install dependencies
+        run: pip install ansible && pip install ansible-lint
+
+      - name: Run Ansible Linter
+        run: |
+          ansible-galaxy install -r ansible/requirements.yml
+          ansible-lint -c .config/ansible-lint.yml
