@@ -13,7 +13,9 @@ vars:
   PUBLIC_KEY: '{{ .PUBLIC_KEY | default .PUBLIC_KEY_DEFAULT}}'
   PRIVATE_KEY: '{{ .PRIVATE_KEY | default .PRIVATE_KEY_DEFAULT}}'
   DEPLOYMENT_ID: '{{default "devex-test" .DEPLOYMENT_ID}}'
+  PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:{{.TERRAFORM_INSTALL_DIR}}/bin/:$PATH":
   NUM_NODES: '{{default "3" .NUM_NODES}}'
+
   TF_SSH_USER_VAR:
     sh: |
       # ssh_user variable is expected for gcp
@@ -30,7 +32,7 @@ tasks:
     desc: generate ssh keys
     summary:
       Generates some local dummy keys to support running with terraform and ansible in CI and to try things out. 
-      If you have your own keys you should use them.
+      If you have your own keys you should use them instead.
     run: always
     vars:
       SSH_EMAIL: '{{default "test@redpanda.com" .SSH_EMAIL | lower}}'
@@ -77,9 +79,8 @@ tasks:
     dir: '{{.CLOUD_PROVIDER}}'
     cmds:
       - |
-        PATH="{{.TERRAFORM_INSTALL_DIR}}/bin/:$PATH"
         terraform init
-        terraform apply -auto-approve {{.TF_SSH_USER_VAR}} {{.TF_CLI_ARGS}} \
+        terraform apply -auto-approve {{.TF_SSH_USER_VAR}} \
           -var='cloud_provider={{.CLOUD_PROVIDER}}' \
           -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
           -var='public_key_path={{.PUBLIC_KEY}}' \
@@ -102,13 +103,12 @@ tasks:
       AWS_DEFAULT_REGION: '{{ default "us-west-2" .AWS_DEFAULT_REGION}}'
     cmds:
       - |
-        PATH="{{.TERRAFORM_INSTALL_DIR}}/bin/:$PATH"
-          terraform destroy -auto-approve {{.TF_SSH_USER_VAR}} {{.TF_CLI_ARGS}} \
-          -var='cloud_provider={{.CLOUD_PROVIDER}}' \
-          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
-          -var='public_key_path={{.PUBLIC_KEY}}' \
-          -var='nodes={{.NUM_NODES}}' \
-          {{.CLI_ARGS}}
+        terraform destroy -auto-approve {{.TF_SSH_USER_VAR}} \
+        -var='cloud_provider={{.CLOUD_PROVIDER}}' \
+        -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+        -var='public_key_path={{.PUBLIC_KEY}}' \
+        -var='nodes={{.NUM_NODES}}' \
+        {{.CLI_ARGS}}
 
   install-role-requirements:
     desc: install required ansible roles
@@ -116,9 +116,7 @@ tasks:
       ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
     cmds:
       - mkdir -p "$ANSIBLE_ROLES_PATH"
-      - |
-        PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:$PATH"
-        ansible-galaxy install -r "ansible/requirements.yml"
+      - ansible-galaxy install -r "ansible/requirements.yml"
 
   basic:
     desc: run an ansible playbook to create a basic private cluster
@@ -136,9 +134,7 @@ tasks:
       ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
-      - |
-        PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:$PATH"
-        ansible-playbook {{.CLI_ARGS}} ansible/playbooks/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
 
   create-ca:
     desc: creates a local certificate authority for issuing certs
@@ -153,8 +149,7 @@ tasks:
       ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
       ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
     cmds:
-      - |
-        ansible-playbook {{.CLI_ARGS}} ansible/playbooks/create-ca.yml
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/create-ca.yml
 
   # TODO this will need an input variable with a default setting for the hosts file variables but is fine static for now
   populate-hosts:
@@ -190,23 +185,21 @@ tasks:
       ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
-      - |
-        PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:$PATH"
-        ansible-playbook {{.CLI_ARGS}} ansible/playbooks/install-node-deps.yml --private-key {{.PRIVATE_KEY}}
-        ansible-playbook {{.CLI_ARGS}} ansible/playbooks/prepare-data-dir.yml --private-key {{.PRIVATE_KEY}}
-        ansible-playbook {{.CLI_ARGS}} ansible/playbooks/generate-csrs.yml --private-key {{.PRIVATE_KEY}}
-        ansible-playbook {{.CLI_ARGS}} ansible/playbooks/issue-certs.yml --private-key {{.PRIVATE_KEY}}
-        ansible-playbook {{.CLI_ARGS}} ansible/playbooks/install-certs.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/install-node-deps.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/prepare-data-dir.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/generate-csrs.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/issue-certs.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/install-certs.yml --private-key {{.PRIVATE_KEY}}
 
-  demo-standup:
+  ci-standup:
     desc: runs all steps for demo cluster standup
+    vars:
+      TF_CLI_ARGS: '{{ default "" .TF_CLI_ARGS}}'
     cmds:
-      - |
-        export PATH=$PATH:{{.ARTIFACT_DIR}}/bin
-        task keygen
-        task apply
-        task create-ca
-        task create-tls-cluster
+      - task: keygen
+      - task apply -- '{{.TF_CLI_ARGS}}'
+      - task: create-ca
+      - task: create-tls-cluster
 
   install-rpk:
     desc: installs rpk

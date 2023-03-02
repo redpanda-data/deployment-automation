@@ -22,7 +22,7 @@ RUN apt-get install -y software-properties-common && \
 
 # Install Terraform
 RUN wget https://releases.hashicorp.com/terraform/1.3.7/terraform_1.3.7_linux_amd64.zip \
-    && unzip terraform_1.3.7_linux_amd64.zip -d /usr/local/bin
+    && unzip terraform_1.3.7_linux_amd64.zip -d /usr/local/bin && rm terraform_1.3.7_linux_amd64.zip
 
 # Install task
 RUN curl -sSLf "https://github.com/go-task/task/releases/download/v3.21.0/task_linux_amd64.tar.gz" | tar -xz -C /usr/local/bin
