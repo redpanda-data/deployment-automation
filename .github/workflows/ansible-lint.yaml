@@ -1,5 +1,5 @@
 name: ansible-lint
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   build:
@@ -13,6 +13,5 @@ jobs:
 
       - name: Run ansible-lint
         uses: ansible/ansible-lint-action@v6.11.0
-        # optional:
-        # with:
-        #   path: "playbooks/"  # <-- only one value is allowed
+        with:
+          requirements: ansible/requirements.yml
