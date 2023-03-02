@@ -11,7 +11,8 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install dependencies
+        run: ansible-galaxy install -r "ansible/requirements.yml"
+
       - name: Run ansible-lint
         uses: ansible/ansible-lint-action@v6.11.0
-        with:
-          requirements: ansible/requirements.yml
