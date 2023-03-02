@@ -1,7 +1,7 @@
 output "redpanda" {
   value = {
     for instance in aws_instance.redpanda :
-    instance.public_ip => instance.private_ip
+    instance.public_ip => instance.private_ip...
   }
 }
 

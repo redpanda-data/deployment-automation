@@ -168,7 +168,7 @@ resource "aws_security_group" "node_sec_group" {
   name        = "${local.deployment_id}-node-sec-group"
   tags        = local.merged_tags
   description = "redpanda ports"
-  vpc_id      = var.vpc_id != "" ? var.vpc_id : data.aws_vpc.default.id
+  vpc_id      = var.vpc_id
 
   # SSH access from anywhere
   ingress {
@@ -294,9 +294,4 @@ data "aws_caller_identity" "current" {}
 
 data "aws_arn" "caller_arn" {
   arn = data.aws_caller_identity.current.arn
-}
-
-# retrieve the default vpc ID
-data "aws_vpc" "default" {
-  default = true
 }
