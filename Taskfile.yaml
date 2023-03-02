@@ -12,7 +12,7 @@ vars:
   PRIVATE_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey'
   PUBLIC_KEY: '{{ .PUBLIC_KEY | default .PUBLIC_KEY_DEFAULT}}'
   PRIVATE_KEY: '{{ .PRIVATE_KEY | default .PRIVATE_KEY_DEFAULT}}'
-  DEPLOYMENT_ID: '{{default "devex-test" .DEPLOYMENT_ID}}'
+  DEPLOYMENT_ID: '{{default "devex-cicd" .DEPLOYMENT_ID}}'
   PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:{{.TERRAFORM_INSTALL_DIR}}/bin/:$PATH":
   NUM_NODES: '{{default "3" .NUM_NODES}}'
 
