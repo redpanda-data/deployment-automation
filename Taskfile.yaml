@@ -31,21 +31,20 @@ tasks:
   keygen:
     desc: generate ssh keys
     summary:
-      Generates some local dummy keys to support running with terraform and ansible in CI and to try things out. 
+      Generates some local dummy keys to support running with terraform and ansible in CI and to try things out.
       If you have your own keys you should use them instead.
     run: always
     vars:
       SSH_EMAIL: '{{default "test@redpanda.com" .SSH_EMAIL | lower}}'
     cmds:
-    - | 
-      if [[ ! -f artifacts/testkey ]]; then
-          ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey <<< y
-      fi
+     - ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey <<< y
+    status:
+      - test f artifacts/testkey
 
   install-prereqs:
     desc: install ansible and terraform
     summary: |
-      Convenience feature that installs terraform and ansible to the artifact directory. 
+      Convenience feature that installs terraform and ansible to the artifact directory.
       For normal operation you will also likely need curl and unzip.
       This is not a part of the flow, it must be called explicitly.
     vars:
@@ -68,10 +67,12 @@ tasks:
   apply:
     desc: init and apply terraform
     summary: |
-      You can set additional arguments to be consumed by terraform for building out the cluster by adding them after 
+      You can set additional arguments to be consumed by terraform for building out the cluster by adding them after
       '--'when calling the task. You can set the number of nodes by setting NUM_NODES
-      You may also want to set a backend for your runs if you are using something like Terraform Cloud to manage state. 
+      You may also want to set a backend for your runs if you are using something like Terraform Cloud to manage state.
       See the commented out line in cmds for an example of how to achieve this
+      Please also note that if you set AWS_ACCESS_KEY_ID etc in your local environment before running this 
+      you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
     env:
      AWS_ACCESS_KEY_ID: '{{.DA_AWS_ACCESS_KEY_ID}}'
      AWS_SECRET_ACCESS_KEY: '{{.DA_AWS_SECRET_ACCESS_KEY}}'
@@ -96,6 +97,8 @@ tasks:
       '--'when calling the task. You can set the number of nodes by setting NUM_NODES
       You may also want to set a backend for your runs if you are using something like Terraform Cloud to manage state.
       See the commented out line in cmds for an example of how to achieve this
+      Please also note that if you set AWS_ACCESS_KEY_ID etc in your local environment before running this
+      you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
     dir: '{{.CLOUD_PROVIDER}}'
     env:
       AWS_ACCESS_KEY_ID: '{{.DA_AWS_ACCESS_KEY_ID}}'
@@ -114,6 +117,7 @@ tasks:
     desc: install required ansible roles
     env:
       ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
+    run: once
     cmds:
       - mkdir -p "$ANSIBLE_ROLES_PATH"
       - ansible-galaxy install -r "ansible/requirements.yml"
@@ -121,7 +125,7 @@ tasks:
   basic:
     desc: run an ansible playbook to create a basic private cluster
     summary: |
-      You will need to export PRIV_KEY_LOC with the location of the private key matching the public key you provided 
+      You will need to export PRIV_KEY_LOC with the location of the private key matching the public key you provided
       in the terraform apply task for the ansible playbook to successfully connect and apply.
     deps:
       - install-role-requirements
@@ -171,7 +175,7 @@ tasks:
   create-tls-cluster:
     desc: run multiple ansible playbooks to create a cluster with tls
     summary: |
-      This command assumes you have the infrastructure in place and does not build it for you. 
+      This command assumes you have the infrastructure in place and does not build it for you.
       Ensure you have a hosts file in the artifacts directory with name hosts_[CLOUD_PROVIDER]_[DEPLOYMENT_ID].ini
     deps:
       - install-role-requirements

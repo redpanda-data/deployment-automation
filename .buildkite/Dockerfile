@@ -6,17 +6,15 @@ ENV DA_AWS_SECRET_ACCESS_KEY="default"
 ENV AWS_DEFAULT_REGION="default"
 
 # Install the good stuff
-RUN apt-get update
-
-RUN apt install unzip -y \
+RUN apt-get update \
+    && apt install unzip -y \
     && apt install wget -y \
     && apt install curl -y \
-    && apt-get install -y git
-
-# Install Ansible
-RUN apt-get install -y software-properties-common && \
-    apt-add-repository --yes --update ppa:ansible/ansible && \
-    apt-get install -y ansible
+    && apt-get install -y git \
+    && apt-get install -y software-properties-common \
+    && apt-add-repository --yes --update ppa:ansible/ansible \
+    && apt-get install -y ansible \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Terraform
 RUN wget https://releases.hashicorp.com/terraform/1.3.7/terraform_1.3.7_linux_amd64.zip \
