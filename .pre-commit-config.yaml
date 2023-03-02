@@ -1,0 +1,12 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+        files: '\.(yml|yaml)$'
+    -   id: end-of-file-fixer
+        files: '\.(yml|yaml)$'
+    -   id: trailing-whitespace
+        files: '\.(yml|yaml)$'
+
+exclude: ansible/playbooks/roles/redpanda_broker/templates/(bootstrap|redpanda)\.yml
