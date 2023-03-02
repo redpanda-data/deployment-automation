@@ -31,11 +31,11 @@
 
     - block:
         - name: create xfs file system
-          filesystem:
+          ansible.posix.filesystem:
             fstype: xfs
             dev: "{{ nvme_devices_for_raid[0] }}"
         - name: mount nvme device
-          mount:
+          ansible.posix.mount:
             path: /mnt/vectorized
             src: "{{ nvme_devices_for_raid[0] }}"
             fstype: xfs

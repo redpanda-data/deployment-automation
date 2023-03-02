@@ -8,5 +8,14 @@ repos:
         files: '\.(yml|yaml)$'
     -   id: trailing-whitespace
         files: '\.(yml|yaml)$'
-
+-   repo: https://github.com/ansible/ansible-lint
+    rev: v6.13.1
+    hooks:
+    -   id: ansible-lint
+        args: ["-c", ".ansible-lint.yml"]
+        files: '\.(yml|yaml)$'
+        language_version: python3
+        requirements:
+        - requirements.txt
+        exclude: ansible/playbooks/prepare-data-dir.yml
 exclude: ansible/playbooks/roles/redpanda_broker/templates/(bootstrap|redpanda)\.yml

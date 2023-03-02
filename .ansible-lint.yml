@@ -13,3 +13,8 @@ enable_list:
   - args
 
 profile: production
+
+mock_modules:
+  - ansible.posix.filesystem
+  - ansible.posix.authorized_key
+  - ansible.posix.mount
