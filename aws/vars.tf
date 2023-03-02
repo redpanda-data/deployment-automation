@@ -226,6 +226,30 @@ variable "private_key_path" {
   default     = null
 }
 
+variable "security_groups_client" {
+  type        = list(string)
+  description = "Any additional security groups to attach to the client nodes"
+  default     = []
+}
+
+variable "security_groups_prometheus" {
+  type        = list(string)
+  description = "Any additional security groups to attach to the prometheus nodes"
+  default     = []
+}
+
+variable "security_groups_redpanda" {
+  type        = list(string)
+  description = "Any additional security groups to attach to the Redpanda nodes"
+  default     = []
+}
+
+variable "ssh_security_rule_cidr" {
+  type        = list(string)
+  description = "List of CIDRs for the security group's SSH ingress rule. Defaults to 0.0.0.0/0 if not specified."
+  default     = [ "0.0.0.0/0" ]
+}
+
 variable "subnet_id" {
   type        = string
   description = "The ID ID of the subnet where the EC2 instances will be deployed. An empty string will deploy to the default VPC. If provided, it must be in the same VPC as vpc_id"
