@@ -12,7 +12,7 @@ repos:
     rev: v6.13.1
     hooks:
     -   id: ansible-lint
-        args: ["-c", ".ansible-lint.yml"]
+        args: ["-c", ".config/ansible-lint.yml"]
         files: '\.(yml|yaml)$'
         language_version: python3
         requirements:
