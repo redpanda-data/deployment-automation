@@ -287,6 +287,18 @@ resource "local_file" "hosts_ini" {
   filename = "${path.module}/../hosts.ini"
 }
 
+locals {
+  node_details = [
+    for index,instance in aws_instance.redpanda:
+     {
+      "instance_id": instance.id
+      "public_ip":  instance.public_ip
+      "private_ip": instance.private_ip
+      "name": "${var.deployment_prefix}-node-${index}"
+     }
+  ]
+}
+
 # we extract the IAM username by getting the caller identity as an ARN
 # then extracting the resource protion, which gives something like 
 # user/travis.downs, and finally we strip the user/ part to use as a tag

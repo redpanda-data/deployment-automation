@@ -47,3 +47,7 @@ output "ssh_user" {
 output "public_key_path" {
   value = var.public_key_path
 }
+
+output "node_details" {
+  value = local.node_details
+}
