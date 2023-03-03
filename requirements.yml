@@ -1,4 +1,8 @@
-- src: mrlesmithjr.mdadm
-- src: cloudalchemy.prometheus
-- src: cloudalchemy.grafana
-- src: geerlingguy.node_exporter
+roles:
+  - src: mrlesmithjr.mdadm
+  - src: cloudalchemy.prometheus
+  - src: cloudalchemy.grafana
+  - src: geerlingguy.node_exporter
+
+collections:
+  - community.general

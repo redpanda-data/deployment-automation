@@ -12,10 +12,9 @@ repos:
     rev: v6.13.1
     hooks:
     -   id: ansible-lint
-        args: ["-c", ".config/ansible-lint.yml"]
+        args: ["-c", ".ansible-lint.yml"]
         files: '\.(yml|yaml)$'
         language_version: python3
-        requirements:
-        - requirements.txt
         exclude: ansible/playbooks/prepare-data-dir.yml
+#       have to exclude these files as they're literally just empty files with one jinja2 inside so the yamllinter goes nuts
 exclude: ansible/playbooks/roles/redpanda_broker/templates/(bootstrap|redpanda)\.yml
