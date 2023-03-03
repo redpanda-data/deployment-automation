@@ -2,6 +2,7 @@
 */**/.terraform
 */**/*.tfstate*
 *tfstate
+aws/aws/**
 */**/*.lock*.hcl
 ansible/playbooks/grafana_dashboards/redpanda-grafana.json
 ansible/playbooks/tls/ca
