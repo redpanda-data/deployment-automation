@@ -11,7 +11,7 @@ Terraform and Ansible configuration to easily provision a [Redpanda](https://www
 * Install Terraform in your preferred way: https://www.terraform.io/downloads.html
 * Install Ansible: https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
 * Depending on your system, you might need to install some python packages (e.g. `selinux` or `jmespath`). Ansible will throw an error with the expected python packages, both on local and remote machines.
-* `ansible-galaxy install -r ansible/requirements.yml` to gather ansible requirements
+* `ansible-galaxy install -r requirements.yml` to gather ansible requirements
 
 ### On Mac OS X:
 You can use brew to install the prerequisites. You will also need to install gnu-tar:
@@ -20,7 +20,7 @@ brew tap hashicorp/tap
 brew install hashicorp/tap/terraform
 brew install ansible
 brew install gnu-tar
-ansible-galaxy install -r ansible/requirements.yml
+ansible-galaxy install -r requirements.yml
 ```
 
 ## Usage

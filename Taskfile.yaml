@@ -71,7 +71,7 @@ tasks:
       '--'when calling the task. You can set the number of nodes by setting NUM_NODES
       You may also want to set a backend for your runs if you are using something like Terraform Cloud to manage state.
       See the commented out line in cmds for an example of how to achieve this
-      Please also note that if you set AWS_ACCESS_KEY_ID etc in your local environment before running this 
+      Please also note that if you set AWS_ACCESS_KEY_ID etc in your local environment before running this
       you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
     env:
      AWS_ACCESS_KEY_ID: '{{.DA_AWS_ACCESS_KEY_ID}}'
@@ -120,7 +120,7 @@ tasks:
     run: once
     cmds:
       - mkdir -p "$ANSIBLE_ROLES_PATH"
-      - ansible-galaxy install -r "ansible/requirements.yml"
+      - ansible-galaxy install -r "requirements.yml"
 
   basic:
     desc: run an ansible playbook to create a basic private cluster

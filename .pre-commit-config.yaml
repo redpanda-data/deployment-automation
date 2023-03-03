@@ -1,0 +1,21 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+        files: '\.(yml|yaml)$'
+    -   id: end-of-file-fixer
+        files: '\.(yml|yaml)$'
+    -   id: trailing-whitespace
+        files: '\.(yml|yaml)$'
+-   repo: https://github.com/ansible/ansible-lint
+    rev: v6.13.1
+    hooks:
+    -   id: ansible-lint
+        args: ["-c", ".config/ansible-lint.yml"]
+        files: '\.(yml|yaml)$'
+        language_version: python3
+        requirements:
+        - requirements.txt
+        exclude: ansible/playbooks/prepare-data-dir.yml
+exclude: ansible/playbooks/roles/redpanda_broker/templates/(bootstrap|redpanda)\.yml

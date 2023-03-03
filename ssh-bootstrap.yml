@@ -69,4 +69,3 @@
     service: name=ssh state=restarted
   - name: reboot-server
     command: /sbin/reboot
-
