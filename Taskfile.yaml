@@ -87,7 +87,6 @@ tasks:
           -var='public_key_path={{.PUBLIC_KEY}}' \
           -var='nodes={{.NUM_NODES}}' \
           {{.CLI_ARGS}}
-  #       -backend-config='workspace_dir={{.BUILD_ROOT}}/terraform/state.d/{{.CLOUD_PROVIDER}}/'
 
   destroy:
     desc: release resources acquired previously for a deployment

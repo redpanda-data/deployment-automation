@@ -8,12 +8,12 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 task ci-standup TF_CLI_ARGS='-var=tags={
-  "vanta-owner" : "devex"
-  "vanta-non-prod" : "true"
-  "vanta-description" : "cicd-instance-for-devex"
-  "vanta-contains-user-data" : "false"
-  "vanta-user-data-stored" : "none"
-  "vanta-no-alert" : "this-is-a-testing-instance-with-no-stored-data"
+  "VantaOwner" : "gene@redpanda.com"
+  "VantaNonProd" : "true"
+  "VantaDescription" : "cicd-instance-for-devex"
+  "VantaContainsUserData" : "false"
+  "VantaUserDataStored" : "none"
+  "VantaNoAlert" : "this-is-a-testing-instance-with-no-stored-data"
 }'
 error_code=$?
 if [ $error_code -ne 0 ]; then
@@ -27,10 +27,10 @@ if [ $error_code -ne 0 ]; then
   exit 1
 fi
 task destroy -- '-var=tags={
-  "vanta-owner" : "devex"
-  "vanta-non-prod" : "true"
-  "vanta-description" : "cicd-instance-for-devex"
-  "vanta-contains-user-data" : "false"
-  "vanta-user-data-stored" : "none"
-  "vanta-no-alert" : "this-is-a-testing-instance-with-no-stored-data"
+  "VantaOwner" : "gene@redpanda.com"
+  "VantaNonProd" : "true"
+  "VantaDescription" : "cicd-instance-for-devex"
+  "VantaContainsUserData" : "false"
+  "VantaUserDataStored" : "none"
+  "VantaNoAlert" : "this-is-a-testing-instance-with-no-stored-data"
 }'
