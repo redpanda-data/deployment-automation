@@ -22,7 +22,7 @@
       chdir: "{{ root_ca_dir }}"
       cmd: openssl genrsa -out {{ root_ca_dir }}/ca.key 2048
       creates: "{{ root_ca_dir }}/ca.key"
-        
+
   - name: Generate self-signed CA certificate
     command:
       chdir: "{{ root_ca_dir }}"

@@ -19,7 +19,7 @@
             mdadm_arrays:
               - name: md0
                 devices: "{{ nvme_devices_for_raid }}"
-                filesystem: xfs
+                community.general.filesystem: xfs
                 level: 0
                 mountpoint: /mnt/vectorized
                 state: present
@@ -31,7 +31,7 @@
 
     - block:
         - name: create xfs file system
-          filesystem:
+          community.general.filesystem:
             fstype: xfs
             dev: "{{ nvme_devices_for_raid[0] }}"
         - name: mount nvme device

@@ -18,11 +18,11 @@ locals {
 }
 
 resource "aws_iam_policy" "redpanda" {
-  count  = var.tiered_storage_enabled ? 1 : 0
-  name   = local.deployment_id
-  path   = "/"
+  count = var.tiered_storage_enabled ? 1 : 0
+  name  = local.deployment_id
+  path  = "/"
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
         "Effect" : "Allow",
@@ -39,15 +39,15 @@ resource "aws_iam_policy" "redpanda" {
 }
 
 resource "aws_iam_role" "redpanda" {
-  count              = var.tiered_storage_enabled ? 1 : 0
-  name               = local.deployment_id
+  count = var.tiered_storage_enabled ? 1 : 0
+  name  = local.deployment_id
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
-        Action    = "sts:AssumeRole"
-        Effect    = "Allow"
-        Sid       = ""
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
         Principal = {
           Service = "ec2.amazonaws.com"
         }
@@ -79,7 +79,7 @@ resource "aws_instance" "redpanda" {
   vpc_security_group_ids     = [aws_security_group.node_sec_group.id]
   placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
   placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
-  tags                       = merge(
+  tags = merge(
     local.merged_tags,
     {
       Name = "${local.deployment_id}-node-${count.index}",
@@ -119,7 +119,7 @@ resource "aws_instance" "prometheus" {
   instance_type          = var.prometheus_instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
-  tags                   = merge(
+  tags = merge(
     local.merged_tags,
     {
       Name = "${local.deployment_id}-prometheus",
@@ -143,7 +143,7 @@ resource "aws_instance" "client" {
   instance_type          = var.client_instance_type
   key_name               = aws_key_pair.ssh.key_name
   vpc_security_group_ids = [aws_security_group.node_sec_group.id]
-  tags                   = merge(
+  tags = merge(
     local.merged_tags,
     {
       Name = "${local.deployment_id}-client",
