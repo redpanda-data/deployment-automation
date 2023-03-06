@@ -76,9 +76,10 @@ resource "aws_instance" "redpanda" {
   instance_type              = var.instance_type
   key_name                   = aws_key_pair.ssh.key_name
   iam_instance_profile       = var.tiered_storage_enabled ? aws_iam_instance_profile.redpanda[0].name : null
-  vpc_security_group_ids     = [aws_security_group.node_sec_group.id]
+  vpc_security_group_ids     = concat([aws_security_group.node_sec_group.id], var.security_groups_redpanda)
   placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
   placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
+  subnet_id                  = var.subnet_id
   tags = merge(
     local.merged_tags,
     {
@@ -118,7 +119,8 @@ resource "aws_instance" "prometheus" {
   ami                    = coalesce(var.prometheus_ami, data.aws_ami.ami.image_id)
   instance_type          = var.prometheus_instance_type
   key_name               = aws_key_pair.ssh.key_name
-  vpc_security_group_ids = [aws_security_group.node_sec_group.id]
+  subnet_id              = var.subnet_id
+  vpc_security_group_ids = concat([aws_security_group.node_sec_group.id], var.security_groups_prometheus)
   tags = merge(
     local.merged_tags,
     {
@@ -142,7 +144,8 @@ resource "aws_instance" "client" {
   ami                    = coalesce(var.client_ami, data.aws_ami.ami.image_id)
   instance_type          = var.client_instance_type
   key_name               = aws_key_pair.ssh.key_name
-  vpc_security_group_ids = [aws_security_group.node_sec_group.id]
+  subnet_id              = var.subnet_id
+  vpc_security_group_ids = concat([aws_security_group.node_sec_group.id], var.security_groups_client)
   tags = merge(
     local.merged_tags,
     {
@@ -165,14 +168,15 @@ resource "aws_security_group" "node_sec_group" {
   name        = "${local.deployment_id}-node-sec-group"
   tags        = local.merged_tags
   description = "redpanda ports"
+  vpc_id      = var.vpc_id
 
   # SSH access from anywhere
   ingress {
-    description = "Allow anywhere inbound to ssh"
+    description = "Allow inbound to ssh"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.ssh_security_rule_cidr
   }
 
   # HTTP access from anywhere to port 9092
@@ -302,6 +306,18 @@ resource "local_file" "hosts_ini" {
     }
   )
   filename = "${path.module}/../hosts.ini"
+}
+
+locals {
+  node_details = [
+    for index, instance in aws_instance.redpanda :
+    {
+      "instance_id" : instance.id
+      "public_ip" : instance.public_ip
+      "private_ip" : instance.private_ip
+      "name" : "${var.deployment_prefix}-node-${index}"
+    }
+  ]
 }
 
 # we extract the IAM username by getting the caller identity as an ARN
