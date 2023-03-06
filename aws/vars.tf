@@ -268,6 +268,7 @@ variable "vpc_id" {
   description = "The ID of the VPC to deploy the instances. If an ID is an empty string, the default VPC is used. If provided, the subnet_id must also be provided."
   default     = ""
 }
+
 variable "cloud_provider" {
   type        = string
   description = "the short, lower case form of the cloud provider"
