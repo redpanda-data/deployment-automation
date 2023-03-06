@@ -1,20 +1,30 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
-    hooks:
-    -   id: check-yaml
-        files: '\.(yml|yaml)$'
-    -   id: end-of-file-fixer
-        files: '\.(yml|yaml)$'
-    -   id: trailing-whitespace
-        files: '\.(yml|yaml)$'
--   repo: https://github.com/ansible/ansible-lint
-    rev: v6.13.1
-    hooks:
-    -   id: ansible-lint
-        args: ["-c", ".ansible-lint.yml"]
-        files: '\.(yml|yaml)$'
-        language_version: python3
-        exclude: ansible/playbooks/prepare-data-dir.yml
-#       have to exclude these files as they're literally just empty files with one jinja2 inside so the yamllinter goes nuts
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.3.0
+  hooks:
+  - id: check-yaml
+    files: '\.(yml|yaml)$'
+  - id: end-of-file-fixer
+    files: '\.(yml|yaml)$'
+  - id: trailing-whitespace
+    files: '\.(yml|yaml)$'
+- repo: https://github.com/ansible/ansible-lint
+  rev: v6.13.1
+  hooks:
+  - id: ansible-lint
+    args: ["-c", ".ansible-lint.yml"]
+    files: '\.(yml|yaml)$'
+    language_version: python3
+    exclude: ansible/playbooks/prepare-data-dir.yml
+- repo: https://github.com/antonbabenko/pre-commit-terraform
+  rev: v1.50.0
+  hooks:
+      - id: terraform_fmt
+        exclude: ibm|azure|gcp
+      - id: terraform_validate
+        exclude: ibm|azure|gcp
+      - id: terraform_tflint
+        args:
+          - config=.tflint.hcl
+        exclude: ibm|azure|gcp
 exclude: ansible/playbooks/roles/redpanda_broker/templates/(bootstrap|redpanda)\.yml

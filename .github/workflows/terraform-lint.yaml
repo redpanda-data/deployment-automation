@@ -1,19 +1,16 @@
-name: linting and testing
+name: terraform fmt
 
 on: [pull_request]
 
 jobs:
-  terraform-lint:
+  format:
     runs-on: ubuntu-latest
+    name: Check terraform file are formatted correctly
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - uses: terraform-linters/setup-tflint@v3
-        name: Setup TFLint
+      - name: terraform fmt
+        uses: dflook/terraform-fmt@v1
         with:
-          tflint_version: v0.44.1
-      - name: Init TFLint
-        run: tflint --init
-      - name: Run TFLint
-        run: tflint --recursive --format compact
+          path: aws

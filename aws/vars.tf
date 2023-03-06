@@ -45,7 +45,7 @@ variable "enable_monitoring" {
 variable "ec2_ebs_device_names" {
   type        = list(string)
   description = "Device names for EBS volumes"
-  default     = [
+  default = [
     "/dev/xvdba",
     "/dev/xvdbb",
     "/dev/xvdbc",
@@ -163,7 +163,7 @@ data "aws_ami" "ami" {
   most_recent = true
 
   filter {
-    name   = "name"
+    name = "name"
     values = [
       "ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*",
       "Fedora-Cloud-Base-*.x86_64-hvm-us-west-2-gp2-0",
@@ -196,21 +196,21 @@ data "aws_ami" "ami" {
 variable "distro_ssh_user" {
   description = "The default user used by the AWS AMIs"
   type        = map(string)
-  default     = {
+  default = {
     "debian-10"            = "admin"
     "debian-11"            = "admin"
     "Fedora-Cloud-Base-34" = "fedora"
     "Fedora-Cloud-Base-35" = "fedora"
     #"Fedora-Cloud-Base-36" = "fedora"
     #"Fedora-Cloud-Base-37" = "fedora"
-    "ubuntu-bionic"        = "ubuntu"
-    "ubuntu-focal"         = "ubuntu"
-    "ubuntu-hirsute"       = "ubuntu"
-    "ubuntu-jammy"         = "ubuntu"
-    "ubuntu-kinetic"       = "ubuntu"
-    "RHEL-8"               = "ec2-user"
+    "ubuntu-bionic"  = "ubuntu"
+    "ubuntu-focal"   = "ubuntu"
+    "ubuntu-hirsute" = "ubuntu"
+    "ubuntu-jammy"   = "ubuntu"
+    "ubuntu-kinetic" = "ubuntu"
+    "RHEL-8"         = "ec2-user"
     #"RHEL-9"              = "ec2-user"
-    "amzn2"                = "ec2-user"
+    "amzn2" = "ec2-user"
   }
 }
 
@@ -234,7 +234,7 @@ variable "tags" {
 }
 
 variable "cloud_provider" {
-  type = string
+  type        = string
   description = "the short, lower case form of the cloud provider"
-  default = "aws"
+  default     = "aws"
 }
