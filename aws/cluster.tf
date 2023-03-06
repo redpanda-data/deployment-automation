@@ -121,7 +121,6 @@ resource "aws_instance" "prometheus" {
   key_name               = aws_key_pair.ssh.key_name
   subnet_id              = var.subnet_id
   vpc_security_group_ids = concat([aws_security_group.node_sec_group.id], var.security_groups_prometheus)
-  vpc_security_group_ids = [aws_security_group.node_sec_group.id]
   tags = merge(
     local.merged_tags,
     {
