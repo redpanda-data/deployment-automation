@@ -216,7 +216,7 @@ We use pre-commit to ensure good code health on this repo. To install pre-commit
 
 ### skip ci 
 
-If you have already got a clean ci bill of health but still want to submit readme or docs related changes you can skip the checks using [one of the commit messages here](https://github.blog/changelog/2021-02-08-github-actions-skip-pull-request-and-push-workflows-with-skip-ci/). 
+If you have already got a clean ci bill of health but still want to submit readme or docs related changes you can skip the checks using [skip ci] or [one of the commit messages here](https://github.blog/changelog/2021-02-08-github-actions-skip-pull-request-and-push-workflows-with-skip-ci/). 
 
 ### [build]
 
