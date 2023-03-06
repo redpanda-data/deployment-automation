@@ -6,7 +6,7 @@ locals {
   uuid                       = random_uuid.cluster.result
   timestamp                  = time_static.timestamp.unix
   deployment_id              = length(var.deployment_prefix) > 0 ? var.deployment_prefix : "redpanda-${substr(local.uuid, 0, 8)}-${local.timestamp}"
-  tiered_storage_bucket_name = "${local.deployment_id}-bucket"
+  tiered_storage_bucket_name = replace("${local.deployment_id}-bucket", "_", "-")
 
   # tags shared by all instances
   instance_tags = {
@@ -18,11 +18,11 @@ locals {
 }
 
 resource "aws_iam_policy" "redpanda" {
-  count  = var.tiered_storage_enabled ? 1 : 0
-  name   = local.deployment_id
-  path   = "/"
+  count = var.tiered_storage_enabled ? 1 : 0
+  name  = local.deployment_id
+  path  = "/"
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
         "Effect" : "Allow",
@@ -39,15 +39,15 @@ resource "aws_iam_policy" "redpanda" {
 }
 
 resource "aws_iam_role" "redpanda" {
-  count              = var.tiered_storage_enabled ? 1 : 0
-  name               = local.deployment_id
+  count = var.tiered_storage_enabled ? 1 : 0
+  name  = local.deployment_id
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
-        Action    = "sts:AssumeRole"
-        Effect    = "Allow"
-        Sid       = ""
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
         Principal = {
           Service = "ec2.amazonaws.com"
         }
@@ -79,8 +79,8 @@ resource "aws_instance" "redpanda" {
   vpc_security_group_ids     = concat([aws_security_group.node_sec_group.id], var.security_groups_redpanda)
   placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
   placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
-  subnet_id                  = var.subnet_id   
-  tags                       = merge(
+  subnet_id                  = var.subnet_id
+  tags = merge(
     local.merged_tags,
     {
       Name = "${local.deployment_id}-node-${count.index}",
@@ -119,9 +119,9 @@ resource "aws_instance" "prometheus" {
   ami                    = coalesce(var.prometheus_ami, data.aws_ami.ami.image_id)
   instance_type          = var.prometheus_instance_type
   key_name               = aws_key_pair.ssh.key_name
-  subnet_id              = var.subnet_id   
+  subnet_id              = var.subnet_id
   vpc_security_group_ids = concat([aws_security_group.node_sec_group.id], var.security_groups_prometheus)
-  tags                   = merge(
+  tags = merge(
     local.merged_tags,
     {
       Name = "${local.deployment_id}-prometheus",
@@ -144,9 +144,9 @@ resource "aws_instance" "client" {
   ami                    = coalesce(var.client_ami, data.aws_ami.ami.image_id)
   instance_type          = var.client_instance_type
   key_name               = aws_key_pair.ssh.key_name
-  subnet_id              = var.subnet_id   
+  subnet_id              = var.subnet_id
   vpc_security_group_ids = concat([aws_security_group.node_sec_group.id], var.security_groups_client)
-  tags                   = merge(
+  tags = merge(
     local.merged_tags,
     {
       Name = "${local.deployment_id}-client",
@@ -267,6 +267,27 @@ resource "aws_key_pair" "ssh" {
   tags       = local.merged_tags
 }
 
+resource "local_file" "hosts_ini_for_ci" {
+  content = templatefile("${path.module}/../templates/hosts_ini.tpl",
+    {
+      cloud_storage_region       = var.aws_region
+      client_public_ips          = aws_instance.client[*].public_ip
+      client_private_ips         = aws_instance.client[*].private_ip
+      enable_monitoring          = var.enable_monitoring
+      monitor_public_ip          = var.enable_monitoring ? aws_instance.prometheus[0].public_ip : ""
+      monitor_private_ip         = var.enable_monitoring ? aws_instance.prometheus[0].private_ip : ""
+      rack                       = aws_instance.redpanda[*].placement_partition_number
+      redpanda_public_ips        = aws_instance.redpanda[*].public_ip
+      redpanda_private_ips       = aws_instance.redpanda[*].private_ip
+      ssh_user                   = var.distro_ssh_user[var.distro]
+      tiered_storage_bucket_name = local.tiered_storage_bucket_name
+      tiered_storage_enabled     = var.tiered_storage_enabled
+    }
+  )
+  filename = "${path.module}/../artifacts/hosts_${var.cloud_provider}_${var.deployment_prefix}.ini"
+}
+
+## TODO remove this and update docs accordingly
 resource "local_file" "hosts_ini" {
   content = templatefile("${path.module}/../templates/hosts_ini.tpl",
     {
@@ -289,13 +310,13 @@ resource "local_file" "hosts_ini" {
 
 locals {
   node_details = [
-    for index,instance in aws_instance.redpanda:
-     {
-      "instance_id": instance.id
-      "public_ip":  instance.public_ip
-      "private_ip": instance.private_ip
-      "name": "${var.deployment_prefix}-node-${index}"
-     }
+    for index, instance in aws_instance.redpanda :
+    {
+      "instance_id" : instance.id
+      "public_ip" : instance.public_ip
+      "private_ip" : instance.private_ip
+      "name" : "${var.deployment_prefix}-node-${index}"
+    }
   ]
 }
 

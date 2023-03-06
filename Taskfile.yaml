@@ -1,0 +1,227 @@
+# https://taskfile.dev
+
+version: '3'
+vars:
+  ARTIFACT_DIR: '{{.TASKFILE_DIR}}/artifacts'
+  CLOUD_PROVIDER: '{{default "aws" .CLOUD_PROVIDER | lower}}'
+  TERRAFORM_VERSION: '1.3.7'
+  TERRAFORM_INSTALL_DIR: '{{.ARTIFACT_DIR}}/terraform/{{.TERRAFORM_VERSION}}'
+  ANSIBLE_VERSION: '2.11.12'
+  ANSIBLE_INSTALL_DIR: '{{.ARTIFACT_DIR}}/ansible/{{.ANSIBLE_VERSION}}'
+  PUBLIC_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey.pub'
+  PRIVATE_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey'
+  PUBLIC_KEY: '{{ .PUBLIC_KEY | default .PUBLIC_KEY_DEFAULT}}'
+  PRIVATE_KEY: '{{ .PRIVATE_KEY | default .PRIVATE_KEY_DEFAULT}}'
+  DEPLOYMENT_ID: '{{default "devex-cicd" .DEPLOYMENT_ID}}'
+  PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:{{.TERRAFORM_INSTALL_DIR}}/bin/:$PATH":
+  NUM_NODES: '{{default "3" .NUM_NODES}}'
+
+  TF_SSH_USER_VAR:
+    sh: |
+      # ssh_user variable is expected for gcp
+      if [[ "{{.CLOUD_PROVIDER}}" == "gcp" ]]; then
+        echo "-var='ssh_user={{default .USER .TF_SSH_USER}}'"
+      fi
+
+env:
+  TF_IN_AUTOMATION: '{{.CI}}'
+  TF_DATA_DIR: '{{.CLOUD_PROVIDER}}'
+
+tasks:
+  keygen:
+    desc: generate ssh keys
+    summary:
+      Generates some local dummy keys to support running with terraform and ansible in CI and to try things out.
+      If you have your own keys you should use them instead.
+    run: always
+    vars:
+      SSH_EMAIL: '{{default "test@redpanda.com" .SSH_EMAIL | lower}}'
+    cmds:
+     - ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey <<< y
+    status:
+      - test f artifacts/testkey
+
+  install-prereqs:
+    desc: install ansible and terraform
+    summary: |
+      Convenience feature that installs terraform and ansible to the artifact directory.
+      For normal operation you will also likely need curl and unzip.
+      This is not a part of the flow, it must be called explicitly.
+    vars:
+      TF_URL: https://releases.hashicorp.com/terraform/{{.TERRAFORM_VERSION}}/terraform_{{.TERRAFORM_VERSION}}_{{OS}}_{{ARCH}}.zip
+    cmds:
+      - mkdir -p '{{.TERRAFORM_INSTALL_DIR}}/bin'
+      - rm -f '{{.TERRAFORM_INSTALL_DIR}}/bin/terraform'
+      - curl -L '{{.TF_URL}}' -o '{{.TERRAFORM_INSTALL_DIR}}/bin/tf.zip'
+      - unzip '{{.TERRAFORM_INSTALL_DIR}}/bin/tf.zip' -d '{{.TERRAFORM_INSTALL_DIR}}/bin'
+      - rm '{{.TERRAFORM_INSTALL_DIR}}/bin/tf.zip'
+      - python3 -mvenv '{{.ANSIBLE_INSTALL_DIR}}'
+      - |
+        source '{{.ANSIBLE_INSTALL_DIR}}/bin/activate'
+        pip3 install --upgrade pip
+        pip3 install ansible-core=={{.ANSIBLE_VERSION}}
+    status:
+      - test -f '{{.TERRAFORM_INSTALL_DIR}}/bin/terraform || command -v terraform'
+      - test -f '{{.ANSIBLE_INSTALL_DIR}}/bin/ansible || command -v ansible'
+
+  apply:
+    desc: init and apply terraform
+    summary: |
+      You can set additional arguments to be consumed by terraform for building out the cluster by adding them after
+      '--'when calling the task. You can set the number of nodes by setting NUM_NODES
+      You may also want to set a backend for your runs if you are using something like Terraform Cloud to manage state.
+      See the commented out line in cmds for an example of how to achieve this
+      Please also note that if you set AWS_ACCESS_KEY_ID etc in your local environment before running this
+      you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
+    env:
+     AWS_ACCESS_KEY_ID: '{{.DA_AWS_ACCESS_KEY_ID}}'
+     AWS_SECRET_ACCESS_KEY: '{{.DA_AWS_SECRET_ACCESS_KEY}}'
+     AWS_DEFAULT_REGION: '{{ default "us-west-2" .AWS_DEFAULT_REGION}}'
+    dir: '{{.CLOUD_PROVIDER}}'
+    cmds:
+      - |
+        terraform init
+        terraform apply -auto-approve {{.TF_SSH_USER_VAR}} \
+          -var='cloud_provider={{.CLOUD_PROVIDER}}' \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='nodes={{.NUM_NODES}}' \
+          {{.CLI_ARGS}}
+
+  destroy:
+    desc: release resources acquired previously for a deployment
+    summary:
+      Should match the arguments given to apply to successfully destroy the cluster!
+      You can set additional arguments to be consumed by terraform for building out the cluster by adding them after
+      '--'when calling the task. You can set the number of nodes by setting NUM_NODES
+      You may also want to set a backend for your runs if you are using something like Terraform Cloud to manage state.
+      See the commented out line in cmds for an example of how to achieve this
+      Please also note that if you set AWS_ACCESS_KEY_ID etc in your local environment before running this
+      you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
+    dir: '{{.CLOUD_PROVIDER}}'
+    env:
+      AWS_ACCESS_KEY_ID: '{{.DA_AWS_ACCESS_KEY_ID}}'
+      AWS_SECRET_ACCESS_KEY: '{{.DA_AWS_SECRET_ACCESS_KEY}}'
+      AWS_DEFAULT_REGION: '{{ default "us-west-2" .AWS_DEFAULT_REGION}}'
+    cmds:
+      - |
+        terraform destroy -auto-approve {{.TF_SSH_USER_VAR}} \
+        -var='cloud_provider={{.CLOUD_PROVIDER}}' \
+        -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+        -var='public_key_path={{.PUBLIC_KEY}}' \
+        -var='nodes={{.NUM_NODES}}' \
+        {{.CLI_ARGS}}
+
+  install-role-requirements:
+    desc: install required ansible roles
+    env:
+      ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
+    run: once
+    cmds:
+      - mkdir -p "$ANSIBLE_ROLES_PATH"
+      - ansible-galaxy install -r "requirements.yml"
+
+  basic:
+    desc: run an ansible playbook to create a basic private cluster
+    summary: |
+      You will need to export PRIV_KEY_LOC with the location of the private key matching the public key you provided
+      in the terraform apply task for the ansible playbook to successfully connect and apply.
+    deps:
+      - install-role-requirements
+    run: always
+    vars:
+      ANSIBLE_PLAYBOOK: '{{default "provision-node.yml" .ANSIBLE_PLAYBOOK}}'
+    env:
+      ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.log'
+      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
+
+  create-ca:
+    desc: creates a local certificate authority for issuing certs
+    summary: |
+      Run if you'd like to test the TLS cluster without having your own certs on hand. Should only need to be run once
+      but if you delete it will need to be run again. It is technically a soft dependecy of the tls command
+    deps:
+      - install-role-requirements
+    run: always
+    env:
+      ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.log'
+      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
+    cmds:
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/create-ca.yml
+
+  # TODO this will need an input variable with a default setting for the hosts file variables but is fine static for now
+  populate-hosts:
+    desc: populate hosts file for a public tls cluster
+    run: always
+    vars:
+      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+    cmds:
+      - |
+        cat <(echo '[all:vars]
+        tls=true
+        advertise_public_ips=true
+
+        '
+        ) {{.ANSIBLE_INVENTORY}} > tmp.ini
+        rm {{.ANSIBLE_INVENTORY}}
+        mv tmp.ini {{.ANSIBLE_INVENTORY}}
+
+  create-tls-cluster:
+    desc: run multiple ansible playbooks to create a cluster with tls
+    summary: |
+      This command assumes you have the infrastructure in place and does not build it for you.
+      Ensure you have a hosts file in the artifacts directory with name hosts_[CLOUD_PROVIDER]_[DEPLOYMENT_ID].ini
+    deps:
+      - install-role-requirements
+      - populate-hosts
+    run: always
+    vars:
+      PRIVATE_KEY: '{{default "~/.ssh/id_rsa" .PRIVATE_KEY}}'
+    env:
+      ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.log'
+      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/install-node-deps.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/prepare-data-dir.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/generate-csrs.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/issue-certs.yml --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/install-certs.yml --private-key {{.PRIVATE_KEY}}
+
+  ci-standup:
+    desc: runs all steps for demo cluster standup
+    vars:
+      TF_CLI_ARGS: '{{ default "" .TF_CLI_ARGS}}'
+    cmds:
+      - task: keygen
+      - task apply -- '{{.TF_CLI_ARGS}}'
+      - task: create-ca
+      - task: create-tls-cluster
+
+  install-rpk:
+    desc: installs rpk
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/tmp
+      - curl -L https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip -o {{.ARTIFACT_DIR}}/tmp/rpk-linux-amd64.zip
+      - mkdir -p {{.ARTIFACT_DIR}}/bin
+      - unzip {{.ARTIFACT_DIR}}/tmp/rpk-linux-amd64.zip -d {{.ARTIFACT_DIR}}/bin/
+      - chmod 755 {{.ARTIFACT_DIR}}/bin/rpk
+    status:
+      - test -f '{{.ARTIFACT_DIR}}/bin/rpk || command -v rpk'
+
+  test-tls-cluster:
+    desc: tests that a public ip TLS cluster is WAD
+    deps:
+      - install-rpk
+    vars:
+      RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
+      CA_CRT: '{{ default "ansible/playbooks/tls/ca/ca.crt" .CA_CRT }}'
+      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+    cmds:
+      - '{{.TASKFILE_DIR}}/.buildkite/scripts/testcluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}}'
