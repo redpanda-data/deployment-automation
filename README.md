@@ -203,3 +203,21 @@ You might try resolving by setting an environment variable:
 `export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`
 
 See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-to-crash-and-gives-an-error-may-have-been-in-progr
+
+
+## Contribution Guide
+
+### pre-commit
+
+We use pre-commit to ensure good code health on this repo. To install pre-commit [check the docs here](https://pre-commit.com/#install). The basic idea is that you'll have a fairly comprehensive checkup happen on each commit, guaranteeing that everything will be properly formatted and validated. You may also need to install some pre-requisite tools for pre-commit to work correctly. At the time of writing this includes:
+
+* [ansible-lint](https://ansible-lint.readthedocs.io/installing/#installing-from-source-code)
+* [tflint](https://github.com/terraform-linters/tflint#installation)
+
+### skip ci 
+
+If you have already got a clean ci bill of health but still want to submit readme or docs related changes you can skip the checks using [one of the commit messages here](https://github.blog/changelog/2021-02-08-github-actions-skip-pull-request-and-push-workflows-with-skip-ci/). 
+
+### [build]
+
+To trigger a full build of the cluster in AWS add [build] to your commit message. This will cause our pipeline to build the cluster and test that everything is working as expected. 
