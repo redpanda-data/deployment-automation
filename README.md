@@ -1,5 +1,7 @@
 # Terraform and Ansible Deployment for Redpanda
 
+[![Build status](https://badge.buildkite.com/b4528cf1604a18231c935663db15739e56d202dde6d7a2ec2a.svg)](https://buildkite.com/redpanda/deployment-automation)
+
 Terraform and Ansible configuration to easily provision a [Redpanda](https://www.redpanda.com/) cluster on AWS, GCP, Azure, or IBM.
 
 # Goal of this project
