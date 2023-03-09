@@ -1,8 +1,14 @@
 - hosts: redpanda[0]
   tasks:
+    - name: Establish if redpanda grafana dashboard file exists
+      ansible.builtin.stat:
+        path: /tmp/redpanda-grafana.json
+      register: dashboard
+
     - name: generate the redpanda grafana dashboard
       ansible.builtin.shell: |
         rpk generate grafana-dashboard --datasource prometheus --metrics-endpoint 'http{{ 's' if tls|default(false) else '' }}://{{hostvars[inventory_hostname].private_ip}}:9644/metrics' > '/tmp/redpanda-grafana.json'
+      when: not dashboard.stat.exists or package_result.changed
 
     - name: fetch grafana dashboard
       ansible.builtin.fetch:
