@@ -1,9 +1,9 @@
 output "ip" {
-  value = google_compute_instance.redpanda.*.network_interface.0.access_config.0.nat_ip
+  value = google_compute_instance.redpanda[*].network_interface.0.access_config.0.nat_ip
 }
 
 output "private_ips" {
-  value = google_compute_instance.redpanda.*.network_interface.0.network_ip
+  value = google_compute_instance.redpanda[*].network_interface.0.network_ip
 }
 
 output "ssh_user" {

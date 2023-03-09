@@ -27,7 +27,7 @@ output "ssh_user" {
 }
 
 output "public_key_path" {
-  value = var.public_key
+  value = var.public_key_path
 }
 
 resource "local_file" "hosts_ini" {

@@ -75,3 +75,11 @@ variable "ssh_user" {
 variable "enable_monitoring" {
   default = "yes"
 }
+
+variable "labels" {
+  description = "passthrough of GCP labels"
+  default = {
+    "purpose" = "redpanda-cluster"
+    "created-with" = "terraform"
+  }
+}

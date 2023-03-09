@@ -29,6 +29,11 @@
       owner: redpanda
       group: redpanda
 
+  - name: Install openssl
+    ansible.builtin.package:
+      name: openssl
+      state: present
+
   - name: Generate an OpenSSH keypair on {{ansible_hostname}}
     ansible.builtin.command:
       creates: "{{ redpanda_key_file }}"

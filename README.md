@@ -1,13 +1,19 @@
 # Terraform and Ansible Deployment for Redpanda
 
+[![Build status](https://badge.buildkite.com/b4528cf1604a18231c935663db15739e56d202dde6d7a2ec2a.svg)](https://buildkite.com/redpanda/deployment-automation)
+
 Terraform and Ansible configuration to easily provision a [Redpanda](https://www.redpanda.com/) cluster on AWS, GCP, Azure, or IBM.
+
+# Goal of this project
+
+1 command to a production cluster
 
 ## Installation Prerequisites
 
 * Install Terraform in your preferred way: https://www.terraform.io/downloads.html
 * Install Ansible: https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
 * Depending on your system, you might need to install some python packages (e.g. `selinux` or `jmespath`). Ansible will throw an error with the expected python packages, both on local and remote machines.
-* `ansible-galaxy install -r ansible/requirements.yml` to gather ansible requirements
+* `ansible-galaxy install -r requirements.yml` to gather ansible requirements
 
 ### On Mac OS X:
 You can use brew to install the prerequisites. You will also need to install gnu-tar:
@@ -16,7 +22,7 @@ brew tap hashicorp/tap
 brew install hashicorp/tap/terraform
 brew install ansible
 brew install gnu-tar
-ansible-galaxy install -r ansible/requirements.yml
+ansible-galaxy install -r requirements.yml
 ```
 
 ## Usage
@@ -43,30 +49,31 @@ Available Ansible variables:
 
 You can pass the following variables as `-e var=value`:
 
-| Property                    | Default value                      | Description                                                                                                                                                                                                                                                                                               |
-|-----------------------------|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
- | `redpanda_organization`     | redpanda-test                      | Set this to identify your organization in the asset management system.                                                                                                                                                                                                                                    |
-| `redpanda_cluster_id`       | redpanda                           | Helps identify the cluster.                                                                                                                                                                                                                                                                               |
-| `advertise_public_ips`      | `false`                            | Configure Redpanda to advertise the node's public IPs for client communication instead of private IPs. This allows for using the cluster from outside its subnet. **Note**: This is not recommended for production deployments, because it means that your nodes will be public. Use it for testing only. |
-| `grafana_admin_pass`        | enter_your_secure_password         | Configure Grafana's admin user's password                                                                                                                                                                                                                                                                 |
-| `ephemeral_disk`            | `false`                            | Enable filesystem check for attached disk, useful when using attached disks in instances with ephemeral OS disks (i.e Azure L Series). This allows a filesystem repair at boot time and ensures that the drive is remounted automatically after a reboot.                                                 |
-| `redpanda_mode`             | production                         | [Enables hardware optimization](https://docs.redpanda.com/docs/platform/deployment/production-deployment/#set-redpanda-production-mode)                                                                                                                                                                   |                                                                                                                                                                  |                                                                                                            
-| `redpanda_admin_api_port`   | 9644                               |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                                                          |                                                                                                                  
-| `redpanda_kafka_port`       | 9092                               |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                  |                                                                                                                  
-| `redpanda_rpc_port`         | 33145                              |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                |                                                                                                                 
-| `redpanda_use_staging_repo` | `false`                            | Enables access to unstable builds                                                                                                                                                                                                                                                                         |                                                                                                                                                                                                                                                                        | False                                                                                                                                                                                                                                                                                                     
-| `redpanda_version`          | latest                             | For example 22.2.2-1 or 22.3.1~rc1-1. If this value is set then the package will be upgraded if the installed version is lower than what has been specified.                                                                                                                                              |
-| `redpanda_install_status`   | present                            | If redpanda_version is set to latest, changing redpanda_install_status to latest will effect an upgrade, otherwise the currently installed version will remain                                                                                                                                            |
-| `redpanda_data_directory`   | /var/lib/redpanda/data             | Path where Redpanda will keep its data                                                                                                                                                                                                                                                                    |
-| `redpanda_key_file`         | /etc/redpanda/certs/node.key       | TLS: path to private key                                                                                                                                                                                                                                                                                  |
-| `redpanda_cert_file`        | /etc/redpanda/certs/node.crt       | TLS: path to signed certificate                                                                                                                                                                                                                                                                           |
-| `redpanda_truststore_file`  | /etc/redpanda/certs/truststore.pem | TLS: path to truststore                                                                                                                                                                                                                                                                                   |
-| `tls`                       | false                              | Set to true to configure Redpanda to use TLS. This can be set on a per-node basis, although this may lead to errors configuring `rpk`                                                                                                                                                                     |
-| `skip_node`                 | false                              | Per-node config to prevent the Redpanda_broker role being applied to this specific node. Use carefully when adding new nodes to avoid existing nodes from being reconfigured.                                                                                                                             |
-| `restart_node`              | false                              | Per-node config to prevent Redpanda brokers from being restarted after updating. Use with care because this can cause `rpk` to be reconfigured but the node not be restarted and therefore be in an inconsistent state.                                                                                   |
-| `rack`                      | `undefined`                        | Per-node config to enable rack awareness. N.B. Rack awareness will be enabled cluster-wide if at least one node has the `rack` variable set.                                                                                                                                                              |
-| `tiered_storage_bucket_name`|                                    | Set bucket name to enable tiered storage
-| `aws_region`                |                                    | The region to be used if tiered storage is enabled
+| Property                     | Default value                      | Description                                                                                                                                                                                                                                                                                               |
+|------------------------------|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+ | `redpanda_organization`      | redpanda-test                      | Set this to identify your organization in the asset management system.                                                                                                                                                                                                                                    |
+| `redpanda_cluster_id`        | redpanda                           | Helps identify the cluster.                                                                                                                                                                                                                                                                               |
+| `advertise_public_ips`       | `false`                            | Configure Redpanda to advertise the node's public IPs for client communication instead of private IPs. This allows for using the cluster from outside its subnet. **Note**: This is not recommended for production deployments, because it means that your nodes will be public. Use it for testing only. |
+| `grafana_admin_pass`         | enter_your_secure_password         | Configure Grafana's admin user's password                                                                                                                                                                                                                                                                 |
+| `ephemeral_disk`             | `false`                            | Enable filesystem check for attached disk, useful when using attached disks in instances with ephemeral OS disks (i.e Azure L Series). This allows a filesystem repair at boot time and ensures that the drive is remounted automatically after a reboot.                                                 |
+| `redpanda_mode`              | production                         | [Enables hardware optimization](https://docs.redpanda.com/docs/platform/deployment/production-deployment/#set-redpanda-production-mode)                                                                                                                                                                   |                                                                                                                                                                  |                                                                                                            
+| `redpanda_admin_api_port`    | 9644                               |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                                                          |                                                                                                                  
+| `redpanda_kafka_port`        | 9092                               |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                  |                                                                                                                  
+| `redpanda_rpc_port`          | 33145                              |                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                |                                                                                                                 
+| `redpanda_use_staging_repo`  | `false`                            | Enables access to unstable builds                                                                                                                                                                                                                                                                         |                                                                                                                                                                                                                                                                        | False                                                                                                                                                                                                                                                                                                     
+| `redpanda_version`           | latest                             | For example 22.2.2-1 or 22.3.1~rc1-1. If this value is set then the package will be upgraded if the installed version is lower than what has been specified.                                                                                                                                              |
+| `redpanda_rpk_opts`          |                                    | Command line options to be passed to instances where `rpk` is used on the playbook, for example superuser credentials may be specified as "--user myuser --password mypassword"                                                                                                                           |
+| `redpanda_install_status`    | present                            | If redpanda_version is set to latest, changing redpanda_install_status to latest will effect an upgrade, otherwise the currently installed version will remain                                                                                                                                            |
+| `redpanda_data_directory`    | /var/lib/redpanda/data             | Path where Redpanda will keep its data                                                                                                                                                                                                                                                                    |
+| `redpanda_key_file`          | /etc/redpanda/certs/node.key       | TLS: path to private key                                                                                                                                                                                                                                                                                  |
+| `redpanda_cert_file`         | /etc/redpanda/certs/node.crt       | TLS: path to signed certificate                                                                                                                                                                                                                                                                           |
+| `redpanda_truststore_file`   | /etc/redpanda/certs/truststore.pem | TLS: path to truststore                                                                                                                                                                                                                                                                                   |
+| `tls`                        | false                              | Set to true to configure Redpanda to use TLS. This can be set on a per-node basis, although this may lead to errors configuring `rpk`                                                                                                                                                                     |
+| `skip_node`                  | false                              | Per-node config to prevent the Redpanda_broker role being applied to this specific node. Use carefully when adding new nodes to avoid existing nodes from being reconfigured.                                                                                                                             |
+| `restart_node`               | false                              | Per-node config to prevent Redpanda brokers from being restarted after updating. Use with care because this can cause `rpk` to be reconfigured but the node not be restarted and therefore be in an inconsistent state.                                                                                   |
+| `rack`                       | `undefined`                        | Per-node config to enable rack awareness. N.B. Rack awareness will be enabled cluster-wide if at least one node has the `rack` variable set.                                                                                                                                                              |
+| `tiered_storage_bucket_name` |                                    | Set bucket name to enable tiered storage                                                                                                                                                                                                                                                                  
+| `aws_region`                 |                                    | The region to be used if tiered storage is enabled                                                                                                                                                                                                                                                        
 
 You can also specify any available Redpanda configuration value (or set of values) by passing a JSON dictionary as an Ansible extra-var. These values will be spliced with the calculated configuration and only override those values that you specify.
 There are two sub-dictionaries that you can specify, `redpanda.cluster` and `redpanda.node`. Check the Redpanda docs for the available [Cluster configuration properties](https://docs.redpanda.com/docs/platform/reference/cluster-properties/) and [Node configuration properties](https://docs.redpanda.com/docs/platform/reference/node-properties/).
@@ -151,6 +158,36 @@ A similar process can be used to build a cluster with TLS in one execution as to
   3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes. Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
 5. If `install-certs.yml` was not run in step iii above, you will need to run `provision-node.yml` which will install the `redpanda_broker` role. **Note: If TLS is enabled on the cluster, make sure that `-e tls=true` is set, otherwise this playbook will disable TLS across any nodes that don't have `skip_nodes=true` set.**
 
+## Upgrading a cluster
+
+The playbook is designed to be idempotent so should be suitable for running as part of a CI/CD pipeline or via Ansible Tower.
+Upgrade support is built in and the playbook is capable of upgrading the packages and then performing [a rolling upgrade](https://docs.redpanda.com/docs/manage/cluster-maintenance/rolling-upgrade/) across the cluster.
+
+> Note: Please be aware that any changes that have been made to cluster or node configuration parameters outside of the playbook may be overwritten by this procedure, and therefore these settings should be incorporated as part of the provided `--extra-vars` (for example `--extra-vars=tls=true`).
+
+There are two ways of enacting an upgrade on a cluster:
+
+1. By running the playbook with a specific target version. If the target version is higher than the currently installed version then the cluster will be upgraded and restarted automatically:
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
+```
+2. By default the playbook will select the latest version of the Redpanda packages, but an upgrade will only be enacted if the `redpanda_install_status` variable is set to `latest`:
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
+```
+
+It is also possible to upgrade clusters where SASL authentication has been turned on. For this, you will need to additionally specify the `redpanda_rpk_opts` variable to include to username and password or a superuser or appropriately privileged user. An example follows:
+
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
+\"redpanda_rpk_opts\": \"--user ${MY_USER} --password ${MY_USER_PASSWORD}\"
+}"
+```
+
+Similarly, you can put the `redpanda_rpk_opts` into a yaml file [protected with Ansible vault](https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html#creating-encrypted-files).
+```commandline
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
+```
 
 ## Troubleshooting
 
@@ -168,3 +205,21 @@ You might try resolving by setting an environment variable:
 `export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`
 
 See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-to-crash-and-gives-an-error-may-have-been-in-progr
+
+
+## Contribution Guide
+
+### pre-commit
+
+We use pre-commit to ensure good code health on this repo. To install pre-commit [check the docs here](https://pre-commit.com/#install). The basic idea is that you'll have a fairly comprehensive checkup happen on each commit, guaranteeing that everything will be properly formatted and validated. You may also need to install some pre-requisite tools for pre-commit to work correctly. At the time of writing this includes:
+
+* [ansible-lint](https://ansible-lint.readthedocs.io/installing/#installing-from-source-code)
+* [tflint](https://github.com/terraform-linters/tflint#installation)
+
+### skip ci 
+
+If you have already got a clean ci bill of health but still want to submit readme or docs related changes you can skip the checks using [skip ci] or [one of the commit messages here](https://github.blog/changelog/2021-02-08-github-actions-skip-pull-request-and-push-workflows-with-skip-ci/). 
+
+### [build]
+
+To trigger a full build of the cluster in AWS add [build] to your commit message. This will cause our pipeline to build the cluster and test that everything is working as expected. 

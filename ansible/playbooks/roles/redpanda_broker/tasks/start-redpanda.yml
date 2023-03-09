@@ -98,9 +98,10 @@
 #
 - name: Establish node id
   ansible.builtin.shell:
-    cmd: rpk cluster status | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'
+    cmd: rpk cluster status {{ redpanda_rpk_opts }} | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'
   register: node_id_out
   changed_when: false
+  no_log: true
 
 # make the node id a reusable fact
 #
@@ -120,10 +121,11 @@
 #
 - name: Establish Redpanda's current config version
   ansible.builtin.shell:
-    cmd: rpk cluster config status | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'
+    cmd: rpk cluster config status {{ redpanda_rpk_opts }} | awk 'BEGIN{NR!=1}{a=0}{if ($2>a) a=$2} END {print a}'
   register: config_version
   changed_when: false
   run_once: true
+  no_log: true
 
 # set cluster-wide configurations
 #
@@ -140,20 +142,22 @@
 #
 - name: Set cluster config
   ansible.builtin.shell:
-    cmd: rpk cluster config set {{ item.key }} {{ item.value }}
+    cmd: rpk cluster config set {{ item.key }} {{ item.value }} {{ redpanda_rpk_opts }}
   loop: "{{ configuration.cluster | dict2items }}"
   register: result
   changed_when: '"New configuration version is {{ config_version.stdout|int() }}." not in result.stdout'
   run_once: true
+  no_log: true
 
 # see if a cluster config operation should trigger ansible to restart each
 # redpanda instance in the cluster
 #
 - name: Check if restart needed
   ansible.builtin.shell:
-    cmd: rpk cluster config status | grep '^{{ node_id }} ' | awk '{ print $3 }' |  grep -E 'true|false'
+    cmd: rpk cluster config status {{ redpanda_rpk_opts }} | grep '^{{ node_id }} ' | awk '{ print $3 }' |  grep -E 'true|false'
   register: restart_required_rc
   changed_when: false
+  no_log: true
 
 # this instance of node config generation only runs after a cluster has been
 # initialized. This is used to update configurations post-cluster setup when
@@ -179,6 +183,7 @@
     dest: /etc/redpanda/redpanda.yaml
     owner: redpanda
     group: redpanda
+  check_mode: true
   register: nodeconfig_result
   when: is_initialized
 
@@ -205,15 +210,20 @@
 #
 - name: Establish whether restart required
   ansible.builtin.set_fact:
-    restart_required: ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded"
-      in package_result.results))) and (restart_node | default("true") | bool)
+    restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool) }}'
 
-# attempt to do a rolling, serial restart by putting each node into maintenance
-# mode, restarting, and putting it back into service. This is throttled to allow
-# only one node out of service at a time.
-#
-- name: Safe restart
-  ansible.builtin.shell:
-    cmd: rpk cluster maintenance enable {{ node_id }} --wait && systemctl restart redpanda && rpk cluster maintenance disable {{ node_id }}
-  when: restart_required
-  throttle: 1
+
+# serial: 1 would be the proper solution here, but that can only be set on play level
+# upstream issue: https://github.com/ansible/ansible/issues/12170
+# See this comment for an example of how this works:
+# https://github.com/ansible/ansible/issues/12170#issuecomment-358229274
+# Essentially we're looping through the hosts to run the tasks in safe-restart.yml.
+# Within safe-restart.yml we need to put inventory_hostname == cluster_host because other options
+# (delegate_to with run_once) meant that things like inventory_hostname get screwed up, and we don't get host facts.
+# It is known that the chosen method is O(n^2) but most people won't be deploying 100s of nodes via this route.
+
+- name: Safe Restart
+  include_tasks: safe-restart.yml
+  with_items: "{{ ansible_play_hosts }}"
+  loop_control:
+    loop_var: cluster_host

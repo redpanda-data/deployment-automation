@@ -18,9 +18,9 @@ After completing these steps, please follow the required steps in the [project r
     - Supported configuration variables (See `vars.tf`):
         - `project_name` (required): The name of the project on GCP to use.
         - `subnet` (required): The name of an existing subnet to deploy the infrastructure on.
-        - `region` (default: `us-west1`): The region to deploy the infrastructure on.
+        - `region` (default: `us-west2`): The region to deploy the infrastructure on.
         - `zone` (default: `a`): The region's zone to deploy the infrastructure on.
-        - `nodes` (default: `1`): The number of nodes to base the cluster on (Note that one additional node is added as a monitoring node).
+        - `nodes` (default: `3`): The number of nodes to base the cluster on (Note that one additional node is added as a monitoring node).
         - `client_nodes` (default: `1`): The number of client nodes
         - `disks` (default: `1`): The number of **local** disks to deploy on each machine
         - `image` (default: `ubuntu-os-cloud/ubuntu-2004-lts`): The OS image running on the VMs.
@@ -29,4 +29,5 @@ After completing these steps, please follow the required steps in the [project r
         - `ssh_user`: The ssh user. Must match the one in the public ssh key's comments.
         - `ha`: Enable high availability mode. In this mode (which supports up to 8 nodes), instances will be deployed into a Compute Resource Policy with an availability domain for each node. N.B. GCP does not currently have a mode which allows you to knowingly co-locate specific nodes into a smaller number of availability domains (see [Google Issue 256993209](https://issuetracker.google.com/issues/256993209)). 
 
+  We recommend putting all the variables you'd like to set as key=value pairs in a file named [redpanda.auto.tfvars](https://developer.hashicorp.com/terraform/language/values/variables#variable-definitions-tfvars-files) in this directory for convenience. However you can also set them at runtime using command line flags. 
   Example: `terraform apply -var nodes=3 -var project_name=myproject -var subnet=redpanda-cluster-subnet -var public_key_path=~/.ssh/id_rsa.pub -var ssh_user=$USER`
