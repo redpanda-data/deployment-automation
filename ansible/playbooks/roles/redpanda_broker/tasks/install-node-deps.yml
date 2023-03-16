@@ -1,0 +1,54 @@
+---
+- name: include geerlingguy nodeexporter
+  ansible.builtin.include_role:
+    name: geerlingguy.node_exporter
+  tags:
+    - node_deps
+
+- name: fedora setup
+  when: ansible_os_family == 'RedHat'
+  tags:
+    - node_deps
+  block:
+    - name: delete unused repos
+      ansible.builtin.file:
+        name: "{{item}}"
+        state: absent
+      with_items:
+        - /etc/yum.repos.d/fedora-updates-modular.repo
+        - /etc/yum.repos.d/fedora-cisco-openh264.repo
+    - name: install base deps
+      ansible.builtin.package:
+        name:
+          - iotop
+          - mdadm
+          - xfsprogs
+        state: present
+
+- name: add additional debian repos
+  tags:
+    - node_deps
+  when: ansible_distribution == 'Debian'
+  ansible.builtin.apt_repository:
+    repo: deb http://deb.debian.org/debian stretch-backports main
+    state: present
+
+- name: update packages - debian
+  tags:
+    - node_deps
+  ansible.builtin.apt:
+    update_cache: true
+    force_apt_get: true
+  when: ansible_os_family == 'Debian'
+
+- name: install base deps - debian
+  tags:
+    - node_deps
+  ansible.builtin.apt:
+    name:
+      - iotop
+      - mdadm
+      - xfsprogs
+    state: present
+    update_cache: true
+  when: ansible_os_family == 'Debian'

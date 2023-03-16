@@ -15,7 +15,7 @@
 #
 - name: Reset configuration
   ansible.builtin.set_fact:
-    configuration: {}
+    configuration: { }
 # fill out the empty configuration object and merge all appropriate templates
 # together this is used to make it easier to have the tls details in a separate
 # template, but coalesce into a single configuration object
@@ -210,8 +210,7 @@
 #
 - name: Establish whether restart required
   ansible.builtin.set_fact:
-    restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool) }}'
-
+    restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or package_result.results is defined and ("Removed" in package_result.results or "1 upgraded" in package_result.results)))) and (restart_node | default("true") | bool) }}'
 
 # serial: 1 would be the proper solution here, but that can only be set on play level
 # upstream issue: https://github.com/ansible/ansible/issues/12170

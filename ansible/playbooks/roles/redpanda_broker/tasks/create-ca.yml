@@ -1,0 +1,48 @@
+#
+# Creates a local CA in $dir/ca (if one does not exist)
+#
+
+---
+- name: create-ca - Check that Root CA directory {{ root_ca_dir }} exists
+  delegate_to: localhost
+  file:
+    path: "{{ root_ca_dir }}"
+    state: directory
+  tags:
+    - create_ca
+
+- name: create-ca - Copy the ca.conf file to CA
+  delegate_to: localhost
+  template:
+    src: ca.conf.tpl
+    dest: "{{ root_ca_dir }}/ca.conf"
+  tags:
+    - create_ca
+
+- name: create-ca - Generate an OpenSSH keypair for the CA
+  delegate_to: localhost
+  command:
+    chdir: "{{ root_ca_dir }}"
+    cmd: openssl genrsa -out {{ root_ca_dir }}/ca.key 2048
+    creates: "{{ root_ca_dir }}/ca.key"
+  tags:
+    - create_ca
+
+- name: create-ca - Generate self-signed CA certificate
+  delegate_to: localhost
+  command:
+    chdir: "{{ root_ca_dir }}"
+    cmd: openssl req -new -x509 -config ca.conf -key ca.key -out ca.crt -days 365 -batch
+    creates: "{{ root_ca_dir }}/ca.crt"
+  tags:
+    - create_ca
+
+- name: create-ca - Initialize CA data files
+  delegate_to: localhost
+  shell: |
+    cd {{ root_ca_dir }}
+    rm -f index.txt serial.txt
+    touch index.txt
+    echo '01' > serial.txt
+  tags:
+    - create_ca

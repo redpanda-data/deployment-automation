@@ -1,0 +1,36 @@
+# Creates a TLS enabled cluster with local CA in artifacts/ca for testing purposes
+# !!! WARNING !!!
+# If you intend to use this for a production cluster you will need to set handle_certs to false and provide your own certs
+# Using our demo CA for production is a bad idea :S
+---
+- name: provision tls cluster
+  hosts: redpanda
+  vars:
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
+    handle_certs: true
+  tasks:
+    - name: create ca
+      include_tasks: roles/redpanda_broker/tasks/create-ca.yml
+      when: handle_certs | default(false) | bool
+
+    - name: include data dirs task
+      include_tasks: roles/redpanda_broker/tasks/prepare-data-dir.yml
+
+    - name: include node dependencies task
+      include_tasks: roles/redpanda_broker/tasks/install-node-deps.yml
+
+    - name: generate cert signing requests
+      include_tasks: roles/redpanda_broker/tasks/generate-csrs.yml
+      when: handle_certs | default(false) | bool
+
+    - name: issue certs
+      include_tasks: roles/redpanda_broker/tasks/issue-certs.yml
+      when: handle_certs | default(false) | bool
+
+    - name: install certs
+      include_tasks: roles/redpanda_broker/tasks/install-certs.yml
+
+    - name: install and start redpanda
+      include_role:
+        name: redpanda_broker
+      when: not skip_node | default(false) | bool

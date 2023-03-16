@@ -1,10 +1,15 @@
-- import_playbook: install-node-deps.yml
+- name: provision nodes
+  hosts: redpanda
+  tasks:
+    - name: include data dirs task
+      include_tasks: roles/redpanda_broker/tasks/prepare-data-dir.yml
 
-- import_playbook: prepare-data-dir.yml
+    - name: include node dependcies task
+      include_tasks: roles/redpanda_broker/tasks/install-node-deps.yml
 
-- hosts: redpanda
-  roles:
-    - role: redpanda_broker
+    - name: install and start redpanda
+      include_role:
+        name: redpanda_broker
       when: not skip_node | default(false) | bool
 
-- import_playbook: deploy-prometheus-grafana.yml
+#import_playbook: deploy-prometheus-grafana.yml
