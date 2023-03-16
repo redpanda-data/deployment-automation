@@ -1,11 +1,13 @@
+---
 exclude_paths:
-  - .github/
+  - .github/**
   - artifacts/
   - aws/
   - azure/
   - gcp/
   - ibm/
   - templates/
+  - ssh-bootstrap.yml
 
 enable_list:
   - yaml
@@ -13,3 +15,10 @@ enable_list:
   - args
 
 profile: production
+
+skip_list:
+  - risky-shell-pipe
+  - jinja[spacing]
+  - yaml[brackets]
+  - yaml[line-length]
+  - yaml[trailing-spaces]

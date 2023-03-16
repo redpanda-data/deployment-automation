@@ -1,0 +1,13 @@
+# This playbook provisions a Redpanda cluster with no bells or whistles for evaluation purposes
+# variables
+# advertise_public_ips : causes the cluster to set a public ip on advertised_kafka_api, allowing access to the cluster from the public internet
+---
+- name: Provision nodes
+  hosts: redpanda
+  vars:
+    advertise_public_ips: true
+  tasks:
+    - name: Install and start redpanda
+      ansible.builtin.include_role:
+        name: redpanda_broker
+      when: not skip_node | default(false) | bool

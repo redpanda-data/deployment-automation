@@ -1,0 +1,78 @@
+---
+- name: Generate_csrs - Test hosts list
+  tags:
+    - generate_csrs
+  ansible.builtin.debug:
+    msg:
+      - "ipv4            : {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+      - "private ip      : {{ hostvars[inventory_hostname]['private_ip'] }}"
+      - "ansible_hostname: {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
+      - "ansible_fqdn    : {{ hostvars[inventory_hostname]['ansible_fqdn'] }}"
+
+- name: Generate_csrs - create redpanda user if it doesn't exist already
+  tags:
+    - generate_csrs
+  ansible.builtin.user:
+    name: redpanda
+    system: true
+
+- name: Generate_csrs - ensure /etc/redpanda/certs exists
+  tags:
+    - generate_csrs
+  ansible.builtin.file:
+    path: "{{ redpanda_certs_dir }}"
+    state: directory
+    owner: redpanda
+    group: redpanda
+    mode: "0755"
+
+- name: Generate_csrs - Copy node template
+  tags:
+    - generate_csrs
+  ansible.builtin.template:
+    src: node.conf.tpl
+    dest: "{{ redpanda_certs_dir }}/node.conf"
+    owner: redpanda
+    group: redpanda
+    mode: "0644"
+
+- name: Generate_csrs - Install openssl
+  tags:
+    - generate_csrs
+  ansible.builtin.package:
+    name: openssl
+    state: present
+
+- name: Generate_csrs - Generate an OpenSSH keypair on {{ansible_hostname}}
+  tags:
+    - generate_csrs
+  ansible.builtin.command:
+    creates: "{{ redpanda_key_file }}"
+    chdir: "{{ redpanda_certs_dir }}"
+    cmd: openssl genrsa -out node.key 2048
+
+- name: Generate_csrs - Generate a Certificate Signing Request on {{ansible_hostname}}
+  tags:
+    - generate_csrs
+  ansible.builtin.command:
+    creates: "{{ redpanda_csr_file }}"
+    chdir: "{{ redpanda_certs_dir }}"
+    cmd: openssl req -new -config node.conf -key node.key -out node.csr -batch
+
+- name: Generate_csrs - CHOWN to redpanda
+  tags:
+    - generate_csrs
+  ansible.builtin.file:
+    path: "{{ redpanda_certs_dir }}"
+    state: directory
+    owner: redpanda
+    group: redpanda
+    recurse: true
+
+- name: Generate_csrs - Fetch CSRs
+  tags:
+    - generate_csrs
+  ansible.builtin.fetch:
+    src: "{{ redpanda_csr_file }}"
+    dest: tls/certs/{{ansible_hostname}}/node.csr
+    flat: true

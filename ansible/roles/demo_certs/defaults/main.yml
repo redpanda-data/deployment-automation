@@ -1,0 +1,8 @@
+---
+redpanda_organization: redpanda-test
+redpanda_cluster_id: redpanda
+redpanda_certs_dir: /etc/redpanda/certs
+redpanda_csr_file: "{{ redpanda_certs_dir }}/node.csr"
+redpanda_key_file: "{{ redpanda_certs_dir }}/node.key"
+redpanda_cert_file: "{{ redpanda_certs_dir }}/node.crt"
+redpanda_truststore_file: "{{ redpanda_certs_dir }}/truststore.pem"
