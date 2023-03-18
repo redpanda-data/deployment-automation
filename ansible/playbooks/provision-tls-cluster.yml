@@ -2,18 +2,27 @@
 # !!! WARNING !!!
 # If you intend to use this for a production cluster you will need to set handle_certs to false and provide your own certs
 # Using our demo CA for production is a bad idea :S
+#
+# variables
+# root_ca_dir: location of our demo cert authority
+# handle_certs: when false, disables all activity related to our demo CA
+# enable_tls: when true, adds the tls template to the /etc/redpanda/redpanda.yml file
+# advertise_public_ips : causes the cluster to set a public ip on advertised_kafka_api, allowing access to the cluster from the public internet
 ---
 - name: provision tls cluster
   hosts: redpanda
   vars:
     root_ca_dir: "{{ playbook_dir }}/tls/ca"
     handle_certs: true
+    enable_tls: true
+    advertise_public_ips: true
   tasks:
-    - name: create ca
+    - name: Create ca
       include_tasks: roles/redpanda_broker/tasks/create-ca.yml
+      run_once: true
       when: handle_certs | default(false) | bool
 
-    - name: include data dirs task
+    - name: Include data dirs task
       include_tasks: roles/redpanda_broker/tasks/prepare-data-dir.yml
 
     - name: include node dependencies task

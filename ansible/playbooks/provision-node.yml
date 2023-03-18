@@ -1,15 +1,19 @@
+# This playbook provisions a Redpanda cluster with no bells or whistles for evaluation purposes
+# variables
+# advertise_public_ips : causes the cluster to set a public ip on advertised_kafka_api, allowing access to the cluster from the public internet
+---
 - name: provision nodes
   hosts: redpanda
+  vars:
+    advertise_public_ips: true
   tasks:
     - name: include data dirs task
       include_tasks: roles/redpanda_broker/tasks/prepare-data-dir.yml
 
-    - name: include node dependcies task
+    - name: include node dependencies task
       include_tasks: roles/redpanda_broker/tasks/install-node-deps.yml
 
     - name: install and start redpanda
       include_role:
         name: redpanda_broker
       when: not skip_node | default(false) | bool
-
-#import_playbook: deploy-prometheus-grafana.yml
