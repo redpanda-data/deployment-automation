@@ -13,33 +13,19 @@
   hosts: redpanda
   vars:
     root_ca_dir: "{{ playbook_dir }}/tls/ca"
-    handle_certs: true
     enable_tls: true
+    prep_data_dir: true
+    prep_deps: true
     advertise_public_ips: true
+    create_demo_certs: true
+    handle_cert_install: true
   tasks:
-    - name: Create ca
-      include_tasks: roles/redpanda_broker/tasks/create-ca.yml
-      run_once: true
-      when: handle_certs | default(false) | bool
-
-    - name: Include data dirs task
-      include_tasks: roles/redpanda_broker/tasks/prepare-data-dir.yml
-
-    - name: include node dependencies task
-      include_tasks: roles/redpanda_broker/tasks/install-node-deps.yml
-
-    - name: generate cert signing requests
-      include_tasks: roles/redpanda_broker/tasks/generate-csrs.yml
-      when: handle_certs | default(false) | bool
-
-    - name: issue certs
-      include_tasks: roles/redpanda_broker/tasks/issue-certs.yml
-      when: handle_certs | default(false) | bool
-
-    - name: install certs
-      include_tasks: roles/redpanda_broker/tasks/install-certs.yml
-
+    - name: Install and configure CA certs for running tls
+      include_role:
+        allow_duplicates: false
+        name: demo-certs
     - name: install and start redpanda
       include_role:
+        allow_duplicates: false
         name: redpanda_broker
       when: not skip_node | default(false) | bool

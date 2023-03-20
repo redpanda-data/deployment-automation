@@ -3,6 +3,7 @@
 version: '3'
 vars:
   ARTIFACT_DIR: '{{.TASKFILE_DIR}}/artifacts'
+  ROLES_DIR: '{{.TASKFILE_DIR}}/artifacts:{{.TASKFILE_DIR}}/roles'
   CLOUD_PROVIDER: '{{default "aws" .CLOUD_PROVIDER | lower}}'
   TERRAFORM_VERSION: '1.3.7'
   TERRAFORM_INSTALL_DIR: '{{.ARTIFACT_DIR}}/terraform/{{.TERRAFORM_VERSION}}'
@@ -15,7 +16,7 @@ vars:
   DEPLOYMENT_ID: '{{default "devex-cicd" .DEPLOYMENT_ID}}'
   PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:{{.TERRAFORM_INSTALL_DIR}}/bin/:$PATH":
   NUM_NODES: '{{default "3" .NUM_NODES}}'
-  ENABLE_MONITORING: '{{default "false" .ENABLE_MONITORING}}'
+  ENABLE_MONITORING: '{{default "true" .ENABLE_MONITORING}}'
 
   TF_SSH_USER_VAR:
     sh: |
@@ -118,7 +119,7 @@ tasks:
   install-role-requirements:
     desc: install required ansible roles
     env:
-      ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
+      ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}'
     run: once
     cmds:
       - mkdir -p "$ANSIBLE_ROLES_PATH"
@@ -137,10 +138,10 @@ tasks:
     env:
       ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.log'
       ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
-      ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
+      ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
-      - ansible-playbook {{.CLI_ARGS}} ansible/playbooks/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
 
   create-tls-cluster:
     desc: run multiple ansible playbooks to create a cluster with tls
@@ -180,7 +181,17 @@ tasks:
       - install-rpk
     vars:
       RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
-      CA_CRT: '{{ default "ansible/playbooks/tls/ca/ca.crt" .CA_CRT }}'
+      CA_CRT: '{{ default "ansible/tls/ca/ca.crt" .CA_CRT }}'
       ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test_tls_cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}}'
+
+  test-basic-cluster:
+    desc: tests that a public ip TLS cluster is WAD
+    deps:
+      - install-rpk
+    vars:
+      RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
+      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+    cmds:
+      - '{{.TASKFILE_DIR}}/.buildkite/scripts/test_basic_cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --rpk={{.RPK_LOC}}'

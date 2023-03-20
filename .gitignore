@@ -4,9 +4,9 @@
 *tfstate
 aws/aws/**
 */**/*.lock*.hcl
-ansible/playbooks/grafana_dashboards/redpanda-grafana.json
-ansible/playbooks/tls/ca
-ansible/playbooks/tls/certs
+ansible/grafana_dashboards/redpanda-grafana.json
+ansible/tls/ca
+ansible/tls/certs
 hosts.ini
 .DS_Store
 .idea/*
