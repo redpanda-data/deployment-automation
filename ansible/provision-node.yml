@@ -2,14 +2,14 @@
 # variables
 # advertise_public_ips : causes the cluster to set a public ip on advertised_kafka_api, allowing access to the cluster from the public internet
 ---
-- name: provision nodes
+- name: Provision nodes
   hosts: redpanda
   vars:
     advertise_public_ips: true
     prep_data_dir: true
     prep_deps: true
   tasks:
-    - name: install and start redpanda
-      include_role:
+    - name: Install and start redpanda
+      ansible.builtin.include_role:
         name: redpanda_broker
       when: not skip_node | default(false) | bool

@@ -1,5 +1,5 @@
 ---
-- name: install_certs - Copy CA Certs
+- name: Install_certs - Copy CA Certs
   tags:
     - install_certs
   copy:
@@ -9,7 +9,7 @@
     group: redpanda
     force: "{{ overwrite_certs | default('no') | bool }}"
 
-- name: install_certs - Copy Node Certs
+- name: Install_certs - Copy Node Certs
   tags:
     - install_certs
   copy:
@@ -19,13 +19,13 @@
     group: redpanda
     force: "{{ overwrite_certs | default('no') | bool }}"
 
-- name: install_certs - Set Redpanda config
+- name: Install_certs - Set Redpanda config
   tags:
     - install_certs
   set_fact:
     tls: true
 
-- name: install_certs - Apply updated config via reapplying the redpanda_broker role
+- name: Install_certs - Apply updated config via reapplying the redpanda_broker role
   tags: install_certs
   import_role:
     name: redpanda_broker

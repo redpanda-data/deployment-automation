@@ -1,9 +1,9 @@
 ---
-- name: ensure /etc/redpanda exists
+- name: Ensure /etc/redpanda exists
   ansible.builtin.file:
     path: /etc/redpanda
     state: directory
-    mode: 0755
+    mode: "0755"
 
 - name: Identify advertised ip address
   ansible.builtin.set_fact:
@@ -45,7 +45,8 @@
 
 # a node is only considered initialized if the controller directory
 # exists and is populated.
-- ansible.builtin.set_fact:
+- name: Set is_initialized fact based on controller_stat
+  ansible.builtin.set_fact:
     is_initialized: "{{ controller_stat.stat.isdir is defined and controller_stat.stat.isdir }}"
 
 # first run of Generate Node config
@@ -83,13 +84,13 @@
 # For more information on the tuners, go to
 #   https://docs.redpanda.com/docs/platform/reference/rpk/rpk-redpanda/rpk-redpanda-tune/
 #
-- name: start redpanda-tuner
+- name: Start redpanda-tuner
   ansible.builtin.systemd:
     name: redpanda-tuner
     state: started
 
 # ensure that systemd starts up redpanda
-- name: start redpanda
+- name: Start redpanda
   ansible.builtin.systemd:
     name: redpanda
     state: started
@@ -141,8 +142,7 @@
 # TODO: fix changed_when to stop throwing ansible warnings on the jinja {{}} parsing
 #
 - name: Set cluster config
-  ansible.builtin.shell:
-    cmd: rpk cluster config set {{ item.key }} {{ item.value }} {{ redpanda_rpk_opts }}
+  ansible.builtin.cmd: rpk cluster config set {{ item.key }} {{ item.value }} {{ redpanda_rpk_opts }}
   loop: "{{ configuration.cluster | dict2items }}"
   register: result
   changed_when: '"New configuration version is {{ config_version.stdout|int() }}." not in result.stdout'
@@ -210,7 +210,8 @@
 #
 - name: Establish whether restart required
   ansible.builtin.set_fact:
-    restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or package_result.results is defined and ("Removed" in package_result.results or "1 upgraded" in package_result.results)))) and (restart_node | default("true") | bool) }}'
+    restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or package_result.results is defined and ("Removed"
+      in package_result.results or "1 upgraded" in package_result.results)))) and (restart_node | default("true") | bool) }}'
 
 # serial: 1 would be the proper solution here, but that can only be set on play level
 # upstream issue: https://github.com/ansible/ansible/issues/12170

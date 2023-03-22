@@ -1,14 +1,14 @@
 ---
-- name: set facts
+- name: Issue_certs - set facts
   tags:
-    - install_certs
+    - issue_certs
   set_fact:
     node_cert: tls/certs/{{ansible_hostname}}/node.crt
     node_csr: tls/certs/{{ansible_hostname}}/node.csr
 
-- name: Check for csr
+- name: Issue_certs - Check for csr
   tags:
-    - install_certs
+    - issue_certs
   ansible.builtin.file:
     path: "{{ node_csr }}"
     state: file
@@ -16,41 +16,41 @@
   failed_when: csr_stat.state == 'absent'
   delegate_to: 127.0.0.1
 
-- name: Check for cert
+- name: Issue_certs - Check for cert
   tags:
-    - install_certs
+    - issue_certs
   ansible.builtin.file:
     path: "{{ node_cert }}"
     state: "{{ 'absent' if (overwrite_certs | default('no') | bool) else 'file' }}"
-  failed_when: False
+  failed_when: false
   register: cert_stat
   delegate_to: 127.0.0.1
 
-- name: Check csr modulus
+- name: Issue_certs - Check csr modulus
   tags:
-    - install_certs
+    - issue_certs
   ansible.builtin.command:
     cmd: openssl req -noout -modulus -in {{ node_csr }}
   register: csr_modulus
   when: cert_stat.state == 'file'
-  changed_when: False
+  changed_when: false
   delegate_to: 127.0.0.1
 
-- name: Check cert modulus
+- name: Issue_certs - Check cert modulus
   tags:
-    - install_certs
+    - issue_certs
   ansible.builtin.command:
     cmd: openssl x509 -noout -modulus -in {{ node_cert }}
   register: cert_modulus
   when: cert_stat.state == 'file'
   failed_when: cert_modulus.stdout != csr_modulus.stdout
-  changed_when: False
+  changed_when: false
   delegate_to: 127.0.0.1
 
-- name: Issue Certs
+- name: Issue_certs - Issue Certs
   tags:
-    - install_certs
-  command:
+    - issue_certs
+  ansible.builtin.command:
     cmd: |
       openssl ca
         -config tls/ca/ca.conf

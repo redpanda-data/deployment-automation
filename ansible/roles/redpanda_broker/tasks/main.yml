@@ -1,3 +1,4 @@
+---
 # installs necessary dependencies for running redpanda
 - name: Install dependencies
   ansible.builtin.include_tasks: install-node-deps.yml

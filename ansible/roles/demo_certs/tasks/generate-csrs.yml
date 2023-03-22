@@ -1,5 +1,5 @@
 ---
-- name: generate_csrs - Test hosts list
+- name: Generate_csrs - Test hosts list
   tags:
     - generate_csrs
   debug:
@@ -9,14 +9,14 @@
       - "ansible_hostname: {{ hostvars[inventory_hostname]['ansible_hostname'] }}"
       - "ansible_fqdn    : {{ hostvars[inventory_hostname]['ansible_fqdn'] }}"
 
-- name: generate_csrs - create redpanda user if it doesn't exist already
+- name: Generate_csrs - create redpanda user if it doesn't exist already
   tags:
     - generate_csrs
   ansible.builtin.user:
     name: redpanda
     system: true
 
-- name: generate_csrs - ensure /etc/redpanda/certs exists
+- name: Generate_csrs - ensure /etc/redpanda/certs exists
   tags:
     - generate_csrs
   ansible.builtin.file:
@@ -24,9 +24,9 @@
     state: directory
     owner: redpanda
     group: redpanda
-    mode: 0755
+    mode: "0755"
 
-- name: generate_csrs - Copy node template
+- name: Generate_csrs - Copy node template
   tags:
     - generate_csrs
   ansible.builtin.template:
@@ -35,14 +35,14 @@
     owner: redpanda
     group: redpanda
 
-- name: generate_csrs - Install openssl
+- name: Generate_csrs - Install openssl
   tags:
     - generate_csrs
   ansible.builtin.package:
     name: openssl
     state: present
 
-- name: generate_csrs - Generate an OpenSSH keypair on {{ansible_hostname}}
+- name: Generate_csrs - Generate an OpenSSH keypair on {{ansible_hostname}}
   tags:
     - generate_csrs
   ansible.builtin.command:
@@ -50,7 +50,7 @@
     chdir: "{{ redpanda_certs_dir }}"
     cmd: openssl genrsa -out node.key 2048
 
-- name: generate_csrs - Generate a Certificate Signing Request on {{ansible_hostname}}
+- name: Generate_csrs - Generate a Certificate Signing Request on {{ansible_hostname}}
   tags:
     - generate_csrs
   ansible.builtin.command:
@@ -58,7 +58,7 @@
     chdir: "{{ redpanda_certs_dir }}"
     cmd: openssl req -new -config node.conf -key node.key -out node.csr -batch
 
-- name: generate_csrs - CHOWN to redpanda
+- name: Generate_csrs - CHOWN to redpanda
   tags:
     - generate_csrs
   ansible.builtin.file:
@@ -66,19 +66,19 @@
     state: directory
     owner: redpanda
     group: redpanda
-    recurse: yes
+    recurse: true
 
-- name: generate_csrs - Fetch CSRs
+- name: Generate_csrs - Fetch CSRs
   tags:
     - generate_csrs
   fetch:
     src: "{{ redpanda_csr_file }}"
     dest: tls/certs/{{ansible_hostname}}/node.csr
-    flat: yes
+    flat: true
 
-- name: generate_csrs - Dummy to import role so that we can use its default variables
+- name: Generate_csrs - Dummy to import role so that we can use its default variables
   tags:
     - generate_csrs
   import_role:
     name: redpanda_broker
-  when: False
+  when: false

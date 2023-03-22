@@ -1,12 +1,12 @@
 ---
-- name: Set device_info fact
+- name: Prep Data Dir - Set device_info fact
   ansible.builtin.set_fact:
     device_info: "{{ hostvars[inventory_hostname].ansible_devices }}"
     nvme_device_ids: "{{ hostvars[inventory_hostname].ansible_devices.keys() | map('regex_search', 'nvme.*') | select('string') | list }}"
   tags:
     - prep_data_dir
 
-- name: Set nvme_devices_for_raid fact
+- name: Prep Data Dir - Set nvme_devices_for_raid fact
   ansible.builtin.set_fact:
     nvme_devices_for_raid: '{{ (nvme_devices_for_raid | default([])) + ["/dev/" + item] }}'
   loop: "{{ nvme_device_ids }}"
@@ -14,45 +14,45 @@
   tags:
     - prep_data_dir
 
-- name: Set nvme_devices_for_raid fact with default value
+- name: Prep Data Dir - Set nvme_devices_for_raid fact with default value
   ansible.builtin.set_fact:
     nvme_devices_for_raid: "{{ (nvme_devices_for_raid | default([])) }}"
   tags:
     - prep_data_dir
 
-- name: Set ephemeral_disk fact
+- name: Prep Data Dir - Set ephemeral_disk fact
   ansible.builtin.set_fact:
     ephemeral_disk: "{{ (ephemeral_disk | default(false)) }}"
   tags:
     - prep_data_dir
 
-- name: handle mdadm
+- name: Prep Data Dir - handle mdadm
   tags:
     - prep_data_dir
   block:
-    - name: Define mdadm_arrays variable
+    - name: Prep Data Dir - Define mdadm_arrays variable
       ansible.builtin.set_fact:
         mdadm_arrays:
-          - name: md0
+          - name: Prep Data Dir - md0
             devices: "{{ nvme_devices_for_raid }}"
             community.general.filesystem: xfs
             level: 0
             mountpoint: /mnt/vectorized
             state: present
-    - name: Run mdadm
+    - name: Prep Data Dir - Run mdadm
       ansible.builtin.include_role:
         name: mrlesmithjr.mdadm
       when: nvme_devices_for_raid|length > 1
 
-- name: mounting file system
+- name: Prep Data Dir - mounting file system
   tags:
     - prep_data_dir
   block:
-    - name: Create XFS file system
+    - name: Prep Data Dir - Create XFS file system
       community.general.filesystem:
         fstype: xfs
         dev: "{{ nvme_devices_for_raid[0] }}"
-    - name: Mount NVMe device
+    - name: Prep Data Dir - Mount NVMe device
       ansible.builtin.mount:
         path: /mnt/vectorized
         src: "{{ nvme_devices_for_raid[0] }}"
@@ -63,7 +63,7 @@
         state: mounted
       when: nvme_devices_for_raid|length == 1
 
-- name: Create data path
+- name: Prep Data Dir - Create data path
   ansible.builtin.file:
     path: /mnt/vectorized/redpanda
     state: directory
@@ -73,8 +73,7 @@
   tags:
     - prep_data_dir
 
-
-- name: Set permissions
+- name: Prep Data Dir - Set permissions
   ansible.builtin.file:
     dest: /var/lib/redpanda
     src: /mnt/vectorized/redpanda
