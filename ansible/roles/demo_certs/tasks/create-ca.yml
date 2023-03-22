@@ -5,9 +5,10 @@
 ---
 - name: Create-ca - check existence of Root CA directory {{ root_ca_dir }}
   delegate_to: localhost
-  file:
+  ansible.builtin.file:
     path: "{{ root_ca_dir }}"
     state: directory
+    mode: "0600"
   tags:
     - create_ca
 
@@ -16,6 +17,7 @@
   ansible.builtin.template:
     src: ca.conf.tpl
     dest: "{{ root_ca_dir }}/ca.conf"
+    mode: "0644"
   tags:
     - create_ca
 
@@ -44,5 +46,6 @@
     rm -f index.txt serial.txt
     touch index.txt
     echo '01' > serial.txt
+  changed_when: false
   tags:
     - create_ca

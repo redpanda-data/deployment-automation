@@ -53,7 +53,7 @@
         fstype: xfs
         dev: "{{ nvme_devices_for_raid[0] }}"
     - name: Prep Data Dir - Mount NVMe device
-      ansible.builtin.mount:
+      ansible.posix.mount:
         path: /mnt/vectorized
         src: "{{ nvme_devices_for_raid[0] }}"
         fstype: xfs

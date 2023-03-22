@@ -12,6 +12,7 @@
   ansible.builtin.file:
     path: "{{ node_csr }}"
     state: file
+    mode: "0644"
   register: csr_stat
   failed_when: csr_stat.state == 'absent'
   delegate_to: 127.0.0.1
@@ -22,6 +23,7 @@
   ansible.builtin.file:
     path: "{{ node_cert }}"
     state: "{{ 'absent' if (overwrite_certs | default('no') | bool) else 'file' }}"
+    mode: "0644"
   failed_when: false
   register: cert_stat
   delegate_to: 127.0.0.1

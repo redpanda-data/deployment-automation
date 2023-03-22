@@ -60,6 +60,7 @@
     dest: /etc/redpanda/redpanda.yaml
     owner: redpanda
     group: redpanda
+    mode: "0644"
   register: nodeconfig_result
   when: not is_initialized
 
@@ -74,6 +75,7 @@
     dest: /etc/redpanda/.bootstrap.yaml
     owner: redpanda
     group: redpanda
+    mode: "0644"
   when: not is_initialized
 
 # This starts up the tuner process which modifies various redpanda items and
@@ -182,6 +184,7 @@
     dest: /etc/redpanda/redpanda.yaml
     owner: redpanda
     group: redpanda
+    mode: "0644"
   check_mode: true
   register: nodeconfig_result
   when: is_initialized

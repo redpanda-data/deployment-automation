@@ -34,6 +34,7 @@
     dest: "{{ redpanda_certs_dir }}/node.conf"
     owner: redpanda
     group: redpanda
+    mode: "0644"
 
 - name: Generate_csrs - Install openssl
   tags:

@@ -1,6 +1,6 @@
 ---
 - name: Download the Redpanda repo script
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ redpanda_repo_script }}"
     dest: "/tmp/redpanda_repo_script.sh"
     mode: '0755'
@@ -8,6 +8,7 @@
 - name: Execute the Redpanda repo script
   ansible.builtin.command:
     cmd: sudo -E /tmp/redpanda_repo_script.sh
+  changed_when: false
 
 - name: Install redpanda from repository
   ansible.builtin.apt:
