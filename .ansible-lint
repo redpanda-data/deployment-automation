@@ -16,6 +16,7 @@ enable_list:
 profile: production
 
 skip_list:
+  - risky-shell-pipe
   - jinja[spacing]
   - yaml[brackets]
   - yaml[line-length]

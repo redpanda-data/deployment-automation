@@ -1,26 +1,26 @@
 ---
 # creates a local CA for demo purposes, should not be used in prod
 - name: Create local ca
-  include_tasks: create-ca.yml
+  ansible.builtin.include_tasks: create-ca.yml
   run_once: true
   when:
     - create_demo_certs | default(false) | bool
 
 # Generates CSRs from the demo local CA
 - name: Generate cert signing requests
-  include_tasks: generate-csrs.yml
+  ansible.builtin.include_tasks: generate-csrs.yml
   when:
     - create_demo_certs | default(false) | bool
 
 # Issues certs from the demo local CA
 - name: Issue certs
-  include_tasks: issue-certs.yml
+  ansible.builtin.include_tasks: issue-certs.yml
   when:
     - create_demo_certs | default(false) | bool
 
 # Copies certs that follow this directory structure into their respective node
 # tls/certs/{{ansible_hostname}}/node.crt
 - name: Install certs
-  include_tasks: install-certs.yml
+  ansible.builtin.include_tasks: install-certs.yml
   when:
     - handle_cert_install | default(false) | bool

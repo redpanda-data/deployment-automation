@@ -172,6 +172,7 @@ tasks:
       - mkdir -p {{.ARTIFACT_DIR}}/bin
       - unzip {{.ARTIFACT_DIR}}/tmp/rpk-linux-amd64.zip -d {{.ARTIFACT_DIR}}/bin/
       - chmod 755 {{.ARTIFACT_DIR}}/bin/rpk
+      - rm -f {{.ARTIFACT_DIR}}/tmp/rpk-linux-amd64.zip
     status:
       - test -f '{{.ARTIFACT_DIR}}/bin/rpk || command -v rpk'
 

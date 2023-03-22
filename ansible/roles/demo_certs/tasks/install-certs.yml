@@ -24,9 +24,3 @@
     - install_certs
   set_fact:
     tls: true
-
-- name: Install_certs - Apply updated config via reapplying the redpanda_broker role
-  tags: install_certs
-  import_role:
-    name: redpanda_broker
-  when: not skip_node | default(false) | bool

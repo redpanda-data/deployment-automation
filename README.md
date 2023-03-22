@@ -266,4 +266,16 @@ or [one of the commit messages here](https://github.blog/changelog/2021-02-08-gi
 ### [build]
 
 To trigger a full build of the cluster in AWS add [build] to your commit message. This will cause our pipeline to build
-the cluster and test that everything is working as expected. 
+the cluster and test that everything is working as expected.
+
+## Ansible Linter Skip List Whys and Wherefores
+
+Nitpicky nonsense that isn't worth the time to fix, especially when IDEs fight with the linter about it
+
+- jinja[spacing]
+- yaml[brackets]
+- yaml[line-length]
+
+Breaks the play because intermediate commands in the pipe return nonzero (but irrelevant) error codes
+
+- risky-shell-pipe 

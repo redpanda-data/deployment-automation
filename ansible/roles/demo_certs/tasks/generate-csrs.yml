@@ -2,7 +2,7 @@
 - name: Generate_csrs - Test hosts list
   tags:
     - generate_csrs
-  debug:
+  ansible.builtin.debug:
     msg:
       - "ipv4            : {{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
       - "private ip      : {{ hostvars[inventory_hostname]['private_ip'] }}"
@@ -71,14 +71,7 @@
 - name: Generate_csrs - Fetch CSRs
   tags:
     - generate_csrs
-  fetch:
+  ansible.builtin.fetch:
     src: "{{ redpanda_csr_file }}"
     dest: tls/certs/{{ansible_hostname}}/node.csr
     flat: true
-
-- name: Generate_csrs - Dummy to import role so that we can use its default variables
-  tags:
-    - generate_csrs
-  import_role:
-    name: redpanda_broker
-  when: false

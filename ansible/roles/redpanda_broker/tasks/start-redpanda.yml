@@ -102,7 +102,6 @@
     cmd: rpk cluster status {{ redpanda_rpk_opts }} | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'
   register: node_id_out
   changed_when: false
-  no_log: true
 
 # make the node id a reusable fact
 #
@@ -142,7 +141,7 @@
 # TODO: fix changed_when to stop throwing ansible warnings on the jinja {{}} parsing
 #
 - name: Set cluster config
-  ansible.builtin.cmd: rpk cluster config set {{ item.key }} {{ item.value }} {{ redpanda_rpk_opts }}
+  ansible.builtin.command: rpk cluster config set {{ item.key }} {{ item.value }} {{ redpanda_rpk_opts }}
   loop: "{{ configuration.cluster | dict2items }}"
   register: result
   changed_when: '"New configuration version is {{ config_version.stdout|int() }}." not in result.stdout'
@@ -223,7 +222,7 @@
 # It is known that the chosen method is O(n^2) but most people won't be deploying 100s of nodes via this route.
 
 - name: Safe Restart
-  include_tasks: safe-restart.yml
+  ansible.builtin.include_tasks: safe-restart.yml
   with_items: "{{ ansible_play_hosts }}"
   loop_control:
     loop_var: cluster_host

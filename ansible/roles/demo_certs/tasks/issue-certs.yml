@@ -2,7 +2,7 @@
 - name: Issue_certs - set facts
   tags:
     - issue_certs
-  set_fact:
+  ansible.builtin.set_fact:
     node_cert: tls/certs/{{ansible_hostname}}/node.crt
     node_csr: tls/certs/{{ansible_hostname}}/node.csr
 
