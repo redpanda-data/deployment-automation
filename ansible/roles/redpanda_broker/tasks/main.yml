@@ -2,13 +2,13 @@
 # installs necessary dependencies for running redpanda
 - name: Install dependencies
   ansible.builtin.include_tasks: install-node-deps.yml
-  when: prep_deps | default(false) | bool
+  when: prep_deps | default(true) | bool
 
 # configures the data dir. won't work if Install dependencies isn't run first
 - name: Prep data dir
   ansible.builtin.include_tasks: prepare-data-dir.yml
   when:
-    - prep_data_dir | default(false) | bool
+    - prep_data_dir | default(true) | bool
 
 - name: Install Redpanda
   ansible.builtin.include_tasks: install-redpanda.yml
