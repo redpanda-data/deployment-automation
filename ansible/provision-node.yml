@@ -6,8 +6,6 @@
   hosts: redpanda
   vars:
     advertise_public_ips: true
-    prep_data_dir: true
-    prep_deps: true
   tasks:
     - name: install and start redpanda
       include_role:
