@@ -270,7 +270,8 @@ the cluster and test that everything is working as expected.
 
 ## Ansible Linter Skip List Whys and Wherefores
 
-Nitpicky nonsense that isn't worth the time to fix, especially when IDEs fight with the linter about it
+A lot of effort to bring the linter and IDE into alignment without meaningful improvement in readability, outcomes or
+correctness.
 
 - jinja[spacing]
 - yaml[brackets]
