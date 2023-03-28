@@ -117,9 +117,9 @@ ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars 
 
 * The Grafana URL is http://&lt;grafana host&gt;:3000/login
 
-## Configure Graphana
+## Configure Grafana
 
-To deploy a graphana node, ensure that you have a [monitor] section in your hosts file. You should then be able to run
+To deploy a grafana node, ensure that you have a [monitor] section in your hosts file. You should then be able to run
 the deploy-prometheus-grafana.yml playbook
 
 ```shell
@@ -143,10 +143,10 @@ For example:
 ansible-playbook ansible/playbooks/provision-tls-cluster.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>' \
---extra-vars redpanda_key_file='<path to key file>' \
---extra-vars redpanda_cert_file='<path to cert file>' \
---extra-vars redpanda_truststore_file='<path to truststore file> \
---extra-vars handle_certs=false'
+--extra-vars create_demo_certs=false \
+--extra-vars advertise_public_ips=false \ 
+--extra-vars handle_certs=false \
+--extra-vars redpanda_truststore_file='<path to ca.crt file>' 
 ```
 
 The second option is to deploy a local certificate authority using the playbooks provided below and generating private
@@ -162,24 +162,8 @@ ansible-playbook ansible/playbooks/provision-tls-cluster.yml \
 
 ## Adding Nodes to an existing cluster
 
-The playbooks can be used to add nodes to an existing cluster however care is required to make sure that they playbooks
-are executed in the correct order. To add new nodes execute the playbooks in the following order:
-
-1. Add the new host(s) to the `hosts.ini` file. You may add `skip_node=true` to the existing hosts to avoid the
-   playbooks being re-run on those nodes.
-2. `install-node-deps.yml` - this will set up the Prometheus node_exporter and install package dependencies.
-3. `prepare-data-dir.yml` - this will create any RAID devices required and format devices as XFS. Note: This playbook
-   looks for devices presented to the operating system as NVMe devices (which can include EBS volumes built on the Nitro
-   System). You may replace this playbook with your own method of formatting devices and presenting disks.
-4. If managing TLS with the Redpanda playbooks:
-1. `generate-csrs.yml` - will create private key and CSR and bring the CSR back to the Ansible host.
-2. If using the Redpanda provided CA: `issue-certs.yml` - signs the CSR and issues a certificate.
-3. `install-certs.yml` - Installs the certificate and also applies the `redpanda_broker` role to the cluster nodes.
-   Note: This will install and start Redpanda (and restart any brokers that do not have `skip_node=true` set)
-5. If `install-certs.yml` was not run in step iii above, you will need to run `provision-node.yml` which will install
-   the `redpanda_broker` role onto any nodes without `skip_node=true` set. **Note: If TLS is enabled on the cluster,
-   make sure that `-e tls=true` is set, otherwise this playbook will disable TLS across any nodes that don't
-   have `skip_nodes=true` set.**
+To add nodes to a cluster you must add them to the hosts file and run the relevant playbook again. You may
+add `skip_node=true` to the existing hosts to avoid the playbooks being re-run on existing nodes.
 
 ## Upgrading a cluster
 
@@ -191,7 +175,7 @@ cluster.
 
 > Note: Please be aware that any changes that have been made to cluster or node configuration parameters outside of the
 > playbook may be overwritten by this procedure, and therefore these settings should be incorporated as part of the
-> provided `--extra-vars` (for example `--extra-vars=tls=true`).
+> provided `--extra-vars` (for example `--extra-vars=enable_tls=true`).
 
 There are two ways of enacting an upgrade on a cluster:
 
