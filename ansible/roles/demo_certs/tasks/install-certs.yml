@@ -1,0 +1,28 @@
+---
+- name: Install_certs - Copy CA Certs
+  tags:
+    - install_certs
+  ansible.builtin.copy:
+    src: tls/ca/ca.crt
+    dest: "{{ redpanda_truststore_file }}"
+    owner: redpanda
+    group: redpanda
+    force: "{{ overwrite_certs | default('no') | bool }}"
+    mode: "0644"
+
+- name: Install_certs - Copy Node Certs
+  tags:
+    - install_certs
+  ansible.builtin.copy:
+    src: tls/certs/{{ansible_hostname}}/node.crt
+    dest: "{{ redpanda_cert_file }}"
+    owner: redpanda
+    group: redpanda
+    force: "{{ overwrite_certs | default('no') | bool }}"
+    mode: "0644"
+
+- name: Install_certs - Set Redpanda config
+  tags:
+    - install_certs
+  ansible.builtin.set_fact:
+    tls: true

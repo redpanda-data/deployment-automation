@@ -1,9 +1,9 @@
 ---
-- name: ensure /etc/redpanda exists
+- name: Ensure /etc/redpanda exists
   ansible.builtin.file:
     path: /etc/redpanda
     state: directory
-    mode: 0755
+    mode: "0755"
 
 - name: Identify advertised ip address
   ansible.builtin.set_fact:
@@ -15,7 +15,7 @@
 #
 - name: Reset configuration
   ansible.builtin.set_fact:
-    configuration: {}
+    configuration: { }
 # fill out the empty configuration object and merge all appropriate templates
 # together this is used to make it easier to have the tls details in a separate
 # template, but coalesce into a single configuration object
@@ -45,7 +45,8 @@
 
 # a node is only considered initialized if the controller directory
 # exists and is populated.
-- ansible.builtin.set_fact:
+- name: Set is_initialized fact based on controller_stat
+  ansible.builtin.set_fact:
     is_initialized: "{{ controller_stat.stat.isdir is defined and controller_stat.stat.isdir }}"
 
 # first run of Generate Node config
@@ -59,6 +60,7 @@
     dest: /etc/redpanda/redpanda.yaml
     owner: redpanda
     group: redpanda
+    mode: "0644"
   register: nodeconfig_result
   when: not is_initialized
 
@@ -73,6 +75,7 @@
     dest: /etc/redpanda/.bootstrap.yaml
     owner: redpanda
     group: redpanda
+    mode: "0644"
   when: not is_initialized
 
 # This starts up the tuner process which modifies various redpanda items and
@@ -83,13 +86,13 @@
 # For more information on the tuners, go to
 #   https://docs.redpanda.com/docs/platform/reference/rpk/rpk-redpanda/rpk-redpanda-tune/
 #
-- name: start redpanda-tuner
+- name: Start redpanda-tuner
   ansible.builtin.systemd:
     name: redpanda-tuner
     state: started
 
 # ensure that systemd starts up redpanda
-- name: start redpanda
+- name: Start redpanda
   ansible.builtin.systemd:
     name: redpanda
     state: started
@@ -101,7 +104,6 @@
     cmd: rpk cluster status {{ redpanda_rpk_opts }} | sed 's/*//g' | grep {{ hostvars[inventory_hostname].private_ip }} | awk '{ print $1;}'
   register: node_id_out
   changed_when: false
-  no_log: true
 
 # make the node id a reusable fact
 #
@@ -141,8 +143,7 @@
 # TODO: fix changed_when to stop throwing ansible warnings on the jinja {{}} parsing
 #
 - name: Set cluster config
-  ansible.builtin.shell:
-    cmd: rpk cluster config set {{ item.key }} {{ item.value }} {{ redpanda_rpk_opts }}
+  ansible.builtin.command: rpk cluster config set {{ item.key }} {{ item.value }} {{ redpanda_rpk_opts }}
   loop: "{{ configuration.cluster | dict2items }}"
   register: result
   changed_when: '"New configuration version is {{ config_version.stdout|int() }}." not in result.stdout'
@@ -183,6 +184,7 @@
     dest: /etc/redpanda/redpanda.yaml
     owner: redpanda
     group: redpanda
+    mode: "0644"
   check_mode: true
   register: nodeconfig_result
   when: is_initialized
@@ -210,8 +212,8 @@
 #
 - name: Establish whether restart required
   ansible.builtin.set_fact:
-    restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or "Removed" in package_result.results or "1 upgraded" in package_result.results))) and (restart_node | default("true") | bool) }}'
-
+    restart_required: '{{ ("true" in restart_required_rc.stdout or (is_initialized and (nodeconfig_result.changed or package_result.results is defined and ("Removed"
+      in package_result.results or "1 upgraded" in package_result.results)))) and (restart_node | default("true") | bool) }}'
 
 # serial: 1 would be the proper solution here, but that can only be set on play level
 # upstream issue: https://github.com/ansible/ansible/issues/12170
@@ -223,7 +225,7 @@
 # It is known that the chosen method is O(n^2) but most people won't be deploying 100s of nodes via this route.
 
 - name: Safe Restart
-  include_tasks: safe-restart.yml
+  ansible.builtin.include_tasks: safe-restart.yml
   with_items: "{{ ansible_play_hosts }}"
   loop_control:
     loop_var: cluster_host

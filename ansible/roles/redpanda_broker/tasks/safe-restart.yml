@@ -1,10 +1,11 @@
+---
 # attempt to do a rolling, serial restart by putting each node into maintenance
 # mode, restarting, and putting it back into service. This is throttled to allow
 # only one node out of service at a time.
 #
 - name: Enable Maintenance Mode
   ansible.builtin.command:
-    cmd: "rpk cluster maintenance enable {{ node_id }} --wait {{ redpanda_rpk_opts }}"
+    cmd: rpk cluster maintenance enable {{ node_id }} --wait {{ redpanda_rpk_opts }}
   no_log: true
   when:
     - restart_required
@@ -14,11 +15,11 @@
 # will fail
 - name: Generate Node config - post-bootstrap runs
   ansible.builtin.template:
-    src: "redpanda.yml"
-    dest: "/etc/redpanda/redpanda.yaml"
+    src: redpanda.yml
+    dest: /etc/redpanda/redpanda.yaml
     owner: redpanda
     group: redpanda
-    mode: 0755
+    mode: "0755"
   register: nodeconfig_result
   when:
     - is_initialized
@@ -34,7 +35,7 @@
 
 - name: Disable Maintenance Mode
   ansible.builtin.command:
-    cmd: "rpk cluster maintenance disable {{ node_id }} {{ redpanda_rpk_opts }}"
+    cmd: rpk cluster maintenance disable {{ node_id }} {{ redpanda_rpk_opts }}
   no_log: true
   when:
     - restart_required
