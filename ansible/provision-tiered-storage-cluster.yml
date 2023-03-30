@@ -20,6 +20,7 @@
     cloud_storage_credentials_source: "AWS instance metadata"
     cloud_storage_region: "us-west-2"
     tiered_storage_bucket_name: "rp-devex-cicd-bucket"
+    cloud_storage_segment_max_upload_interval_sec: 1
   tasks:
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
