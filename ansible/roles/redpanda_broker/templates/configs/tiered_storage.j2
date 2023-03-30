@@ -5,8 +5,12 @@ cluster:
     cloud_storage_access_key: {{ cloud_storage_access_key if cloud_storage_access_key is defined }}
     cloud_storage_secret_key: {{ cloud_storage_secret_key if cloud_storage_secret_key is defined }}
 {% endif %}
-    cloud_storage_enable_remote_read: true
-    cloud_storage_enable_remote_write: true
+{% if cloud_storage_enable_remote_read is defined %}
+    cloud_storage_enable_remote_read: {{ cloud_storage_enable_remote_read }}
+{% endif %}
+{% if cloud_storage_enable_remote_write is defined %}
+    cloud_storage_enable_remote_write: {{ cloud_storage_enable_remote_write }}
+{% endif %}
     cloud_storage_region: {{ cloud_storage_region if cloud_storage_region is defined }}
     cloud_storage_bucket: {{ tiered_storage_bucket_name if tiered_storage_bucket_name is defined }}
 {% if cloud_storage_segment_max_upload_interval_sec is defined %}
