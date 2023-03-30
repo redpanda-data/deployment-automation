@@ -252,7 +252,7 @@ variable "ssh_security_rule_cidr" {
 
 variable "subnet_id" {
   type        = string
-  description = "The ID ID of the subnet where the EC2 instances will be deployed. An empty string will deploy to the default VPC. If provided, it must be in the same VPC as vpc_id"
+  description = "The ID of the subnet where the EC2 instances will be deployed. An empty string will deploy to the default VPC. If provided, it must be in the same VPC as vpc_id"
   default     = ""
 }
 
@@ -273,4 +273,10 @@ variable "cloud_provider" {
   type        = string
   description = "the short, lower case form of the cloud provider"
   default     = "aws"
+}
+
+variable "allow_force_destroy" {
+  default     = false
+  type        = bool
+  description = "allows destruction of s3 buckets with objects inside them. should only be enabled for testing tiered storage unless you like data loss :D"
 }

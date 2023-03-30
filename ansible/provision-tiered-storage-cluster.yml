@@ -9,7 +9,7 @@
 # enable_tls: when true, adds the tls template to the /etc/redpanda/redpanda.yml file
 # advertise_public_ips : causes the cluster to set a public ip on advertised_kafka_api, allowing access to the cluster from the public internet
 ---
-- name: Provision tls cluster
+- name: Provision tiered storage cluster
   hosts: redpanda
   vars:
     root_ca_dir: "{{ playbook_dir }}/tls/ca"
@@ -17,6 +17,9 @@
     advertise_public_ips: true
     create_demo_certs: true
     handle_cert_install: true
+    cloud_storage_credentials_source: "AWS instance metadata"
+    cloud_storage_region: "us-west-2"
+    tiered_storage_bucket_name: "rp-devex-cicd-bucket"
   tasks:
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:

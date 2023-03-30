@@ -2,22 +2,30 @@
 
 version: '3'
 vars:
+  ## shared variables
+  DEPLOYMENT_ID: '{{default "rp-devex-cicd" .DEPLOYMENT_ID}}'
   ARTIFACT_DIR: '{{.TASKFILE_DIR}}/artifacts'
-  ROLES_DIR: '{{.TASKFILE_DIR}}/artifacts:{{.TASKFILE_DIR}}/roles'
-  CLOUD_PROVIDER: '{{default "aws" .CLOUD_PROVIDER | lower}}'
-  TERRAFORM_VERSION: '1.3.7'
-  TERRAFORM_INSTALL_DIR: '{{.ARTIFACT_DIR}}/terraform/{{.TERRAFORM_VERSION}}'
+  PRIVATE_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey'
+  PRIVATE_KEY: '{{ .PRIVATE_KEY | default .PRIVATE_KEY_DEFAULT}}'
+  PUBLIC_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey.pub'
+  PUBLIC_KEY: '{{ .PUBLIC_KEY | default .PUBLIC_KEY_DEFAULT}}'
+
+  ## ansible variables
   ANSIBLE_VERSION: '2.11.12'
   ANSIBLE_INSTALL_DIR: '{{.ARTIFACT_DIR}}/ansible/{{.ANSIBLE_VERSION}}'
-  PUBLIC_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey.pub'
-  PRIVATE_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey'
-  PUBLIC_KEY: '{{ .PUBLIC_KEY | default .PUBLIC_KEY_DEFAULT}}'
-  PRIVATE_KEY: '{{ .PRIVATE_KEY | default .PRIVATE_KEY_DEFAULT}}'
-  DEPLOYMENT_ID: '{{default "devex-cicd" .DEPLOYMENT_ID}}'
+  ROLES_DIR: '{{.TASKFILE_DIR}}/artifacts/{{.TASKFILE_DIR}}/roles'
   PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:{{.TERRAFORM_INSTALL_DIR}}/bin/:$PATH":
-  NUM_NODES: '{{default "3" .NUM_NODES}}'
-  ENABLE_MONITORING: '{{default "true" .ENABLE_MONITORING}}'
 
+  ## terraform variables
+  CLOUD_PROVIDER: '{{default "aws" .CLOUD_PROVIDER | lower}}'
+  ENABLE_MONITORING: '{{default "true" .ENABLE_MONITORING}}'
+  NUM_NODES: '{{default "3" .NUM_NODES}}'
+  TIERED_STORAGE_ENABLED: '{{ .TIERED_STORAGE_ENABLED | default "false"}}'
+  ALLOW_FORCE_DESTROY: '{{ .ALLOW_FORCE_DESTROY | default "true"}}'
+  TERRAFORM_VERSION: '1.3.7'
+  TERRAFORM_INSTALL_DIR: '{{.ARTIFACT_DIR}}/terraform/{{.TERRAFORM_VERSION}}'
+  VPC_ID: '{{ .VPC_ID | default "" }}'
+  SUBNET_ID: '{{ .SUBNET_ID | default "" }}'
   TF_SSH_USER_VAR:
     sh: |
       # ssh_user variable is expected for gcp
@@ -89,6 +97,9 @@ tasks:
           -var='public_key_path={{.PUBLIC_KEY}}' \
           -var='nodes={{.NUM_NODES}}' \
           -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
           {{.CLI_ARGS}}
 
   destroy:
@@ -114,6 +125,9 @@ tasks:
         -var='public_key_path={{.PUBLIC_KEY}}' \
         -var='nodes={{.NUM_NODES}}' \
         -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+        -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+        -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+        -var='vpc_id={{.VPC_ID}}' \
         {{.CLI_ARGS}}
 
   install-role-requirements:
@@ -155,6 +169,18 @@ tasks:
       - task: basic
         vars: { ANSIBLE_PLAYBOOK: "provision-tls-cluster.yml" }
 
+  create-tiered-storage-cluster:
+    desc: run multiple ansible playbooks to create a cluster with tiered storage and tls
+    summary: |
+      This command assumes you have the infrastructure in place and does not build it for you.
+      Ensure you have a hosts file in the artifacts directory with name hosts_[CLOUD_PROVIDER]_[DEPLOYMENT_ID].ini
+    deps:
+      - install-role-requirements
+    run: always
+    cmds:
+      - task: basic
+        vars: { ANSIBLE_PLAYBOOK: "provision-tiered-storage-cluster.yml" }
+
   ci-standup:
     desc: runs all steps for demo cluster standup
     vars:
@@ -176,6 +202,16 @@ tasks:
     status:
       - test -f '{{.ARTIFACT_DIR}}/bin/rpk || command -v rpk'
 
+  test-basic-cluster:
+    desc: tests that a public ip TLS cluster is WAD
+    deps:
+      - install-rpk
+    vars:
+      RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
+      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+    cmds:
+      - '{{.TASKFILE_DIR}}/.buildkite/scripts/test_basic_cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --rpk={{.RPK_LOC}}'
+
   test-tls-cluster:
     desc: tests that a public ip TLS cluster is WAD
     deps:
@@ -187,12 +223,13 @@ tasks:
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test_tls_cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}}'
 
-  test-basic-cluster:
-    desc: tests that a public ip TLS cluster is WAD
+  test-tiered-storage-cluster:
+    desc: tests that a public ip TLS cluster with Tiered Storage is WAD
     deps:
       - install-rpk
     vars:
       RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
+      CA_CRT: '{{ default "ansible/tls/ca/ca.crt" .CA_CRT }}'
       ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
     cmds:
-      - '{{.TASKFILE_DIR}}/.buildkite/scripts/test_basic_cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --rpk={{.RPK_LOC}}'
+      - '{{.TASKFILE_DIR}}/.buildkite/scripts/test_tiered_storage_cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}}'
