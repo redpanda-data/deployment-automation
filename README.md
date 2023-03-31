@@ -160,6 +160,37 @@ ansible-playbook ansible/playbooks/provision-tls-cluster.yml \
 --private-key '<path to a private key with ssh access to the hosts>'
 ```
 
+## Building a Cluster with Tiered Storage
+
+To enable Tiered Storage on a cluster you ned the following two values:
+
+```yaml
+cloud_storage_region: "<<your bucket region>>"
+tiered_storage_bucket_name: "<<your bucket name>>"
+```
+
+You also need a method of authenticating to the bucket. You can use either credentials in the instance
+
+```yaml
+cloud_storage_credentials_source: "AWS instance metadata"
+```
+
+Or credentials passed into the playbook. Don't store them in the playbook itself as that would leak your creds to anyone
+with github access.
+
+```shell
+```shell
+ansible-playbook ansible/playbooks/provision-tls-cluster.yml \
+-i hosts.ini \
+--private-key '<path to a private key with ssh access to the hosts>' \
+--extra-vars create_demo_certs=false \
+--extra-vars advertise_public_ips=false \ 
+--extra-vars handle_certs=false \
+--extra-vars redpanda_truststore_file='<path to ca.crt file>' \
+--extra-vars cloud_storage_access_key="<access_key>" \
+--extra-vars cloud_storage_secret_key="<secret_key>"
+```
+
 ## Adding Nodes to an existing cluster
 
 To add nodes to a cluster you must add them to the hosts file and run the relevant playbook again. You may
@@ -263,4 +294,4 @@ correctness.
 
 Breaks the play because intermediate commands in the pipe return nonzero (but irrelevant) error codes
 
-- risky-shell-pipe 
+- risky-shell-pipe

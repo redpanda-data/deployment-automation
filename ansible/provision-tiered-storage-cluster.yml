@@ -17,9 +17,13 @@
     advertise_public_ips: true
     create_demo_certs: true
     handle_cert_install: true
-    cloud_storage_credentials_source: "AWS instance metadata"
+    #    cloud_storage_credentials_source: "AWS instance metadata"
+    #    cloud_storage_access_key: some_key
+    #    cloud_storage_secret_key: some_secret_key
     cloud_storage_region: "us-west-2"
     tiered_storage_bucket_name: "rp-devex-cicd-bucket"
+    # this value is used to force segments to close out in 1 second to verify that segments are being written to the S3 bucket
+    # not recommended in production without a serious reason
     cloud_storage_segment_max_upload_interval_sec: 1
   tasks:
     - name: Install and configure CA certs for running tls

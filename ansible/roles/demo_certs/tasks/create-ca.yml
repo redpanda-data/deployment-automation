@@ -8,7 +8,7 @@
   ansible.builtin.file:
     path: "{{ root_ca_dir }}"
     state: directory
-    mode: "0600"
+    mode: "0755"
   tags:
     - create_ca
 
