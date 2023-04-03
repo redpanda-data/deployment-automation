@@ -162,7 +162,7 @@ ansible-playbook ansible/provision-tls-cluster.yml \
 
 ## Building a Cluster with Tiered Storage
 
-To enable Tiered Storage on a cluster you ned the following two values:
+To enable Tiered Storage on a cluster you need the following two values:
 
 ```yaml
 cloud_storage_region: "<<your bucket region>>"
