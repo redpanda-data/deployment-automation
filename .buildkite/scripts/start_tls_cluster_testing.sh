@@ -15,7 +15,7 @@ if [ $error_code -ne 0 ]; then
   exit 1
 fi
 DEPLOYMENT_ID=rp-devex-tls task apply -- -var='tags={
-  "VantaOwner" : "gene@redpanda.com"
+  "VantaOwner" : "devex@redpanda.com"
   "VantaNonProd" : "true"
   "VantaDescription" : "cicd-instance-for-devex"
   "VantaContainsUserData" : "false"
@@ -44,7 +44,7 @@ if [ $error_code -ne 0 ]; then
   exit 1
 fi
 DEPLOYMENT_ID=rp-devex-tls task destroy -- '-var=tags={
-  "VantaOwner" : "gene@redpanda.com"
+  "VantaOwner" : "devex@redpanda.com"
   "VantaNonProd" : "true"
   "VantaDescription" : "cicd-instance-for-devex"
   "VantaContainsUserData" : "false"
