@@ -41,7 +41,8 @@ resource "local_file" "hosts_ini" {
       monitor_private_ip         = var.enable_monitoring ? "${azurerm_network_interface.monitoring.0.private_ip_address}" : ""
       enable_monitoring          = "${var.enable_monitoring}"
       ssh_user                   = "${var.admin_username}"
-      rack                       = "${azurerm_linux_virtual_machine.redpanda.*.platform_fault_domain}"
+      rack                       = local.zone_count < 2 ? azurerm_linux_virtual_machine.redpanda.*.platform_fault_domain : azurerm_linux_virtual_machine.redpanda.*.zone
+      rack_awareness             = var.ha || local.multi_az
       cloud_storage_region       = var.region
       tiered_storage_enabled     = false
       tiered_storage_bucket_name = ""
