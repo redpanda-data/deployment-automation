@@ -58,7 +58,7 @@ for the following cloud providers:
 Before running these steps, verify that the `hosts.ini` file contains the correct information for your infrastructure.
 This will be automatically populated if using the terraform steps above.
 
-1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/playbooks/provision-node.yml`
+1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/provision-node.yml`
 
 Available Ansible variables:
 
@@ -100,7 +100,7 @@ and [Node configuration properties](https://docs.redpanda.com/docs/platform/refe
 An example overriding specific properties would be as follows:
 
 ```commandline
-ansible-playbook ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars '{
+ansible-playbook ansible/provision-node.yml -i hosts.ini --extra-vars '{
   "redpanda": {
     "cluster": {
       "auto_create_topics_enabled": "true"
@@ -123,7 +123,7 @@ To deploy a grafana node, ensure that you have a [monitor] section in your hosts
 the deploy-prometheus-grafana.yml playbook
 
 ```shell
-ansible-playbook ansible/playbooks/deploy-prometheus-grafana.yml \
+ansible-playbook ansible/deploy-prometheus-grafana.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>'
 ```
@@ -140,7 +140,7 @@ You should also consider whether you want public access to the kafka_api and adm
 For example:
 
 ```shell
-ansible-playbook ansible/playbooks/provision-tls-cluster.yml \
+ansible-playbook ansible/provision-tls-cluster.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>' \
 --extra-vars create_demo_certs=false \
@@ -155,7 +155,7 @@ keys and signed certificates. For this approach, follow the steps below.
 NOTE THAT THIS SHOULD ONLY BE DONE FOR TESTING PURPOSES! Use an actual signed cert from a valid CA for production!
 
 ```shell
-ansible-playbook ansible/playbooks/provision-tls-cluster.yml \
+ansible-playbook ansible/provision-tls-cluster.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>'
 ```
@@ -214,14 +214,14 @@ There are two ways of enacting an upgrade on a cluster:
    version then the cluster will be upgraded and restarted automatically:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
 ```
 
 2. By default the playbook will select the latest version of the Redpanda packages, but an upgrade will only be enacted
    if the `redpanda_install_status` variable is set to `latest`:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
 ```
 
 It is also possible to upgrade clusters where SASL authentication has been turned on. For this, you will need to
