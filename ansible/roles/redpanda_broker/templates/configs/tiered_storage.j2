@@ -1,9 +1,9 @@
 cluster:
-{% if cloud_storage_credentials_source is defined %}
-    cloud_storage_credentials_source: {{ cloud_storage_credentials_source if cloud_storage_credentials_source is defined }}
-{% else %}
-    cloud_storage_access_key: {{ cloud_storage_access_key if cloud_storage_access_key is defined }}
-    cloud_storage_secret_key: {{ cloud_storage_secret_key if cloud_storage_secret_key is defined }}
+{% if cloud_storage_credentials_source is defined and cloud_storage_credentials_source|d('')|length > 0 %}
+    cloud_storage_credentials_source: {{ cloud_storage_credentials_source }}
+{% elif cloud_storage_access_key is defined and cloud_storage_access_key|d('')|length >0 %}
+    cloud_storage_access_key: {{ cloud_storage_access_key }}
+    cloud_storage_secret_key: {{ cloud_storage_secret_key }}
 {% endif %}
 {% if cloud_storage_enable_remote_read is defined %}
     cloud_storage_enable_remote_read: {{ cloud_storage_enable_remote_read }}

@@ -149,14 +149,13 @@ tasks:
     run: always
     vars:
       ANSIBLE_PLAYBOOK: '{{default "provision-node.yml" .ANSIBLE_PLAYBOOK}}'
-      ANSIBLE_ARGS: '{{default "" .ANSIBLE_ARGS}}'
     env:
       ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.log'
       ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
       ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
-      - ansible-playbook {{.ANSIBLE_ARGS}} ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}} {{.CLI_ARGS}}
 
   create-tls-cluster:
     desc: run multiple ansible playbooks to create a cluster with tls
@@ -179,18 +178,17 @@ tasks:
       - install-role-requirements
     run: always
     env:
-      DA_AWS_ACCESS_KEY_ID: '{{ .DA_AWS_ACCESS_KEY_ID | default nil }}'
-      DA_AWS_SECRET_ACCESS_KEY: '{{ .DA_AWS_SECRET_ACCESS_KEY | default nil }}'
-    preconditions:
-      - sh: "[ {{.DA_AWS_ACCESS_KEY_ID}} ]"
-        msg: DA_AWS_ACCESS_KEY_ID envvar not set.
-      - sh: "[ {{.DA_AWS_SECRET_ACCESS_KEY}} ]"
-        msg: DA_AWS_SECRET_ACCESS_KEY envvar not set.
+      AWS_ACCESS_KEY_ID: '{{ .DA_AWS_ACCESS_KEY_ID | default nil }}'
+      AWS_SECRET_ACCESS_KEY: '{{ .DA_AWS_SECRET_ACCESS_KEY | default nil }}'
+    vars:
+      CLOUD_STORAGE_BUCKET_NAME: '{{ default "rp-devex-cicd-bucket" .CLOUD_STORAGE_BUCKET_NAME }}'
+      CLOUD_STORAGE_REGION: '{{ default "us-west-2" .CLOUD_STORAGE_REGION }}'
+      SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
     cmds:
       - task: basic
         vars: {
-          ANSIBLE_PLAYBOOK: "provision-tls-cluster.yml",
-          ANSIBLE_ARGS: '-e cloud_storage_access_key={{.DA_AWS_ACCESS_KEY_ID}} -e cloud_storage_secret_key={{.DA_AWS_SECRET_ACCESS_KEY}}'
+          ANSIBLE_PLAYBOOK: "provision-tiered-storage-cluster.yml",
+          CLI_ARGS: "-e cloud_storage_access_key={{.AWS_ACCESS_KEY_ID}} -e cloud_storage_secret_key={{.AWS_SECRET_ACCESS_KEY}} -e tiered_storage_bucket_name={{.CLOUD_STORAGE_BUCKET_NAME}} -e cloud_storage_segment_max_upload_interval_sec={{.SEGMENT_UPLOAD_INTERVAL}} -e cloud_storage_region={{.CLOUD_STORAGE_REGION}}"
         }
 
   install-rpk:

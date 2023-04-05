@@ -48,8 +48,6 @@ echo "checking cluster status"
 echo "creating topic"
 "${PATH_TO_RPK_FILE}" topic create testtopic \
 --brokers "$REDPANDA_BROKERS" \
--c redpanda.remote.read=true \
--c redpanda.remote.write=true \
 --tls-truststore "$PATH_TO_CA_CRT" \
 -v || exit 1
 
