@@ -54,7 +54,7 @@ echo "creating topic"
 echo "producing to topic"
 echo squirrels | "${PATH_TO_RPK_FILE}" topic produce testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v || exit 1
 
-sleep 2
+sleep 120
 
 echo "consuming from topic"
 testoutput=$("${PATH_TO_RPK_FILE}" topic consume testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v -o :end)
