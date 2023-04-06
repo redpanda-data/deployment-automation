@@ -36,6 +36,9 @@ vars:
 env:
   TF_IN_AUTOMATION: '{{.CI}}'
   TF_DATA_DIR: '{{.CLOUD_PROVIDER}}'
+  AWS_ACCESS_KEY_ID: '{{.DA_AWS_ACCESS_KEY_ID}}'
+  AWS_SECRET_ACCESS_KEY: '{{.DA_AWS_SECRET_ACCESS_KEY}}'
+  AWS_DEFAULT_REGION: '{{ default "us-west-2" .AWS_DEFAULT_REGION}}'
 
 tasks:
   keygen:
@@ -83,10 +86,6 @@ tasks:
       See the commented out line in cmds for an example of how to achieve this
       Please also note that if you set AWS_ACCESS_KEY_ID etc in your local environment before running this
       you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
-    env:
-      AWS_ACCESS_KEY_ID: '{{.DA_AWS_ACCESS_KEY_ID}}'
-      AWS_SECRET_ACCESS_KEY: '{{.DA_AWS_SECRET_ACCESS_KEY}}'
-      AWS_DEFAULT_REGION: '{{ default "us-west-2" .AWS_DEFAULT_REGION}}'
     dir: '{{.CLOUD_PROVIDER}}'
     cmds:
       - |
@@ -113,10 +112,6 @@ tasks:
       Please also note that if you set AWS_ACCESS_KEY_ID etc in your local environment before running this
       you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
     dir: '{{.CLOUD_PROVIDER}}'
-    env:
-      AWS_ACCESS_KEY_ID: '{{.DA_AWS_ACCESS_KEY_ID}}'
-      AWS_SECRET_ACCESS_KEY: '{{.DA_AWS_SECRET_ACCESS_KEY}}'
-      AWS_DEFAULT_REGION: '{{ default "us-west-2" .AWS_DEFAULT_REGION}}'
     cmds:
       - |
         terraform destroy -auto-approve {{.TF_SSH_USER_VAR}} \
@@ -177,18 +172,14 @@ tasks:
     deps:
       - install-role-requirements
     run: always
-    env:
-      AWS_ACCESS_KEY_ID: '{{ .DA_AWS_ACCESS_KEY_ID | default nil }}'
-      AWS_SECRET_ACCESS_KEY: '{{ .DA_AWS_SECRET_ACCESS_KEY | default nil }}'
     vars:
       CLOUD_STORAGE_BUCKET_NAME: '{{ default "rp-devex-cicd-bucket" .CLOUD_STORAGE_BUCKET_NAME }}'
-      CLOUD_STORAGE_REGION: '{{ default "us-west-2" .CLOUD_STORAGE_REGION }}'
       SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
     cmds:
       - task: basic
         vars: {
           ANSIBLE_PLAYBOOK: "provision-tiered-storage-cluster.yml",
-          CLI_ARGS: "-e cloud_storage_access_key={{.AWS_ACCESS_KEY_ID}} -e cloud_storage_secret_key={{.AWS_SECRET_ACCESS_KEY}} -e tiered_storage_bucket_name={{.CLOUD_STORAGE_BUCKET_NAME}} -e cloud_storage_segment_max_upload_interval_sec={{.SEGMENT_UPLOAD_INTERVAL}} -e cloud_storage_region={{.CLOUD_STORAGE_REGION}}"
+          CLI_ARGS: "-e cloud_storage_access_key={{.AWS_ACCESS_KEY_ID}} -e cloud_storage_secret_key={{.AWS_SECRET_ACCESS_KEY}} -e tiered_storage_bucket_name={{.CLOUD_STORAGE_BUCKET_NAME}} -e cloud_storage_segment_max_upload_interval_sec={{.SEGMENT_UPLOAD_INTERVAL}} -e cloud_storage_region={{.AWS_DEFAULT_REGION}}"
         }
 
   install-rpk:
