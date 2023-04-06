@@ -179,7 +179,7 @@ tasks:
       - task: basic
         vars: {
           ANSIBLE_PLAYBOOK: "provision-tiered-storage-cluster.yml",
-          CLI_ARGS: "-e cloud_storage_access_key={{.AWS_ACCESS_KEY_ID}} -e cloud_storage_secret_key={{.AWS_SECRET_ACCESS_KEY}} -e tiered_storage_bucket_name={{.CLOUD_STORAGE_BUCKET_NAME}} -e cloud_storage_segment_max_upload_interval_sec={{.SEGMENT_UPLOAD_INTERVAL}} -e cloud_storage_region={{.AWS_DEFAULT_REGION}}"
+          CLI_ARGS: "-e tiered_storage_bucket_name={{.CLOUD_STORAGE_BUCKET_NAME}} -e cloud_storage_segment_max_upload_interval_sec={{.SEGMENT_UPLOAD_INTERVAL}} -e cloud_storage_region={{.AWS_DEFAULT_REGION}}"
         }
 
   install-rpk:

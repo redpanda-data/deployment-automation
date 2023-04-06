@@ -17,13 +17,9 @@
     advertise_public_ips: true
     create_demo_certs: true
     handle_cert_install: true
-    ## Pick this if you provide creds in the metadata
-    #    cloud_storage_credentials_source: "AWS instance metadata"
-    ## Pick this if you provide creds directly BUT supply the values to the playbook with -e cloud_storage_access_key="key"
-    ## rather than storing them in the playbook directly
-    #    cloud_storage_access_key: some_key
-    #    cloud_storage_secret_key: some_secret_key
-    ## these need to be supplied to create the bucket in the correct region
+    # Use this if you plan to use IAM to enable the cluster to access the bucket
+    cloud_storage_credentials_source: "aws_instance_metadata"
+    # these need to be supplied to create the bucket in the correct region
     cloud_storage_enable_remote_read: true
     cloud_storage_enable_remote_write: true
   tasks:
