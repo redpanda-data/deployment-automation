@@ -3,7 +3,7 @@
 version: '3'
 vars:
   ARTIFACT_DIR: '{{.TASKFILE_DIR}}/artifacts'
-  ROLES_DIR: '{{.TASKFILE_DIR}}/artifacts:{{.TASKFILE_DIR}}/roles'
+  ROLES_DIR: '{{.TASKFILE_DIR}}/artifacts:{{.TASKFILE_DIR}}/roles:{{.TASKFILE_DIR}}/ansible/redpanda/cluster/roles'
   CLOUD_PROVIDER: '{{default "aws" .CLOUD_PROVIDER | lower}}'
   TERRAFORM_VERSION: '1.3.7'
   TERRAFORM_INSTALL_DIR: '{{.ARTIFACT_DIR}}/terraform/{{.TERRAFORM_VERSION}}'
@@ -141,7 +141,7 @@ tasks:
       ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
-      - ansible-playbook {{.CLI_ARGS}} ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/redpanda/cluster/playbooks/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
 
   create-tls-cluster:
     desc: run multiple ansible playbooks to create a cluster with tls
@@ -182,7 +182,8 @@ tasks:
       - install-rpk
     vars:
       RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
-      CA_CRT: '{{ default "ansible/tls/ca/ca.crt" .CA_CRT }}'
+      # this needs to go somewhere else badly
+      CA_CRT: '{{ default "ansible/redpanda/cluster/playbooks/tls/ca/ca.crt" .CA_CRT }}'
       ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test_tls_cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}}'

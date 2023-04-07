@@ -1,45 +1,8 @@
-# Terraform and Ansible Deployment for Redpanda
+# Ansible Collection for Redpanda
 
-[![Build status](https://badge.buildkite.com/b4528cf1604a18231c935663db15739e56d202dde6d7a2ec2a.svg)](https://buildkite.com/redpanda/deployment-automation)
-
-Terraform and Ansible configuration to easily provision a [Redpanda](https://www.redpanda.com/) cluster on AWS, GCP,
-Azure, or IBM.
-
-# Goal of this project
-
-1 command to a production cluster
-
-## Installation Prerequisites
-
-* Install Terraform in your preferred way: https://www.terraform.io/downloads.html
-* Install Ansible: https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
-* Depending on your system, you might need to install some python packages (e.g. `selinux` or `jmespath`). Ansible will
-  throw an error with the expected python packages, both on local and remote machines.
-* `ansible-galaxy install -r requirements.yml` to gather ansible requirements
-
-### On Mac OS X:
-
-You can use brew to install the prerequisites. You will also need to install gnu-tar:
-
-```commandline
-brew tap hashicorp/tap
-brew install hashicorp/tap/terraform
-brew install ansible
-brew install gnu-tar
-ansible-galaxy install -r requirements.yml
-```
+Redpanda Ansible Collection that enables provisioning and managing a [Redpanda](https://www.redpanda.com/) cluster.
 
 ## Usage
-
-### Optional Steps: Deploying the VMs
-
-To use existing infrastructure, update the `hosts.ini` file with the appropriate information. Otherwise see the READMEs
-for the following cloud providers:
-
-* [AWS](aws/readme.md)
-* [GCP](gcp/readme.md)
-* [Azure](azure/README.md)
-* [IBM Cloud](ibm/README.md)
 
 ### Required Steps: Deploying Redpanda
 
@@ -56,7 +19,6 @@ for the following cloud providers:
 > will disable TLS).
 
 Before running these steps, verify that the `hosts.ini` file contains the correct information for your infrastructure.
-This will be automatically populated if using the terraform steps above.
 
 1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/provision-node.yml`
 
@@ -93,6 +55,7 @@ You can pass the following variables as `-e var=value`:
 You can also specify any available Redpanda configuration value (or set of values) by passing a JSON dictionary as an
 Ansible extra-var. These values will be spliced with the calculated configuration and only override those values that
 you specify.
+
 There are two sub-dictionaries that you can specify, `redpanda.cluster` and `redpanda.node`. Check the Redpanda docs for
 the available [Cluster configuration properties](https://docs.redpanda.com/docs/platform/reference/cluster-properties/)
 and [Node configuration properties](https://docs.redpanda.com/docs/platform/reference/node-properties/).
@@ -123,7 +86,7 @@ To deploy a grafana node, ensure that you have a [monitor] section in your hosts
 the deploy-prometheus-grafana.yml playbook
 
 ```shell
-ansible-playbook ansible/redpanda/cluster/playbooks/deploy-prometheus-grafana.yml \
+ansible-playbook cluster/playbooks/deploy-prometheus-grafana.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>'
 ```
@@ -140,7 +103,7 @@ You should also consider whether you want public access to the kafka_api and adm
 For example:
 
 ```shell
-ansible-playbook ansible/redpanda/cluster/playbooks/provision-tls-cluster.yml \
+ansible-playbook cluster/playbooks/provision-tls-cluster.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>' \
 --extra-vars create_demo_certs=false \
@@ -155,7 +118,7 @@ keys and signed certificates. For this approach, follow the steps below.
 NOTE THAT THIS SHOULD ONLY BE DONE FOR TESTING PURPOSES! Use an actual signed cert from a valid CA for production!
 
 ```shell
-ansible-playbook ansible/redpanda/cluster/playbooks/provision-tls-cluster.yml \
+ansible-playbook ansible/provision-tls-cluster.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>'
 ```
@@ -183,14 +146,14 @@ There are two ways of enacting an upgrade on a cluster:
    version then the cluster will be upgraded and restarted automatically:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/redpanda/cluster/playbooks/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
+ansible-playbook --private-key ~/.ssh/id_rsa cluster/playbooks/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
 ```
 
 2. By default the playbook will select the latest version of the Redpanda packages, but an upgrade will only be enacted
    if the `redpanda_install_status` variable is set to `latest`:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/redpanda/cluster/playbooks/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
+ansible-playbook --private-key ~/.ssh/id_rsa cluster/playbooks/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
 ```
 
 It is also possible to upgrade clusters where SASL authentication has been turned on. For this, you will need to
@@ -198,7 +161,7 @@ additionally specify the `redpanda_rpk_opts` variable to include to username and
 appropriately privileged user. An example follows:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/redpanda/cluster/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
+ansible-playbook --private-key ~/.ssh/id_rsa cluster/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
 \"redpanda_rpk_opts\": \"--user ${MY_USER} --password ${MY_USER_PASSWORD}\"
 }"
 ```
@@ -207,7 +170,7 @@ Similarly, you can put the `redpanda_rpk_opts` into a yaml
 file [protected with Ansible vault](https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html#creating-encrypted-files).
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/redpanda/cluster/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
+ansible-playbook --private-key ~/.ssh/id_rsa cluster/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
 ```
 
 ## Troubleshooting
@@ -227,46 +190,3 @@ You might try resolving by setting an environment variable:
 `export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`
 
 See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-to-crash-and-gives-an-error-may-have-been-in-progr
-
-## Contribution Guide
-
-### Creating and Publishing the Collection
-
-To build the collection you first need to bump the version number listed in ansible/redpanda/cluster/galaxy.yml
-
-You will probably
-need [appropriate permissions](https://galaxy.ansible.com/docs/contributing/namespaces.html#adding-administrators-to-a-namespace)
-on the namespace for this to work.
-
-Once that's all sorted, run the following shell script with
-an [API key from Ansible Galaxy](https://galaxy.ansible.com/me/preferences)
-
-```shell
-cd ansible/redpanda
-ansible-galaxy collection build
-ansible-galaxy collection publish redpanda-cluster-*.tar.gz --token <YOUR_API_KEY> -s https://galaxy.ansible.com/api/
-```
-
-### pre-commit
-
-We use pre-commit to ensure good code health on this repo. To install
-pre-commit [check the docs here](https://pre-commit.com/#install). The basic idea is that you'll have a fairly
-comprehensive checkup happen on each commit, guaranteeing that everything will be properly formatted and validated. You
-may also need to install some pre-requisite tools for pre-commit to work correctly. At the time of writing this
-includes:
-
-* [ansible-lint](https://ansible-lint.readthedocs.io/installing/#installing-from-source-code)
-* [tflint](https://github.com/terraform-linters/tflint#installation)
-
-## Ansible Linter Skip List Whys and Wherefores
-
-A lot of effort to bring the linter and IDE into alignment without meaningful improvement in readability, outcomes or
-correctness.
-
-- jinja[spacing]
-- yaml[brackets]
-- yaml[line-length]
-
-Breaks the play because intermediate commands in the pipe return nonzero (but irrelevant) error codes
-
-- risky-shell-pipe 
