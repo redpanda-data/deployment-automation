@@ -3,8 +3,8 @@ variable "region" {
   default     = "centralus"
 }
 
-variable "zone" {
-  description = "Availability Zone"
+variable "availability_zones" {
+  description = "Availability Zones to deploy to - this can either be null or an array of zones"
   default     = null
 }
 
@@ -20,7 +20,7 @@ variable "vm_instances" {
 }
 
 variable "ha" {
-  description = "Whether to use a scale set to enable rack awareness"
+  description = "Whether to use a scale set to enable rack awareness - this is ignored if any availability zones are specified"
   type        = bool
   default     = false
 }
