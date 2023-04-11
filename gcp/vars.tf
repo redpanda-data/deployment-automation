@@ -2,14 +2,15 @@ variable "region" {
   default = "us-west2"
 }
 
-variable "zone" {
+variable "availability_zone" {
   description = "The zone where the cluster will be deployed [a,b,...]"
-  default     = "a"
+  default     = ["a"]
+  type        = list(string)
 }
 
 variable "instance_group_name" {
   description = "The name of the GCP instance group"
-  default     = "redpanda-group"  
+  default     = "redpanda-group"
 }
 
 variable "subnet" {
@@ -41,7 +42,7 @@ variable "client_nodes" {
 variable "disks" {
   description = "The number of local disks on each machine."
   type        = number
-  default     = 1 
+  default     = 1
 }
 
 variable "image" {
@@ -78,8 +79,8 @@ variable "enable_monitoring" {
 
 variable "labels" {
   description = "passthrough of GCP labels"
-  default = {
-    "purpose" = "redpanda-cluster"
+  default     = {
+    "purpose"      = "redpanda-cluster"
     "created-with" = "terraform"
   }
 }
