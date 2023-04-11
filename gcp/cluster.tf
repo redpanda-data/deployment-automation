@@ -18,6 +18,7 @@ resource "google_compute_instance" "redpanda" {
   count             = var.nodes
   name              = "rp-node-${count.index}-${local.deployment_id}"
   tags              = ["rp-cluster", "tf-deployment-${local.deployment_id}"]
+  zone              = "${var.region}-${var.availability_zone[count.index % length(var.availability_zone)]}"
   machine_type      = var.machine_type
   // GCP does not give you visibility nor control over which failure domain a resource has been placed into
   // (https://issuetracker.google.com/issues/256993209?pli=1). So the only way that we can guarantee that
@@ -61,6 +62,7 @@ resource "google_compute_instance" "monitor" {
   name         = "rp-monitor-${local.deployment_id}"
   tags         = ["rp-cluster", "tf-deployment-${local.deployment_id}"]
   machine_type = var.monitor_machine_type
+  zone         = "${var.region}-${var.availability_zone[0]}"
 
   metadata = {
     ssh-keys = <<KEYS
@@ -93,6 +95,7 @@ resource "google_compute_instance" "client" {
   name         = "rp-client-${count.index}-${local.deployment_id}"
   tags         = ["rp-cluster", "tf-deployment-${local.deployment_id}"]
   machine_type = var.client_machine_type
+  zone         = "${var.region}-${var.availability_zone[count.index % length(var.availability_zone)]}"
 
   metadata = {
     ssh-keys = <<KEYS
@@ -119,12 +122,39 @@ KEYS
   labels = tomap(var.labels)
 }
 
+# This generates a map of AZ -> Instance that can be used then creating the google_compute_instance_group
+# further down. When n AZs are defined, every nth broker, client and monitor is placed into each AZ (noting that we
+# can have at most one monitoring node).
+locals {
+  hosts_map = {
+    for i in range(length(var.availability_zone)) : var.availability_zone[i] =>
+    concat(
+      [
+        for j in range(i, length(google_compute_instance.redpanda), length(var.availability_zone)) :
+        google_compute_instance.redpanda[j].self_link
+      ],
+      [
+        for j in range(i, length(google_compute_instance.client), length(var.availability_zone)) :
+        google_compute_instance.client[j].self_link
+      ],
+      [
+        for j in range(i, length(google_compute_instance.monitor), length(var.availability_zone)) :
+        google_compute_instance.monitor[j].self_link
+      ]
+    )
+
+  }
+}
+
+output "host_map" {
+  value = local.hosts_map
+}
+
 resource "google_compute_instance_group" "redpanda" {
   name      = "redpanda-group-${local.deployment_id}"
-  zone      = "${var.region}-${var.zone}"
-  instances = concat(google_compute_instance.redpanda[*].self_link,
-    google_compute_instance.client[*].self_link,
-    [google_compute_instance.monitor[0].self_link])
+  count     = length(var.availability_zone)
+  zone      = "${var.region}-${var.availability_zone[count.index]}"
+  instances = local.hosts_map[var.availability_zone[count.index]]
 }
 
 resource "local_file" "hosts_ini" {
@@ -138,7 +168,9 @@ resource "local_file" "hosts_ini" {
       monitor_private_ip         = google_compute_instance.monitor[0].network_interface.0.network_ip
       ssh_user                   = var.ssh_user
       enable_monitoring          = true
-      rack                       = google_compute_instance.redpanda[*].name
+      rack                       = length(var.availability_zone) == 1 ? google_compute_instance.redpanda[*].name : google_compute_instance.redpanda.*.zone
+      rack_awareness             = var.ha || length(var.availability_zone) > 1
+      availability_zone          = google_compute_instance.redpanda[*].zone
       cloud_storage_region       = var.region
       tiered_storage_enabled     = false
       tiered_storage_bucket_name = ""

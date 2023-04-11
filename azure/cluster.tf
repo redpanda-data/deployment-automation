@@ -1,3 +1,11 @@
+locals {
+  zone_count = try(length(var.availability_zones), 0)
+  multi_az = local.zone_count > 1
+  single_az = local.zone_count <= 1
+  use_availability_sets = var.ha && local.single_az
+  use_vmss = ! local.use_availability_sets
+}
+
 #
 # Redpanda broker VMs
 #
@@ -8,21 +16,20 @@ resource "azurerm_linux_virtual_machine" "redpanda" {
   count                        = var.vm_instances
   resource_group_name          = azurerm_resource_group.redpanda.name
   location                     = azurerm_resource_group.redpanda.location
-  availability_set_id          = var.ha ? null : azurerm_availability_set.redpanda.0.id
-  proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
-  virtual_machine_scale_set_id = var.ha ? azurerm_orchestrated_virtual_machine_scale_set.redpanda.0.id : null
-  platform_fault_domain        = var.ha ? count.index % 3 : null
-  
-  zone                         = try(var.zone, null)
+  availability_set_id          = local.use_availability_sets ? azurerm_availability_set.redpanda.0.id : null
+  proximity_placement_group_id = local.single_az ? azurerm_proximity_placement_group.redpanda.0.id : null
+  virtual_machine_scale_set_id = local.use_vmss ? azurerm_orchestrated_virtual_machine_scale_set.redpanda.0.id : null
+  platform_fault_domain        = local.multi_az || local.use_availability_sets ? null : count.index % 3
+  zone                         = local.use_availability_sets ? null : try(var.availability_zones[count.index % length(var.availability_zones)], null)
   size                         = var.vm_sku
   admin_username               = var.admin_username
   network_interface_ids        = ["${element(azurerm_network_interface.redpanda.*.id, count.index)}"]
-  
+
   os_disk {
     storage_account_type = "Premium_LRS"
     caching              = "ReadWrite"
   }
-  
+
   admin_ssh_key {
     username   = var.admin_username
     public_key = file(var.public_key_path)
@@ -75,10 +82,11 @@ resource "azurerm_linux_virtual_machine" "redpanda_client" {
   count                        = var.client_vm_instances
   resource_group_name          = azurerm_resource_group.redpanda.name
   location                     = azurerm_resource_group.redpanda.location
-  proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
+  proximity_placement_group_id = local.single_az ? azurerm_proximity_placement_group.redpanda.0.id : null
   size                         = var.client_vm_sku
   admin_username               = var.admin_username
   network_interface_ids        = ["${element(azurerm_network_interface.redpanda_client.*.id, count.index)}"]
+  zone                         = try(var.availability_zones[count.index % length(var.availability_zones)], null)
 
   os_disk {
     storage_account_type = "Standard_LRS"
@@ -111,7 +119,7 @@ resource "azurerm_linux_virtual_machine" "monitoring" {
   count                        = var.enable_monitoring ? 1 : 0
   resource_group_name          = azurerm_resource_group.redpanda.name
   location                     = azurerm_resource_group.redpanda.location
-  proximity_placement_group_id = azurerm_proximity_placement_group.redpanda.id
+  proximity_placement_group_id = local.single_az ? azurerm_proximity_placement_group.redpanda[0].id : null
   size                         = var.monitoring_vm_sku
   admin_username               = var.admin_username
   network_interface_ids        = ["${element(azurerm_network_interface.monitoring.*.id, count.index)}"]
