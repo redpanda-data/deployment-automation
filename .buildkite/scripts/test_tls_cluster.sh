@@ -52,4 +52,4 @@ echo "producing to topic"
 echo test | "${PATH_TO_RPK_FILE}" topic produce testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v || exit 1
 
 echo "consuming from topic"
-"${PATH_TO_RPK_FILE}" topic consume testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v -o :end | grep -q test || exit 1
+"${PATH_TO_RPK_FILE}" topic consume testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v -o :end | grep test || exit 1

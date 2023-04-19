@@ -8,6 +8,7 @@ exclude_paths:
   - ibm/
   - templates/
   - ssh-bootstrap.yml
+  - Taskfile.yaml
 
 enable_list:
   - yaml

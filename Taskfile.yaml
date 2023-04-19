@@ -3,12 +3,11 @@
 version: '3'
 vars:
   ARTIFACT_DIR: '{{.TASKFILE_DIR}}/artifacts'
-  ROLES_DIR: '{{.TASKFILE_DIR}}/artifacts:{{.TASKFILE_DIR}}/roles:{{.TASKFILE_DIR}}/ansible/redpanda/cluster/roles'
+  ROLES_DIR: '{{.TASKFILE_DIR}}/artifacts/roles'
   CLOUD_PROVIDER: '{{default "aws" .CLOUD_PROVIDER | lower}}'
   TERRAFORM_VERSION: '1.3.7'
   TERRAFORM_INSTALL_DIR: '{{.ARTIFACT_DIR}}/terraform/{{.TERRAFORM_VERSION}}'
-  ANSIBLE_VERSION: '2.11.12'
-  ANSIBLE_INSTALL_DIR: '{{.ARTIFACT_DIR}}/ansible/{{.ANSIBLE_VERSION}}'
+
   PUBLIC_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey.pub'
   PRIVATE_KEY_DEFAULT: '{{.ARTIFACT_DIR}}/testkey'
   PUBLIC_KEY: '{{ .PUBLIC_KEY | default .PUBLIC_KEY_DEFAULT}}'
@@ -17,6 +16,15 @@ vars:
   PATH="{{.ANSIBLE_INSTALL_DIR}}/bin/:{{.TERRAFORM_INSTALL_DIR}}/bin/:$PATH":
   NUM_NODES: '{{default "3" .NUM_NODES}}'
   ENABLE_MONITORING: '{{default "true" .ENABLE_MONITORING}}'
+
+  # ansible stuff
+  ANSIBLE_VERSION: '2.11.12'
+  ANSIBLE_INSTALL_DIR: '{{.ARTIFACT_DIR}}/ansible/{{.ANSIBLE_VERSION}}'
+  ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.log'
+  ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+  ANSIBLE_COLLECTIONS_PATHS: '{{ .ARTIFACT_DIR }}/collections'
+  ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}:{{.ANSIBLE_COLLECTIONS_PATHS}}'
+  ANSIBLE_COLLECTION_INSTALL: '{{ default "redpanda.cluster" .ANSIBLE_COLLECTION_INSTALL }}'
 
   TF_SSH_USER_VAR:
     sh: |
@@ -39,7 +47,7 @@ tasks:
     vars:
       SSH_EMAIL: '{{default "test@redpanda.com" .SSH_EMAIL | lower}}'
     cmds:
-      - ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey <<< y
+      - ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey <<< y && chmod 0700 artifacts/testkey
     status:
       - test f artifacts/testkey
 
@@ -120,10 +128,12 @@ tasks:
     desc: install required ansible roles
     env:
       ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}'
+      ANSIBLE_COLLECTION_INSTALL: '{{ .ANSIBLE_COLLECTION_INSTALL }}'
     run: once
     cmds:
       - mkdir -p "$ANSIBLE_ROLES_PATH"
       - ansible-galaxy install -r "requirements.yml"
+      - ansible-galaxy collection install {{ .ANSIBLE_COLLECTION_INSTALL }} -p {{ .ANSIBLE_COLLECTIONS_PATHS }}
 
   basic:
     desc: run an ansible playbook to create a basic private cluster
@@ -133,15 +143,17 @@ tasks:
     deps:
       - install-role-requirements
     run: always
+    env:
+        ANSIBLE_INSTALL_DIR: '{{.ANSIBLE_INSTALL_DIR}}'
+        ANSIBLE_LOG_PATH: '{{.ANSIBLE_LOG_PATH}}'
+        ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
+        ANSIBLE_COLLECTIONS_PATHS: '{{.ANSIBLE_COLLECTIONS_PATHS}}'
+        ANSIBLE_ROLES_PATH: '{{.ANSIBLE_ROLES_PATH}}'
     vars:
       ANSIBLE_PLAYBOOK: '{{default "provision-node.yml" .ANSIBLE_PLAYBOOK}}'
-    env:
-      ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.log'
-      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
-      ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
-      - ansible-playbook {{.CLI_ARGS}} ansible/redpanda/cluster/playbooks/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
+      - ansible-playbook {{.CLI_ARGS}} ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}}
 
   create-tls-cluster:
     desc: run multiple ansible playbooks to create a cluster with tls
@@ -183,7 +195,7 @@ tasks:
     vars:
       RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
       # this needs to go somewhere else badly
-      CA_CRT: '{{ default "ansible/redpanda/cluster/playbooks/tls/ca/ca.crt" .CA_CRT }}'
+      CA_CRT: '{{ default "ansible/tls/ca/ca.crt" .CA_CRT }}'
       ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test_tls_cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}}'

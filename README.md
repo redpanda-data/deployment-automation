@@ -123,7 +123,7 @@ To deploy a grafana node, ensure that you have a [monitor] section in your hosts
 the deploy-prometheus-grafana.yml playbook
 
 ```shell
-ansible-playbook ansible/redpanda/cluster/playbooks/deploy-prometheus-grafana.yml \
+ansible-playbook ansible/deploy-prometheus-grafana.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>'
 ```
@@ -140,7 +140,7 @@ You should also consider whether you want public access to the kafka_api and adm
 For example:
 
 ```shell
-ansible-playbook ansible/redpanda/cluster/playbooks/provision-tls-cluster.yml \
+ansible-playbook ansible/provision-tls-cluster.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>' \
 --extra-vars create_demo_certs=false \
@@ -155,7 +155,7 @@ keys and signed certificates. For this approach, follow the steps below.
 NOTE THAT THIS SHOULD ONLY BE DONE FOR TESTING PURPOSES! Use an actual signed cert from a valid CA for production!
 
 ```shell
-ansible-playbook ansible/redpanda/cluster/playbooks/provision-tls-cluster.yml \
+ansible-playbook ansible/provision-tls-cluster.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>'
 ```
@@ -183,14 +183,14 @@ There are two ways of enacting an upgrade on a cluster:
    version then the cluster will be upgraded and restarted automatically:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/redpanda/cluster/playbooks/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
 ```
 
 2. By default the playbook will select the latest version of the Redpanda packages, but an upgrade will only be enacted
    if the `redpanda_install_status` variable is set to `latest`:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/redpanda/cluster/playbooks/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
 ```
 
 It is also possible to upgrade clusters where SASL authentication has been turned on. For this, you will need to
@@ -198,7 +198,7 @@ additionally specify the `redpanda_rpk_opts` variable to include to username and
 appropriately privileged user. An example follows:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/redpanda/cluster/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
 \"redpanda_rpk_opts\": \"--user ${MY_USER} --password ${MY_USER_PASSWORD}\"
 }"
 ```
@@ -207,7 +207,7 @@ Similarly, you can put the `redpanda_rpk_opts` into a yaml
 file [protected with Ansible vault](https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html#creating-encrypted-files).
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/redpanda/cluster/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
 ```
 
 ## Troubleshooting
@@ -230,22 +230,15 @@ See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-
 
 ## Contribution Guide
 
-### Creating and Publishing the Collection
+### testing with a specific commit of redpanda-ansible-collection
 
-To build the collection you first need to bump the version number listed in ansible/redpanda/cluster/galaxy.yml
-
-You will probably
-need [appropriate permissions](https://galaxy.ansible.com/docs/contributing/namespaces.html#adding-administrators-to-a-namespace)
-on the namespace for this to work.
-
-Once that's all sorted, run the following shell script with
-an [API key from Ansible Galaxy](https://galaxy.ansible.com/me/preferences)
-
+To test with a specific commit of RAC, set the following value in your environment. 
 ```shell
-cd ansible/redpanda
-ansible-galaxy collection build
-ansible-galaxy collection publish redpanda-cluster-*.tar.gz --token <YOUR_API_KEY> -s https://galaxy.ansible.com/api/
+export ANSIBLE_COLLECTION_INSTALL=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,<<YOUR COMMIT HERE>>
 ```
+The alphanumeric string after the comma should be the short form of the commit you want installed. This value is consumed by the task file as part of an ansible-galaxy install command.
+
+More documentation is available [here](https://docs.ansible.com/ansible/latest/collections_guide/collections_installing.html)
 
 ### pre-commit
 

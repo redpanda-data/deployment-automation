@@ -7,8 +7,8 @@
 
     - name: generate the redpanda grafana dashboard
       ansible.builtin.shell: |
-        rpk generate grafana-dashboard --datasource prometheus --metrics-endpoint 'http{{ 's' if tls|default(false) else '' }}://{{hostvars[inventory_hostname].private_ip}}:9644/metrics' > '/tmp/redpanda-grafana.json'
-      when: not dashboard.stat.exists or package_result.changed
+        rpk generate grafana-dashboard --datasource prometheus --metrics-endpoint 'http{{ 's' if tls|default(false) else '' }}://{{hostvars[inventory_hostname].private_ip}}:9644/public_metrics' > '/tmp/redpanda-grafana.json'
+      when: not dashboard.stat.exists
 
     - name: fetch grafana dashboard
       ansible.builtin.fetch:
@@ -29,13 +29,13 @@
   vars:
     prometheus_scrape_configs:
       - job_name: "redpanda"
-        metrics_path: "/metrics"
+        metrics_path: "/public_metrics"
         static_configs:
-          - targets: "{{ groups['redpanda'] | map('extract', hostvars, ['ansible_default_ipv4','address']) | map('regex_replace', '^(.*)$','\\1:9644') | list  }}"
+          - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9644') | list  }}"
       - job_name: "node"
-        metrics_path: "/metrics"
+        metrics_path: "/public_metrics"
         static_configs:
-          - targets: "{{ groups['redpanda'] | map('extract', hostvars, ['ansible_default_ipv4','address']) | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
+          - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
 
 - hosts: monitor
   roles:
