@@ -198,7 +198,7 @@ additionally specify the `redpanda_rpk_opts` variable to include to username and
 appropriately privileged user. An example follows:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
 \"redpanda_rpk_opts\": \"--user ${MY_USER} --password ${MY_USER_PASSWORD}\"
 }"
 ```
@@ -207,7 +207,7 @@ Similarly, you can put the `redpanda_rpk_opts` into a yaml
 file [protected with Ansible vault](https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html#creating-encrypted-files).
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/playbooks/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
 ```
 
 ## Troubleshooting
@@ -230,6 +230,16 @@ See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-
 
 ## Contribution Guide
 
+### testing with a specific commit of redpanda-ansible-collection
+
+To test with a specific commit of RAC, set the following value in your environment. 
+```shell
+export ANSIBLE_COLLECTION_INSTALL=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,<<YOUR COMMIT HERE>>
+```
+The alphanumeric string after the comma should be the short form of the commit you want installed. This value is consumed by the task file as part of an ansible-galaxy install command.
+
+More documentation is available [here](https://docs.ansible.com/ansible/latest/collections_guide/collections_installing.html)
+
 ### pre-commit
 
 We use pre-commit to ensure good code health on this repo. To install
@@ -240,17 +250,6 @@ includes:
 
 * [ansible-lint](https://ansible-lint.readthedocs.io/installing/#installing-from-source-code)
 * [tflint](https://github.com/terraform-linters/tflint#installation)
-
-### skip ci
-
-If you have already got a clean ci bill of health but still want to submit readme or docs related changes you can skip
-the checks using [skip ci]
-or [one of the commit messages here](https://github.blog/changelog/2021-02-08-github-actions-skip-pull-request-and-push-workflows-with-skip-ci/).
-
-### [build]
-
-To trigger a full build of the cluster in AWS add [build] to your commit message. This will cause our pipeline to build
-the cluster and test that everything is working as expected.
 
 ## Ansible Linter Skip List Whys and Wherefores
 

@@ -9,5 +9,5 @@
   tasks:
     - name: Install and start redpanda
       ansible.builtin.include_role:
-        name: redpanda_broker
+        name: redpanda.cluster.redpanda_broker
       when: not skip_node | default(false) | bool

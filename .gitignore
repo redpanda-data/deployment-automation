@@ -15,3 +15,4 @@ gcp/_override.tf
 azure/_override.tf
 *.tfvars
 ibm/_override.tf
+*.gz
