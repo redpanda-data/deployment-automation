@@ -16,6 +16,12 @@
         dest: '{{ playbook_dir }}/grafana_dashboards/redpanda-grafana.json'
         flat: true
 
+- hosts: redpanda
+  tasks:
+    - name: Node dependencies - include geerlingguy nodeexporter
+      ansible.builtin.include_role:
+        name: geerlingguy.node_exporter
+
 - hosts: monitor
   tasks:
     - name: install deps
