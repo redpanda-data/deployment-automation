@@ -2,6 +2,7 @@ resource "aws_s3_bucket" "tiered_storage" {
   count  = var.tiered_storage_enabled ? 1 : 0
   bucket = local.tiered_storage_bucket_name
   tags   = local.instance_tags
+  force_destroy = var.allow_force_destroy
 }
 
 resource "aws_s3_bucket_acl" "tiered_storage" {

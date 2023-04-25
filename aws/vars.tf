@@ -258,7 +258,7 @@ variable "ssh_security_rule_cidr" {
 
 variable "subnet_id" {
   type        = string
-  description = "The ID ID of the subnet where the EC2 instances will be deployed. An empty string will deploy to the default VPC. If provided, it must be in the same VPC as vpc_id"
+  description = "The ID of the subnet where the EC2 instances will be deployed. An empty string will deploy to the default VPC. If provided, it must be in the same VPC as vpc_id"
   default     = ""
 }
 
@@ -279,4 +279,18 @@ variable "cloud_provider" {
   type        = string
   description = "the short, lower case form of the cloud provider"
   default     = "aws"
+}
+
+# allow_force_destroy is only intended for demos and CI testing and to support decommissioning a cluster entirely
+# enabling it will result in loss of any data or topic info stored in the bucket
+variable "allow_force_destroy" {
+  default     = false
+  type        = bool
+  description = "DANGER: Enabling this option will delete your data in Tiered Storage when terraform destroy is run. Enable this only after careful consideration of the data loss consequences."
+}
+
+variable "associate_public_ip_addr" {
+  default = false
+  type = bool
+  description = "Allows enabling public ips when using a custom VPC rather than the default"
 }
