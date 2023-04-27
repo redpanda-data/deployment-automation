@@ -6,6 +6,7 @@
   hosts: redpanda
   vars:
     advertise_public_ips: true
+    redpanda_version: latest
   tasks:
     - name: Install and start redpanda
       ansible.builtin.include_role:
