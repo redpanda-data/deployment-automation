@@ -1,7 +1,7 @@
 # Creates a TLS enabled cluster with local CA in artifacts/ca for testing purposes
 # !!! WARNING !!!
 # If you intend to use this for a production cluster you will need to set handle_certs to false and provide your own certs
-# Using our demo certificate authority for production is not recommended, and is intended only for testing and proof of concepts. 
+# Using our demo certificate authority for production is not recommended, and is intended only for testing and proof of concepts.
 # Redpanda encourages you to integrate with your corporate certificate management setup.
 # variables
 # root_ca_dir: location of our demo cert authority

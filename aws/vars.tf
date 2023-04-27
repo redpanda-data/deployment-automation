@@ -290,7 +290,7 @@ variable "allow_force_destroy" {
 }
 
 variable "associate_public_ip_addr" {
-  default = false
-  type = bool
+  default     = false
+  type        = bool
   description = "Allows enabling public ips when using a custom VPC rather than the default"
 }
