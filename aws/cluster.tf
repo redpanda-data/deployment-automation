@@ -18,11 +18,11 @@ locals {
 }
 
 resource "aws_iam_policy" "redpanda" {
-  count = var.tiered_storage_enabled ? 1 : 0
-  name  = local.deployment_id
-  path  = "/"
+  count  = var.tiered_storage_enabled ? 1 : 0
+  name   = local.deployment_id
+  path   = "/"
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [
       {
         "Effect" : "Allow",
@@ -39,15 +39,15 @@ resource "aws_iam_policy" "redpanda" {
 }
 
 resource "aws_iam_role" "redpanda" {
-  count = var.tiered_storage_enabled ? 1 : 0
-  name  = local.deployment_id
+  count              = var.tiered_storage_enabled ? 1 : 0
+  name               = local.deployment_id
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [
       {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Sid    = ""
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Sid       = ""
         Principal = {
           Service = "ec2.amazonaws.com"
         }
@@ -71,22 +71,25 @@ resource "aws_iam_instance_profile" "redpanda" {
 
 
 resource "aws_instance" "redpanda" {
-  count                      = var.nodes
-  ami                        = coalesce(var.cluster_ami, data.aws_ami.ami.image_id)
-  instance_type              = var.instance_type
-  key_name                   = aws_key_pair.ssh.key_name
-  iam_instance_profile       = var.tiered_storage_enabled ? aws_iam_instance_profile.redpanda[0].name : null
-  vpc_security_group_ids     = concat([aws_security_group.node_sec_group.id], var.security_groups_redpanda)
-  placement_group            = var.ha ? aws_placement_group.redpanda-pg[0].id : null
-  placement_partition_number = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
-  availability_zone          = var.availability_zone[count.index % length(var.availability_zone)]
-  subnet_id                  = var.subnet_id
+  count                       = var.nodes
+  ami                         = coalesce(var.cluster_ami, data.aws_ami.ami.image_id)
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.ssh.key_name
+  iam_instance_profile        = var.tiered_storage_enabled ? aws_iam_instance_profile.redpanda[0].name : null
+  placement_group             = var.ha ? aws_placement_group.redpanda-pg[0].id : null
+  placement_partition_number  = var.ha ? (count.index % aws_placement_group.redpanda-pg[0].partition_count) + 1 : null
+  availability_zone           = var.availability_zone[count.index % length(var.availability_zone)]
+  vpc_security_group_ids      = concat([aws_security_group.node_sec_group.id], var.security_groups_redpanda)
+  subnet_id                   = var.subnet_id
+  associate_public_ip_address = var.associate_public_ip_addr
+
   tags = merge(
     local.merged_tags,
     {
       Name = "${local.deployment_id}-node-${count.index}",
     }
   )
+
 
   connection {
     user        = var.distro_ssh_user[var.distro]
@@ -116,12 +119,14 @@ resource "aws_volume_attachment" "volume_attachment" {
 }
 
 resource "aws_instance" "prometheus" {
-  count                  = var.enable_monitoring ? 1 : 0
-  ami                    = coalesce(var.prometheus_ami, data.aws_ami.ami.image_id)
-  instance_type          = var.prometheus_instance_type
-  key_name               = aws_key_pair.ssh.key_name
-  subnet_id              = var.subnet_id
-  vpc_security_group_ids = concat([aws_security_group.node_sec_group.id], var.security_groups_prometheus)
+  count                       = var.enable_monitoring ? 1 : 0
+  ami                         = coalesce(var.prometheus_ami, data.aws_ami.ami.image_id)
+  instance_type               = var.prometheus_instance_type
+  key_name                    = aws_key_pair.ssh.key_name
+  subnet_id                   = var.subnet_id
+  vpc_security_group_ids      = concat([aws_security_group.node_sec_group.id], var.security_groups_prometheus)
+  associate_public_ip_address = var.associate_public_ip_addr
+
   tags = merge(
     local.merged_tags,
     {
@@ -141,12 +146,14 @@ resource "aws_instance" "prometheus" {
 }
 
 resource "aws_instance" "client" {
-  count                  = var.clients
-  ami                    = coalesce(var.client_ami, data.aws_ami.ami.image_id)
-  instance_type          = var.client_instance_type
-  key_name               = aws_key_pair.ssh.key_name
-  subnet_id              = var.subnet_id
-  vpc_security_group_ids = concat([aws_security_group.node_sec_group.id], var.security_groups_client)
+  count                       = var.clients
+  ami                         = coalesce(var.client_ami, data.aws_ami.ami.image_id)
+  instance_type               = var.client_instance_type
+  key_name                    = aws_key_pair.ssh.key_name
+  subnet_id                   = var.subnet_id
+  vpc_security_group_ids      = concat([aws_security_group.node_sec_group.id], var.security_groups_client)
+  associate_public_ip_address = var.associate_public_ip_addr
+
   tags = merge(
     local.merged_tags,
     {
@@ -317,10 +324,10 @@ locals {
   node_details = [
     for index, instance in aws_instance.redpanda :
     {
-      "instance_id" : instance.id
-      "public_ip" : instance.public_ip
-      "private_ip" : instance.private_ip
-      "name" : "${var.deployment_prefix}-node-${index}"
+      instance_id : instance.id
+      public_ip : instance.public_ip
+      private_ip : instance.private_ip
+      name : "${var.deployment_prefix}-node-${index}"
     }
   ]
 }
