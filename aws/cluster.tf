@@ -31,7 +31,8 @@ resource "aws_iam_policy" "redpanda" {
           "s3-object-lambda:*",
         ],
         "Resource" : [
-          "arn:aws:s3:::${local.tiered_storage_bucket_name}/*"
+          "arn:aws:s3:::${local.tiered_storage_bucket_name}/*",
+          "arn:aws:s3:::${local.tiered_storage_bucket_name}"
         ]
       },
     ]
