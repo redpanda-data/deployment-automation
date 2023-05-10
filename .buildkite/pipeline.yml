@@ -3,11 +3,21 @@ agents:
 
 steps:
   - label: test tls cluster standup
-    key: aws-up
-    command: .buildkite/scripts/runtask.sh
+    key: tls-up
+    command: .buildkite/scripts/standup-tls.sh
     plugins:
       - docker#v5.4.0:
-          image: glrp/atgt:1.0.2
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: test tiered-storage-up cluster standup
+    key: tiered-up
+    command: .buildkite/scripts/standup-tiered-storage.sh
+    plugins:
+      - docker#v5.4.0:
+          image: glrp/atgt:latest
           environment:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
