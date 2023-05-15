@@ -97,19 +97,11 @@ There are two sub-dictionaries that you can specify, `redpanda.cluster` and `red
 the available [Cluster configuration properties](https://docs.redpanda.com/docs/platform/reference/cluster-properties/)
 and [Node configuration properties](https://docs.redpanda.com/docs/platform/reference/node-properties/).
 
-An example overriding specific properties would be as follows:
+Example below, note that adding whitespace breaks configuration merging. Please ensure you do not add whitespace!
 
-```commandline
-ansible-playbook ansible/provision-node.yml -i hosts.ini --extra-vars '{
-  "redpanda": {
-    "cluster": {
-      "auto_create_topics_enabled": "true"
-    },
-    "node": {
-      "developer_mode": "false"
-    }
-  }
-}'
+```shell
+export JSONDATA='{"cluster":{"auto_create_topics_enabled":"true"},"node":{"developer_mode":"false"}}'
+ansible-playbook ansible/provision-node.yml --private-key artifacts/testkey -e redpanda="${JSONDATA}"
 ```
 
 2. Use `rpk` & standard Kafka tools to produce/consume from the Redpanda cluster & access the Grafana installation on
@@ -230,15 +222,19 @@ See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-
 
 ## Contribution Guide
 
-### testing with a specific commit of redpanda-ansible-collection
+### testing with a specific commit hash of redpanda-ansible-collection
 
-To test with a specific commit of RAC, set the following value in your environment. 
+To test with a specific commit hash of RAC, set the following value in your environment.
+
 ```shell
-export ANSIBLE_COLLECTION_INSTALL=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,<<YOUR COMMIT HERE>>
+export ANSIBLE_COLLECTION_INSTALL=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,<<YOUR GIT COMMIT HASH HERE>>
 ```
-The alphanumeric string after the comma should be the short form of the commit you want installed. This value is consumed by the task file as part of an ansible-galaxy install command.
 
-More documentation is available [here](https://docs.ansible.com/ansible/latest/collections_guide/collections_installing.html)
+The alphanumeric string after the comma should be the short form of the commit hash you want installed. This value is
+consumed by the task file as part of an ansible-galaxy install command.
+
+More documentation is
+available [here](https://docs.ansible.com/ansible/latest/collections_guide/collections_installing.html)
 
 ### pre-commit
 
