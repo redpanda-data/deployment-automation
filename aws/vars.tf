@@ -143,19 +143,19 @@ variable "prometheus_instance_type" {
 
 variable "cluster_ami" {
   type        = string
-  description = "AMI for Redpanda broker nodes (if not set, will select based on the client_distro variable"
+  description = "AMI for Redpanda broker nodes (if not set, will select based on the distro variable"
   default     = null
 }
 
 variable "prometheus_ami" {
   type        = string
-  description = "AMI for prometheus nodes (if not set, will select based on the client_distro variable"
+  description = "AMI for prometheus nodes (if not set, will select based on the distro variable"
   default     = null
 }
 
 variable "client_ami" {
   type        = string
-  description = "AMI for Redpanda client nodes (if not set, will select based on the client_distro variable"
+  description = "AMI for Redpanda client nodes (if not set, will select based on the distro variable"
   default     = null
 }
 

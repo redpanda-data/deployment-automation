@@ -19,6 +19,7 @@ vars:
   ALLOW_FORCE_DESTROY: '{{ .ALLOW_FORCE_DESTROY | default "true"}}'
   VPC_ID: '{{ .VPC_ID | default "" }}'
   BUCKET_NAME: '{{ .DEPLOYMENT_ID | replace "_" "-"}}-bucket'
+  DISTRO: '{{ .DISTRO | default "" }}'
 
   # ansible stuff
   ANSIBLE_VERSION: '2.11.12'
@@ -27,7 +28,6 @@ vars:
   ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
   ANSIBLE_COLLECTIONS_PATHS: '{{ .ARTIFACT_DIR }}/collections'
   ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}:{{.ROLES_DIR}}:{{.ANSIBLE_COLLECTIONS_PATHS}}:{{.ANSIBLE_COLLECTIONS_PATHS}}/ansible_collections/redpanda/cluster/roles'
-  ANSIBLE_COLLECTION_INSTALL: '{{ default "redpanda.cluster" .ANSIBLE_COLLECTION_INSTALL }}'
 
   TF_SSH_USER_VAR:
     sh: |
@@ -102,6 +102,7 @@ tasks:
           -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
           -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
           -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
           {{.CLI_ARGS}}
 
   destroy:
@@ -126,6 +127,7 @@ tasks:
         -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
         -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
         -var='vpc_id={{.VPC_ID}}' \
+        -var='distro={{.DISTRO}}' \
         {{.CLI_ARGS}}
 
   install-role-requirements:
@@ -133,11 +135,12 @@ tasks:
     env:
       ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}'
       ANSIBLE_COLLECTION_INSTALL: '{{ .ANSIBLE_COLLECTION_INSTALL }}'
+      ANSIBLE_COLLECTIONS_PATHS: '{{ .ANSIBLE_COLLECTIONS_PATHS }}'
     run: once
     cmds:
       - mkdir -p "$ANSIBLE_ROLES_PATH"
-      - ansible-galaxy install -r "requirements.yml"
-      - ansible-galaxy collection install {{ .ANSIBLE_COLLECTION_INSTALL }} -p {{ .ANSIBLE_COLLECTIONS_PATHS }}
+      - ansible-galaxy install -r requirements.yml
+      - ansible-galaxy collection install -r requirements.yml -p {{ .ANSIBLE_COLLECTIONS_PATHS }}
 
   basic:
     desc: run an ansible playbook to create a basic private cluster

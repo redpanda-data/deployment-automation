@@ -2,9 +2,9 @@ agents:
   queue: "k8s-builders"
 
 steps:
-  - label: test tls cluster standup
-    key: tls-up
-    command: .buildkite/scripts/standup-tls.sh
+  - label: test tls cluster standup ubuntu
+    key: tls-up-ubuntu
+    command: .buildkite/scripts/standup-tls.sh --prefix=rp-tls-ub --distro=ubuntu-focal
     plugins:
       - docker#v5.4.0:
           image: glrp/atgt:latest
@@ -12,9 +12,29 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: test tiered-storage-up cluster standup
-    key: tiered-up
-    command: .buildkite/scripts/standup-tiered-storage.sh
+  - label: test tiered-storage-up cluster standup ubuntu
+    key: tiered-up-ubuntu
+    command: .buildkite/scripts/standup-tiered-storage.sh --prefix=rp-tier-ub --distro=ubuntu-focal
+    plugins:
+      - docker#v5.4.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: test tls cluster standup fedora
+    key: tls-up-fedora
+    command: .buildkite/scripts/standup-tls.sh --prefix=rp-tls-fd --distro=Fedora-Cloud-Base-36
+    plugins:
+      - docker#v5.4.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: test tiered-storage-up cluster standup fedora
+    key: tiered-up-fedora
+    command: .buildkite/scripts/standup-tiered-storage.sh --prefix=rp-tier-fd --distro=Fedora-Cloud-Base-36
     plugins:
       - docker#v5.4.0:
           image: glrp/atgt:latest
