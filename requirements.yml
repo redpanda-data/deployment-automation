@@ -2,6 +2,7 @@ collections:
   - name: community.general
   - name: redpanda.cluster
     type: galaxy
+  - name: ansible.posix
 
 roles:
   - src: mrlesmithjr.mdadm
