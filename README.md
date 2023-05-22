@@ -222,19 +222,15 @@ See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-
 
 ## Contribution Guide
 
-### testing with a specific commit hash of redpanda-ansible-collection
+### testing with a specific branch of redpanda-ansible-collection
 
-To test with a specific commit hash of RAC, set the following value in your environment.
+Change the redpanda.cluster entry in your requirements.yml file to the following:
 
-```shell
-export ANSIBLE_COLLECTION_INSTALL=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,<<YOUR GIT COMMIT HASH HERE>>
+```yaml
+  - name: https://github.com/redpanda-data/redpanda-ansible-collection.git
+    type: git
+    version: <<<YOUR BRANCH NAME>>>
 ```
-
-The alphanumeric string after the comma should be the short form of the commit hash you want installed. This value is
-consumed by the task file as part of an ansible-galaxy install command.
-
-More documentation is
-available [here](https://docs.ansible.com/ansible/latest/collections_guide/collections_installing.html)
 
 ### pre-commit
 
