@@ -19,7 +19,7 @@ vars:
   ALLOW_FORCE_DESTROY: '{{ .ALLOW_FORCE_DESTROY | default "true"}}'
   VPC_ID: '{{ .VPC_ID | default "" }}'
   BUCKET_NAME: '{{ .DEPLOYMENT_ID | replace "_" "-"}}-bucket'
-  DISTRO: '{{ .DISTRO | default "" }}'
+  DISTRO: '{{ .DISTRO | default "ubuntu-focal" }}'
 
   # ansible stuff
   ANSIBLE_VERSION: '2.11.12'
