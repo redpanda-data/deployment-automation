@@ -181,7 +181,7 @@ resource "azurerm_network_security_group" "redpanda" {
 
 resource "azurerm_virtual_network" "redpanda" {
   name                = "redpanda_vnet"
-  address_space       = ["10.0.0.0/16"]
+  address_space       = [var.network_range]
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
 
@@ -194,7 +194,7 @@ resource "azurerm_subnet" "redpanda" {
   name                 = "redpanda_subnet"
   resource_group_name  = azurerm_resource_group.redpanda.name
   virtual_network_name = azurerm_virtual_network.redpanda.name
-  address_prefixes     = ["10.0.1.0/24"]
+  address_prefixes     = [var.subnet_range]
 }
 
 resource "azurerm_subnet_network_security_group_association" "redpanda" {
@@ -208,7 +208,7 @@ resource "azurerm_subnet_network_security_group_association" "redpanda" {
 
 resource "azurerm_public_ip" "redpanda" {
   name                = "redpanda_public_ip${count.index}"
-  count               = var.vm_instances
+  count               = var.vm_public_networking ? var.vm_instances : 0
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
@@ -231,7 +231,7 @@ resource "azurerm_network_interface" "redpanda" {
     name                          = "ip_addresses"
     subnet_id                     = azurerm_subnet.redpanda.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = "${element(azurerm_public_ip.redpanda.*.id, count.index)}"
+    public_ip_address_id          = var.vm_public_networking ? "${element(azurerm_public_ip.redpanda.*.id, count.index)}" : null
   }
 }
 
@@ -247,7 +247,7 @@ resource "azurerm_network_interface_security_group_association" "redpanda" {
 
 resource "azurerm_public_ip" "redpanda_client" {
   name                = "client_public_ip${count.index}"
-  count               = var.client_vm_instances
+  count               = var.client_vm_public_networking ? var.client_vm_instances : 0
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
@@ -270,7 +270,7 @@ resource "azurerm_network_interface" "redpanda_client" {
     name                          = "ip_addresses"
     subnet_id                     = azurerm_subnet.redpanda.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = "${element(azurerm_public_ip.redpanda_client.*.id, count.index)}"
+    public_ip_address_id          = var.client_vm_public_networking ? "${element(azurerm_public_ip.redpanda_client.*.id, count.index)}" : null
   }
 }
 
@@ -286,7 +286,7 @@ resource "azurerm_network_interface_security_group_association" "redpanda_client
 
 resource "azurerm_public_ip" "monitoring" {
   name                = "monitoring_public_ip"
-  count               = var.enable_monitoring ? 1 : 0
+  count               = var.monitoring_vm_public_networking && var.enable_monitoring ? 1 : 0
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
@@ -309,7 +309,7 @@ resource "azurerm_network_interface" "monitoring" {
     name                          = "ip_addresses"
     subnet_id                     = azurerm_subnet.redpanda.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = "${element(azurerm_public_ip.monitoring.*.id, count.index)}"
+    public_ip_address_id          = var.monitoring_vm_public_networking ? "${element(azurerm_public_ip.monitoring.*.id, count.index)}" : null
   }
 }
 

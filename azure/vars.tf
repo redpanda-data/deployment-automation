@@ -8,9 +8,25 @@ variable "availability_zones" {
   default     = null
 }
 
+variable "network_range" {
+  description = "CIDR range for Redpanda Network"
+  default     = "10.0.0.0/16"
+}
+
+variable "subnet_range" {
+  description = "CIDR range for Redpanda Subnet - should exist within the network range"
+  default     = "10.0.1.0/24"
+}
+
 variable "vm_sku" {
   description = "Azure VM SKU to use for the Redpanda nodes"
   default     = "Standard_L8s_v3" # Lsv3-series sizes have local NVMe disks
+}
+
+variable "vm_public_networking" {
+  description = "Create a public IP for each Redpanda node?"
+  type        = bool
+  default     = true
 }
 
 variable "vm_instances" {
@@ -44,6 +60,12 @@ variable "client_vm_sku" {
   # bandwidth with the Redpanda nodes.
 }
 
+variable "client_vm_public_networking" {
+  description = "Create a public IP for each client node?"
+  type        = bool
+  default     = true
+}
+
 variable "client_vm_instances" {
   description = "Number of client nodes to create"
   type        = number
@@ -59,6 +81,12 @@ variable "enable_monitoring" {
 variable "monitoring_vm_sku" {
   description = "Azure VM SKU to use for the monitoring node"
   default     = "Standard_D2ds_v5"
+}
+
+variable "monitoring_vm_public_networking" {
+  description = "Create a public IP for the monitoring node?"
+  type        = bool
+  default     = true
 }
 
 variable "vm_image" {
