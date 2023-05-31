@@ -24,7 +24,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test unstable tls cluster standup ubuntu
     key: tls-up-unstable-ubuntu
-    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tls-ub --distro=ubuntu-focal --tiered=false --unstable=true
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tls-ub --distro=ubuntu-focal --tiered=false --unstable=true
     plugins:
       - docker#v5.4.0:
           image: glrp/atgt:latest
@@ -34,7 +34,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test unstable tiered-storage-up cluster standup ubuntu
     key: tiered-up-unstable-ubuntu
-    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-ub --distro=ubuntu-focal --tiered=true --unstable=true
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-ub --distro=ubuntu-focal --tiered=true --unstable=true
     plugins:
       - docker#v5.4.0:
           image: glrp/atgt:latest
@@ -64,7 +64,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test unstable tls cluster standup fedora
     key: tls-up-unstable-fedora
-    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tls-fd --distro=Fedora-Cloud-Base-34 --tiered=false --unstable=true
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tls-fd --distro=Fedora-Cloud-Base-34 --tiered=false --unstable=true
     plugins:
       - docker#v5.4.0:
           image: glrp/atgt:latest
@@ -74,7 +74,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test unstable tiered-storage-up cluster standup fedora
     key: tiered-up-unstable-fedora
-    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-fd --distro=Fedora-Cloud-Base-34 --tiered=true --unstable=true
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-fd --distro=Fedora-Cloud-Base-34 --tiered=true --unstable=true
     plugins:
       - docker#v5.4.0:
           image: glrp/atgt:latest
