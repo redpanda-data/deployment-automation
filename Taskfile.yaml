@@ -158,9 +158,10 @@ tasks:
         ANSIBLE_ROLES_PATH: '{{.ANSIBLE_ROLES_PATH}}'
     vars:
       ANSIBLE_PLAYBOOK: '{{default "provision-node.yml" .ANSIBLE_PLAYBOOK}}'
+      IS_USING_UNSTABLE: '{{ default false .IS_USING_UNSTABLE }}'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
-      - ansible-playbook ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}} {{.CLI_ARGS}}
+      - ansible-playbook ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} {{.CLI_ARGS}}
 
   create-tls-cluster:
     desc: run multiple ansible playbooks to create a cluster with tls
@@ -190,11 +191,13 @@ tasks:
       ANSIBLE_ROLES_PATH: '{{.ANSIBLE_ROLES_PATH}}'
     vars:
       SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
+      IS_USING_UNSTABLE: '{{ default false .SEGMENT_UPLOAD_INTERVAL }}'
     cmds:
       - task: basic
         vars: {
             ANSIBLE_PLAYBOOK: "provision-tiered-storage-cluster.yml",
-            CLI_ARGS: "--extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'"
+            CLI_ARGS: "--extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
+            IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}"
         }
 
   install-rpk:
