@@ -179,7 +179,7 @@ resource "aws_security_group" "node_sec_group" {
   description = "redpanda ports"
   vpc_id      = var.vpc_id
 
-  # SSH access from anywhere
+  # SSH access
   ingress {
     description = "Allow inbound to ssh"
     from_port   = 22
@@ -188,11 +188,29 @@ resource "aws_security_group" "node_sec_group" {
     cidr_blocks = var.ssh_security_rule_cidr
   }
 
-  # HTTP access from anywhere to port 9092
+  # Access to Kafka API on port 9092
   ingress {
-    description = "Allow anywhere inbound to access the Redpanda Kafka endpoint"
+    description = "Allow anywhere inbound to access the Kafka endpoint"
     from_port   = 9092
     to_port     = 9092
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Access to Schema Registry on port 8081
+  ingress {
+    description = "Allow anywhere inbound to access the Schema Registry endpoint"
+    from_port   = 8081
+    to_port     = 8081
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Access to HTTP Proxy on port 8082
+  ingress {
+    description = "Allow anywhere inbound to access the HTTP Proxy endpoint"
+    from_port   = 8082
+    to_port     = 8082
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -224,7 +242,7 @@ resource "aws_security_group" "node_sec_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # java client for open messaging benchmark (omb)
+  # Java client for open messaging benchmark (omb)
   ingress {
     description = "Allow anywhere inbound to access for Open Messaging Benchmark"
     from_port   = 8080
