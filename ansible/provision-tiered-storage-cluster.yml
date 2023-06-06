@@ -25,8 +25,8 @@
   tasks:
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
-        name: demo_certs
+        name: redpanda.cluster.demo_certs
     - name: Install and start redpanda
       ansible.builtin.include_role:
-        name: redpanda_broker
+        name: redpanda.cluster.redpanda_broker
       when: not skip_node | default(false) | bool

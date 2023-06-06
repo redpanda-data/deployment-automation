@@ -11,11 +11,14 @@ Azure, or IBM.
 
 ## Installation Prerequisites
 
-* Install Terraform in your preferred way: https://www.terraform.io/downloads.html
+Here are some prerequisites you'll need to install to run the content in this repo. You can also choose to use our
+Dockerfile_FEDORA or Dockerfile_UBUNTU dockerfiles to build a local client if you'd rather not install terraform and
+ansible on your machine.
+
+* Install Terraform: https://www.terraform.io/downloads.html
 * Install Ansible: https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
 * Depending on your system, you might need to install some python packages (e.g. `selinux` or `jmespath`). Ansible will
   throw an error with the expected python packages, both on local and remote machines.
-* `ansible-galaxy install -r requirements.yml` to gather ansible requirements
 
 ### On Mac OS X:
 
@@ -26,43 +29,87 @@ brew tap hashicorp/tap
 brew install hashicorp/tap/terraform
 brew install ansible
 brew install gnu-tar
-ansible-galaxy install -r requirements.yml
 ```
 
 ## Usage
 
-### Optional Steps: Deploying the VMs
+### Standing up VMs
 
-To use existing infrastructure, update the `hosts.ini` file with the appropriate information. Otherwise see the READMEs
-for the following cloud providers:
+You are welcome to stand up VMs your own way for running a Redpanda cluster, but if you'd like we support VM standup
+with our [AWS Redpanda Cluster module](https://registry.terraform.io/modules/redpanda-data/redpanda-cluster/aws/latest).
 
-* [AWS](aws/readme.md)
+Actually running terraform itself is fairly straightforward. For example if you want to create an AWS Redpanda Cluster,
+you should review the [default variables](aws/main.tf) and change them to your liking.
+
+Additional documetation for non-AWS terraform code is available here:
+
 * [GCP](gcp/readme.md)
 * [Azure](azure/README.md)
 * [IBM Cloud](ibm/README.md)
 
-### Required Steps: Deploying Redpanda
+```shell
+export AWS_ACCESS_KEY_ID=<<<YOUR KEY ID>>>
+export AWS_SECRET_ACCESS_KEY=<<<YOUR SECRET ACCESS KEY>>>
 
-> Note: This playbook is designed to be run repeatedly against a running cluster however be aware that it will cause a
-> rolling restart of the cluster to occur. If you do not want the cluster to restart you can
-> specify `restart_node=false`
-> either globally (as --extra-vars, or on a host-by-host basis in the `hosts.ini` file). If you make changes to the node
-> config and do not perform a restart then you may leave your `rpk` config (and this may inhibit subsequent executions
-> of
-> the playbook). If you re-run the playbook it will overwrite any configurations with those specified in the playbook,
-> so
-> care should be taken to ensure that the playbook contains any desired configuration (for example, if you have enabled
-> TLS on your cluster, any subsequent runs of `provision-node` should be made with `-e tls=true` otherwise the playbook
-> will disable TLS).
+terraform apply --auto-approve
+```
 
-Before running these steps, verify that the `hosts.ini` file contains the correct information for your infrastructure.
-This will be automatically populated if using the terraform steps above.
+### Populating a Hosts File
 
-1. `ansible-playbook --private-key <your_private_key> -i hosts.ini -v ansible/provision-node.yml`
+Our terraform code will automatically supply you a hosts file, but if you aren't using it you'll need to generate one
+for your own use.
 
-Available Ansible variables:
+The general format is
 
-You can pass the following variables as `-e var=value`:
+```text
+[ redpanda ]
+<<<INSTANCE PUBLIC IP>>> ansible_user=<<<SSH USER FOR ANSIBLE TO USE>>> ansible_become=True private_ip=<<<INSTANCE PRIVATE IP>>>
+<<<INSTANCE PUBLIC IP>>> ansible_user=<<<SSH USER FOR ANSIBLE TO USE>>> ansible_become=True private_ip=<<<INSTANCE PRIVATE IP>>>
+<<<INSTANCE PUBLIC IP>>> ansible_user=<<<SSH USER FOR ANSIBLE TO USE>>> ansible_become=True private_ip=<<<INSTANCE PRIVATE IP>>>
+
+[ client ]
+<<<INSTANCE PUBLIC IP>>> ansible_user=<<<SSH USER FOR ANSIBLE TO USE>>> ansible_become=True private_ip=<<<INSTANCE PRIVATE IP>>>
+
+[ monitor ]
+<<<INSTANCE PUBLIC IP>>> ansible_user=<<<SSH USER FOR ANSIBLE TO USE>>> ansible_become=True private_ip=<<<INSTANCE PRIVATE IP>>>
+```
+
+We also have some additional values that can be set on each instance in the [redpanda] group if you intend to use
+features like rack awareness or tiered storage. Here's an example with tiered storage, but you can also set values like
+rack or restart_node.
+
+```text 
+[redpanda]
+<<<INSTANCE PUBLIC IP>>> ansible_user=<<<SSH USER FOR ANSIBLE TO USE>>> ansible_become=True private_ip=<<<INSTANCE PRIVATE IP>>> tiered_storage_bucket_name=<<<AWS BUCKET NAME TO USE FOR TIERED STORAGE>>> cloud_storage_region=<<<AWS REGION TO USE FOR TIERED STORAGE>>>
+```
+
+### Running a Playbook
+
+Here is an example for how you can run one of our playbooks. You will want to make sure that ANSIBLE_COLLECTIONS_PATHS
+and ANSIBLE_ROLES_PATH are correct for your setup.
+
+Please note that if you use a particular playbook for creating a cluster you should use it for any subsequent
+operations, for example upgrades.
+
+```shell
+#!/bin/bash
+## from content root ##
+## if you already have ANSIBLE_COLLECTIONS_PATH and ANSIBLE_ROLES_PATH don't set these
+export ANSIBLE_COLLECTIONS_PATHS=${PWD}/artifacts/collections
+export ANSIBLE_ROLES_PATH=${PWD}/artifacts/roles
+
+## install collections and roles
+ansible-galaxy install -r ./requirements.yml
+
+## set path to a hosts.ini file with at minimum a [redpanda] section. you can also add a [client] and [monitor] section for additional features
+export ANSIBLE_INVENTORY=$PWD/hosts.ini
+
+ansible-playbook ansible/<<<PLAYBOOK NAME>>>.yml --private-key <<<YOUR PRIVATE KEY LOCATION>>>
+```
+
+### Additional Redpanda Values
+
+You can pass the following variables as `-e var=value` when running ansible :
 
 | Property                     | Default value                      | Description                                                                                                                                                                                                                                                                                               |
 |------------------------------|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -90,6 +137,8 @@ You can pass the following variables as `-e var=value`:
 | `tiered_storage_bucket_name` |                                    | Set bucket name to enable tiered storage                                                                                                                                                                                                                                                                  
 | `aws_region`                 |                                    | The region to be used if tiered storage is enabled                                                                                                                                                                                                                                                        
 
+### Additional Custom Config
+
 You can also specify any available Redpanda configuration value (or set of values) by passing a JSON dictionary as an
 Ansible extra-var. These values will be spliced with the calculated configuration and only override those values that
 you specify.
@@ -101,13 +150,27 @@ Example below, note that adding whitespace breaks configuration merging. Please 
 
 ```shell
 export JSONDATA='{"cluster":{"auto_create_topics_enabled":"true"},"node":{"developer_mode":"false"}}'
-ansible-playbook ansible/provision-node.yml --private-key artifacts/testkey -e redpanda="${JSONDATA}"
+ansible-playbook ansible/<<<PLAYBOOK NAME>>>.yml --private-key artifacts/testkey -e redpanda="${JSONDATA}"
 ```
 
 2. Use `rpk` & standard Kafka tools to produce/consume from the Redpanda cluster & access the Grafana installation on
    the monitor host.
 
 * The Grafana URL is http://&lt;grafana host&gt;:3000/login
+
+## Migrate to the AWS Module
+
+We previously had AWS code delivered as simple in place terraform code, but have now converted to a module. If you were
+previously using our AWS code and want to migrate you'll need to take the following steps:
+
+* download the new config
+* run the following
+
+```shell
+terraform state list | while read -r line ; do terraform state mv "$line" "module.redpanda-cluster.$line"; done
+```
+
+You can also do the same by hand.
 
 ## Configure Grafana
 
@@ -147,7 +210,7 @@ keys and signed certificates. For this approach, follow the steps below.
 NOTE THAT THIS SHOULD ONLY BE DONE FOR TESTING PURPOSES! Use an actual signed cert from a valid CA for production!
 
 ```shell
-ansible-playbook ansible/provision-tls-cluster.yml \
+ansible-playbook ansible/provision-tiered-storage-cluster.yml \
 -i hosts.ini \
 --private-key '<path to a private key with ssh access to the hosts>'
 ```
@@ -175,14 +238,14 @@ There are two ways of enacting an upgrade on a cluster:
    version then the cluster will be upgraded and restarted automatically:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini -e redpanda_version=22.3.10-1 
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/<<<PLAYBOOK NAME>>>.yml -i hosts.ini -e redpanda_version=22.3.10-1 
 ```
 
 2. By default the playbook will select the latest version of the Redpanda packages, but an upgrade will only be enacted
    if the `redpanda_install_status` variable is set to `latest`:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini -e redpanda_install_status=latest 
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/<<<PLAYBOOK NAME>>>.yml -i hosts.ini -e redpanda_install_status=latest 
 ```
 
 It is also possible to upgrade clusters where SASL authentication has been turned on. For this, you will need to
@@ -190,7 +253,7 @@ additionally specify the `redpanda_rpk_opts` variable to include to username and
 appropriately privileged user. An example follows:
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/<<<PLAYBOOK NAME>>>.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars "{
 \"redpanda_rpk_opts\": \"--user ${MY_USER} --password ${MY_USER_PASSWORD}\"
 }"
 ```
@@ -199,7 +262,7 @@ Similarly, you can put the `redpanda_rpk_opts` into a yaml
 file [protected with Ansible vault](https://docs.ansible.com/ansible/latest/vault_guide/vault_encrypting_content.html#creating-encrypted-files).
 
 ```commandline
-ansible-playbook --private-key ~/.ssh/id_rsa ansible/provision-node.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
+ansible-playbook --private-key ~/.ssh/id_rsa ansible/<<<PLAYBOOK NAME>>>.yml -i hosts.ini --extra-vars=redpanda_install_status=latest --extra-vars @vault-file.yml --ask-vault-pass
 ```
 
 ## Troubleshooting
