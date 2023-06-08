@@ -11,6 +11,14 @@ module "redpanda-cluster" {
   distro                 = var.distro
   hosts_file             = var.hosts_file
   tags                   = var.tags
+  instance_type          = var.instance_type
+}
+
+### you can also add more values from here for local work:
+### https://registry.terraform.io/modules/redpanda-data/redpanda-cluster/aws/latest?tab=inputs
+
+variable "instance_type" {
+  default = "i3.2xlarge"
 }
 
 variable "public_key_path" {
