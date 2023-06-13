@@ -5,9 +5,29 @@
 Terraform and Ansible configuration to easily provision a [Redpanda](https://www.redpanda.com/) cluster on AWS, GCP,
 Azure, or IBM.
 
-# Goal of this project
+## Goal of this project
 
 1 command to a production cluster
+
+## Basic Usage:
+
+```
+# Set required ansible variables
+export ANSIBLE_COLLECTIONS_PATHS=${PWD}/artifacts/collections
+export ANSIBLE_ROLES_PATH=${PWD}/artifacts/roles
+export ANSIBLE_INVENTORY=$PWD/hosts.ini
+
+# Deploy VM
+cd <cloud-provider>
+terraform init
+terraform apply --auto-approve
+
+# Install collections and roles
+ansible-galaxy install -r ./requirements.yml
+
+# Run a Playbook
+ansible-playbook ansible/<<<PLAYBOOK NAME>>>.yml --private-key <<<YOUR PRIVATE KEY LOCATION>>>
+```
 
 ## Installation Prerequisites
 
@@ -51,6 +71,9 @@ Additional documetation for non-AWS terraform code is available here:
 export AWS_ACCESS_KEY_ID=<<<YOUR KEY ID>>>
 export AWS_SECRET_ACCESS_KEY=<<<YOUR SECRET ACCESS KEY>>>
 
+# Go to the cloud provider directory (aws, gcp, azure, or IBM)
+cd aws
+terraform init
 terraform apply --auto-approve
 ```
 
@@ -85,8 +108,8 @@ rack or restart_node.
 
 ### Running a Playbook
 
-Here is an example for how you can run one of our playbooks. You will want to make sure that ANSIBLE_COLLECTIONS_PATHS
-and ANSIBLE_ROLES_PATH are correct for your setup.
+Here is an example for how you can run one of our playbooks. You will want to make sure that `ANSIBLE_COLLECTIONS_PATHS`
+and `ANSIBLE_ROLES_PATH` are correct for your setup.
 
 Please note that if you use a particular playbook for creating a cluster you should use it for any subsequent
 operations, for example upgrades.
