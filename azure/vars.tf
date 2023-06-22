@@ -3,9 +3,10 @@ variable "region" {
   default     = "centralus"
 }
 
-variable "availability_zones" {
+variable "availability_zone" {
   description = "Availability Zones to deploy to - this can either be null or an array of zones"
   default     = null
+  type        = list(string)
 }
 
 variable "network_range" {

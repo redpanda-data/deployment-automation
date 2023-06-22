@@ -45,7 +45,7 @@ resource "azurerm_orchestrated_virtual_machine_scale_set" "redpanda" {
   proximity_placement_group_id = local.single_az ? azurerm_proximity_placement_group.redpanda[0].id : null
   count                        = local.use_vmss ? 1 : 0
   zone_balance                 = local.multi_az ? true : false
-  zones                        = local.multi_az ? var.availability_zones : null
+  zones                        = local.multi_az ? var.availability_zone : null
 
   tags = {
     deployment_id = local.deployment_id
@@ -212,7 +212,7 @@ resource "azurerm_public_ip" "redpanda" {
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
-  zones               = try([var.availability_zones[0]], [])
+  zones               = try([var.availability_zone[0]], [])
   sku                 = "Standard"
 
   tags = {
@@ -251,7 +251,7 @@ resource "azurerm_public_ip" "redpanda_client" {
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
-  zones               = try([var.availability_zones[count.index % length(var.availability_zones)]], [])
+  zones               = try([var.availability_zone[count.index % length(var.availability_zone)]], [])
   sku                 = "Standard"
 
   tags = {
@@ -290,7 +290,7 @@ resource "azurerm_public_ip" "monitoring" {
   resource_group_name = azurerm_resource_group.redpanda.name
   location            = azurerm_resource_group.redpanda.location
   allocation_method   = "Static"
-  zones               = try([var.availability_zones[0]], [])
+  zones               = try([var.availability_zone[0]], [])
   sku                 = "Standard"
 
   tags = {
