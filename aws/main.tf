@@ -11,6 +11,7 @@ module "redpanda-cluster" {
   distro                 = var.distro
   hosts_file             = var.hosts_file
   tags                   = var.tags
+  availability_zone      = var.availability_zone
 }
 
 variable "public_key_path" {
@@ -93,4 +94,10 @@ variable "region" {
 
 provider "aws" {
   region = var.region
+}
+
+variable "availability_zone" {
+  description = "The AWS AZs to deploy the infrastructure on"
+  default     = ["us-west-2a"]
+  type        = list(string)
 }
