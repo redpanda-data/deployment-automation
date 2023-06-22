@@ -13,20 +13,25 @@ Azure, or IBM.
 
 ```
 # Set required ansible variables
+export CLOUD_PROVIDER=aws
 export ANSIBLE_COLLECTIONS_PATHS=${PWD}/artifacts/collections
 export ANSIBLE_ROLES_PATH=${PWD}/artifacts/roles
-export ANSIBLE_INVENTORY=$PWD/hosts.ini
+export ANSIBLE_INVENTORY=${PWD}/${CLOUD_PROVIDER}/hosts.ini
+
+# Assumes default private and public key names, if these aren't correct for you set them to the correct values
 
 # Deploy VM
-cd <cloud-provider>
+# ASSUMES YOU HAVE A DEFAULT VPC, if you don't set vpc_id and subnet_id
+cd $CLOUD_PROVIDER
 terraform init
-terraform apply --auto-approve
+terraform apply --auto-approve -var='public_key_path=~/.ssh/id_rsa.pub'
 
 # Install collections and roles
 ansible-galaxy install -r ./requirements.yml
 
 # Run a Playbook
-ansible-playbook ansible/<<<PLAYBOOK NAME>>>.yml --private-key <<<YOUR PRIVATE KEY LOCATION>>>
+# You need to pick the correct playbook for you, in this case we picked provision-basic-cluster
+ansible-playbook ansible/provision-basic-cluster.yml --private-key ~/.ssh/id_rsa
 ```
 
 ## Installation Prerequisites

@@ -90,7 +90,7 @@ tasks:
       you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
     dir: '{{.CLOUD_PROVIDER}}'
     vars:
-      HOSTS_FILE_LOC: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{ .ANSIBLE_INVENTORY }}'
     cmds:
       - |
         terraform init
@@ -103,7 +103,7 @@ tasks:
           -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
           -var='vpc_id={{.VPC_ID}}' \
           -var='distro={{.DISTRO}}' \
-          -var='hosts_file={{.HOSTS_FILE_LOC}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
           {{.CLI_ARGS}}
 
   import:
@@ -117,7 +117,7 @@ tasks:
       you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
     dir: '{{.CLOUD_PROVIDER}}'
     vars:
-      HOSTS_FILE_LOC: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{ .ANSIBLE_INVENTORY }}'
     cmds:
       - |
         terraform import {{.TF_SSH_USER_VAR}} \
@@ -129,7 +129,7 @@ tasks:
           -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
           -var='vpc_id={{.VPC_ID}}' \
           -var='distro={{.DISTRO}}' \
-          -var='hosts_file={{.HOSTS_FILE_LOC}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
           {{.CLI_ARGS}}
 
   destroy:
@@ -144,7 +144,7 @@ tasks:
       you won't have to worry about loading them as DA_AWS* because you'll override it. So it will just work.
     dir: '{{.CLOUD_PROVIDER}}'
     vars:
-      HOSTS_FILE_LOC: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{ .ANSIBLE_INVENTORY }}'
     cmds:
       - |
         terraform destroy -auto-approve {{.TF_SSH_USER_VAR}} \
@@ -156,7 +156,7 @@ tasks:
         -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
         -var='vpc_id={{.VPC_ID}}' \
         -var='distro={{.DISTRO}}' \
-        -var='hosts_file={{.HOSTS_FILE_LOC}}' \
+        -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
         {{.CLI_ARGS}}
 
   install-role-requirements:
