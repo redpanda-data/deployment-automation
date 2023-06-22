@@ -122,39 +122,16 @@ KEYS
   labels = tomap(var.labels)
 }
 
-# This generates a map of AZ -> Instance that can be used then creating the google_compute_instance_group
-# further down. When n AZs are defined, every nth broker, client and monitor is placed into each AZ (noting that we
-# can have at most one monitoring node).
-locals {
-  hosts_map = {
-    for i in range(length(var.availability_zone)) : var.availability_zone[i] =>
-    concat(
-      [
-        for j in range(i, length(google_compute_instance.redpanda), length(var.availability_zone)) :
-        google_compute_instance.redpanda[j].self_link
-      ],
-      [
-        for j in range(i, length(google_compute_instance.client), length(var.availability_zone)) :
-        google_compute_instance.client[j].self_link
-      ],
-      [
-        for j in range(i, length(google_compute_instance.monitor), length(var.availability_zone)) :
-        google_compute_instance.monitor[j].self_link
-      ]
-    )
-
-  }
-}
-
-output "host_map" {
-  value = local.hosts_map
-}
-
 resource "google_compute_instance_group" "redpanda" {
   name      = "redpanda-group-${local.deployment_id}"
   count     = length(var.availability_zone)
   zone      = "${var.region}-${var.availability_zone[count.index]}"
-  instances = local.hosts_map[var.availability_zone[count.index]]
+  instances = tolist(concat(
+    [for i in google_compute_instance.redpanda.* : i.self_link if i.zone == "${var.region}-${var.availability_zone[count.index]}"],
+    [for i in google_compute_instance.monitor.* : i.self_link if i.zone == "${var.region}-${var.availability_zone[count.index]}"],
+    [for i in google_compute_instance.client.* : i.self_link if i.zone == "${var.region}-${var.availability_zone[count.index]}"]
+   )
+  )
 }
 
 resource "local_file" "hosts_ini" {
