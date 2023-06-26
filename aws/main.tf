@@ -1,17 +1,31 @@
+## we assume a default vpc. if you have one you want to use you will need to provide a vpc and subnet ID
+
 module "redpanda-cluster" {
-  source                 = "redpanda-data/redpanda-cluster/aws"
-  version                = "~> 0.1"
-  public_key_path        = var.public_key_path
-  nodes                  = var.nodes
-  deployment_prefix      = var.deployment_prefix
-  enable_monitoring      = var.enable_monitoring
-  tiered_storage_enabled = var.tiered_storage_enabled
-  allow_force_destroy    = var.allow_force_destroy
-  vpc_id                 = var.vpc_id
-  distro                 = var.distro
-  hosts_file             = var.hosts_file
-  tags                   = var.tags
-  availability_zone      = var.availability_zone
+  source                   = "redpanda-data/redpanda-cluster/aws"
+  version                  = "~> 0.1"
+  public_key_path          = var.public_key_path
+  nodes                    = var.nodes
+  deployment_prefix        = var.deployment_prefix
+  enable_monitoring        = var.enable_monitoring
+  tiered_storage_enabled   = var.tiered_storage_enabled
+  allow_force_destroy      = var.allow_force_destroy
+  vpc_id                   = var.vpc_id
+  distro                   = var.distro
+  hosts_file               = var.hosts_file
+  tags                     = var.tags
+  aws_region               = var.aws_region
+  associate_public_ip_addr = var.associate_public_ip_addr
+  subnet_id                = var.subnet_id
+  availability_zone        = var.availability_zone
+}
+
+variable "availability_zone" {
+  default = ["us-west-2a"]
+}
+
+variable "associate_public_ip_addr" {
+  default = true
+  type    = bool
 }
 
 variable "public_key_path" {
@@ -87,17 +101,16 @@ terraform {
   }
 }
 
-variable "region" {
+variable "subnet_id" {
+  default = ""
+  type    = string
+}
+
+variable "aws_region" {
   type    = string
   default = "us-west-2"
 }
 
 provider "aws" {
-  region = var.region
-}
-
-variable "availability_zone" {
-  description = "The AWS AZs to deploy the infrastructure on"
-  default     = ["us-west-2a"]
-  type        = list(string)
+  region = var.aws_region
 }
