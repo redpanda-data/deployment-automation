@@ -1,0 +1,57 @@
+### This is not a truely airgapped cluster!!! The intent here is specifically to test the install flow for an airgapped install
+
+---
+- name: Provision client
+  hosts: client
+  vars:
+    squid_acl_localnet:
+      - "10.0.1.0/24"
+  tasks:
+    - name: Install and configure proxy on client
+      ansible.builtin.include_role:
+        name: mrlesmithjr.squid
+
+- name: Bundle RPMs
+  hosts: client
+  vars:
+    basearch: "amd64" # must match the output of `uname -m`. however on ubuntu you need to use the debian version of the output. So for example x86_64 is amd64
+    os_distribution_major_version: "focal" # must match the output of `. /etc/os-release && echo ${VERSION_ID%%.*}`
+    os_distribution: "ubuntu" # must match the output of `. /etc/os-release && echo $ID`
+    redpanda_version: "23.1.13-1" # note that the -1 is the build number for this version. it is typically -1 but if the version is incremented it will be higher
+    rpm_or_deb: "deb"
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /app/artifacts/testkey -W %h:%p -q {{ hostvars[groups['client'][0]].ansible_user }}@{{ hostvars[groups['client'][0]].inventory_hostname }}'"
+  tasks:
+    - name: Install and configure proxy on client
+      ansible.builtin.include_role:
+        name: redpanda.cluster.binary_bundler
+      run_once: true
+
+## clients[0] is obviously pretty ugly, need to come up with an az friendly way to handle this
+## BUT because it is in the playbook it is easy for the user to adjust to their liking at least
+- name: Provision proxied private cluster
+  hosts: redpanda
+  vars:
+    https_proxy_value: "{{ hostvars[groups['client'][0]].private_ip }}:3128"
+    rpm_proxy: "{{ hostvars[groups['client'][0]].private_ip }}:3128"
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
+    enable_tls: true
+    advertise_public_ips: true
+    create_demo_certs: true
+    handle_cert_install: true
+    redpanda_version: latest
+    ca_cert_file: "tls/ca/ca.crt"
+    node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
+    cloud_storage_credentials_source: "aws_instance_metadata"
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /app/artifacts/testkey -W %h:%p -q {{ hostvars[groups['client'][0]].ansible_user }}@{{ hostvars[groups['client'][0]].inventory_hostname }}'"
+    enable_airgap: true
+  tasks:
+    - name: Install system prereqs
+      ansible.builtin.include_role:
+        name: redpanda.cluster.system_setup
+    - name: Install and configure CA certs for running tls
+      ansible.builtin.include_role:
+        name: redpanda.cluster.demo_certs
+    - name: Install and start redpanda
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_broker
+      when: not skip_node | default(false) | bool

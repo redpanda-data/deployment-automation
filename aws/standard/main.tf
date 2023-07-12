@@ -1,10 +1,9 @@
 ## we assume a default vpc. if you have one you want to use you will need to provide a vpc and subnet ID
 
 module "redpanda-cluster" {
-  source                   = "redpanda-data/redpanda-cluster/aws"
-  version                  = "~> 0.1"
+  source                   = "git::github.com/redpanda-data/terraform-aws-redpanda-cluster.git?ref=private-ip-and-zones"
   public_key_path          = var.public_key_path
-  nodes                    = var.nodes
+  broker_count             = var.nodes
   deployment_prefix        = var.deployment_prefix
   enable_monitoring        = var.enable_monitoring
   tiered_storage_enabled   = var.tiered_storage_enabled
@@ -15,8 +14,8 @@ module "redpanda-cluster" {
   tags                     = var.tags
   aws_region               = var.aws_region
   associate_public_ip_addr = var.associate_public_ip_addr
-  subnet_id                = var.subnet_id
   availability_zone        = var.availability_zone
+  client_count             = 1
 }
 
 variable "availability_zone" {
@@ -99,11 +98,6 @@ terraform {
       version = "~> 0.9"
     }
   }
-}
-
-variable "subnet_id" {
-  default = ""
-  type    = string
 }
 
 variable "aws_region" {

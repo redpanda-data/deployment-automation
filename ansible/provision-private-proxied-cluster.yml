@@ -10,9 +10,23 @@
 # enable_tls: when true, adds the tls template to the /etc/redpanda/redpanda.yml file
 # advertise_public_ips : causes the cluster to set a public ip on advertised_kafka_api, allowing access to the cluster from the public internet
 ---
-- name: Provision tiered storage cluster
+- name: Provision client
+  hosts: client
+  vars:
+    squid_acl_localnet:
+      - "10.0.1.0/24"
+  tasks:
+    - name: Install and configure proxy on client
+      ansible.builtin.include_role:
+        name: mrlesmithjr.squid
+
+## clients[0] is obviously pretty ugly, need to come up with an az friendly way to handle this
+## BUT because it is in the playbook it is easy for the user to adjust to their liking at least
+- name: Provision proxied private cluster
   hosts: redpanda
   vars:
+    https_proxy_value: "{{ hostvars[groups['client'][0]].private_ip }}:3128"
+    rpm_proxy: "{{ hostvars[groups['client'][0]].private_ip }}:3128"
     root_ca_dir: "{{ playbook_dir }}/tls/ca"
     enable_tls: true
     advertise_public_ips: true
@@ -22,13 +36,14 @@
     ca_cert_file: "tls/ca/ca.crt"
     node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
     cloud_storage_credentials_source: "aws_instance_metadata"
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /app/artifacts/testkey -W %h:%p -q {{ hostvars[groups['client'][0]].ansible_user }}@{{ hostvars[groups['client'][0]].inventory_hostname }}'"
   tasks:
-    - name: Install and configure CA certs for running tls
-      ansible.builtin.include_role:
-        name: redpanda.cluster.demo_certs
     - name: Install system prereqs
       ansible.builtin.include_role:
         name: redpanda.cluster.system_setup
+    - name: Install and configure CA certs for running tls
+      ansible.builtin.include_role:
+        name: redpanda.cluster.demo_certs
     - name: Install and start redpanda
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker
