@@ -20,6 +20,7 @@ module "redpanda-cluster" {
 
 variable "availability_zone" {
   default = ["us-west-2a"]
+  type    = list(string)
 }
 
 variable "associate_public_ip_addr" {
