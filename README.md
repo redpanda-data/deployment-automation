@@ -64,7 +64,7 @@ You are welcome to stand up VMs your own way for running a Redpanda cluster, but
 with our [AWS Redpanda Cluster module](https://registry.terraform.io/modules/redpanda-data/redpanda-cluster/aws/latest).
 
 Actually running terraform itself is fairly straightforward. For example if you want to create an AWS Redpanda Cluster,
-you should review the [default variables](aws/standard/main.tf) and change them to your liking.
+you should review the [default variables](aws/main.tf) and change them to your liking.
 
 Additional documetation for non-AWS terraform code is available here:
 

@@ -8,6 +8,9 @@
     advertise_public_ips: true
     redpanda_version: latest
   tasks:
+    - name: Install system prereqs
+      ansible.builtin.include_role:
+        name: redpanda.cluster.system_setup
     - name: Install and start redpanda
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker

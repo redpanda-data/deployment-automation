@@ -2,7 +2,7 @@
 
 module "redpanda-cluster" {
   source                   = "redpanda-data/redpanda-cluster/aws"
-  version                  = "~> 0.1"
+  version                  = "~> 1.0.0"
   public_key_path          = var.public_key_path
   broker_count             = var.nodes
   deployment_prefix        = var.deployment_prefix

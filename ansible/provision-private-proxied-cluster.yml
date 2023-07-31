@@ -35,8 +35,9 @@
     redpanda_version: latest
     ca_cert_file: "tls/ca/ca.crt"
     node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
+    create_pkg_mgr_proxy: true
     cloud_storage_credentials_source: "aws_instance_metadata"
-    ansible_ssh_common_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /app/artifacts/testkey -W %h:%p -q {{ hostvars[groups['client'][0]].ansible_user }}@{{ hostvars[groups['client'][0]].inventory_hostname }}'"
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -vvv -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /app/artifacts/testkey -W %h:%p -q {{ hostvars[groups['client'][0]].ansible_user }}@{{ hostvars[groups['client'][0]].inventory_hostname }}'"
   tasks:
     - name: Install system prereqs
       ansible.builtin.include_role:
@@ -48,3 +49,11 @@
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker
       when: not skip_node | default(false) | bool
+
+# Not necessary if you aren't intending to manage the cluster via rpk on a client
+- name: Provision rpk and ca.crt on client
+  hosts: client
+  tasks:
+    - name: Configure client for use with RPK
+      ansible.builtin.include_role:
+        name: redpanda.cluster.client_config

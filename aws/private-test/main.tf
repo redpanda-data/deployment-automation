@@ -112,7 +112,8 @@ POLICY
 
 
 module "redpanda-cluster" {
-  source                          = "git::github.com/redpanda-data/terraform-aws-redpanda-cluster.git?ref=private-ip-and-zones"
+  source                          = "redpanda-data/redpanda-cluster/aws"
+  version                         = "~> 1.0.0"
   public_key_path                 = var.public_key_path
   broker_count                    = var.nodes
   deployment_prefix               = var.deployment_prefix

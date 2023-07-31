@@ -15,6 +15,12 @@ while [ $# -gt 0 ]; do
     --tiered=*)
       TIERED="${1#*=}"
       ;;
+    --tfdir=*)
+      TF_DIR="${1#*=}"
+      ;;
+    --taskname=*)
+      TASK_NAME="${1#*=}"
+      ;;
     *)
       echo "Invalid argument: $1"
       exit 1
@@ -22,22 +28,24 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-if [ -z "$PREFIX" ] || [ -z "$DISTRO" ] || [ -z "$UNSTABLE" ] || [ -z "$TIERED" ]; then
+if [ -z "$PREFIX" ] || [ -z "$DISTRO" ] || [ -z "$UNSTABLE" ] || [ -z "$TIERED" ] || [ -z "$TASK_NAME" ]; then
   echo ""
   echo "ERROR: invalid input"
   echo ""
-  echo "Usage: ./standup-tiered-storage.sh.sh --prefix=PREFIX --distro=DISTRO --unstable=[true/false] --tiered=[true/false]"
+  echo "Usage: ./standup-tiered-storage.sh.sh --prefix=PREFIX --distro=DISTRO --unstable=[true/false] --tiered=[true/false] --tfdir=TF_DIR --taskname=ANSIBLE_TASK_NAME"
   echo "prefix   : a short prefix for identifying resources"
   echo "distro   : name of an image distro, must match the lookup in vars.tf"
   echo "unstable : whether to use the latest development version"
   echo "tiered   : whether to use tiered storage"
+  echo "tfdir    : directory for Terraform"
+  echo "taskname : Ansible task to use minus create- or test-. So for example create-proxy-cluster would be passed as proxy-cluster"
   exit 1
 fi
 
 cleanup() {
   exit_code=$?
   echo "trapped exit, cleaning up"
-  DEPLOYMENT_ID=$PREFIX TIERED_STORAGE_ENABLED=true task destroy
+  DEPLOYMENT_ID=$PREFIX TIERED_STORAGE_ENABLED=true TF_DIR=$TF_DIR TF_CMD=destroy task build
   exit $exit_code
 }
 trap cleanup EXIT INT TERM
@@ -50,16 +58,12 @@ if [ $error_code -ne 0 ]; then
   exit 1
 fi
 
-task_to_create="create-tls-cluster"
-task_to_test="test-tls-cluster"
 is_tiered="false"
 if [ "$TIERED" == "true" ]; then
-  task_to_create="create-tiered-storage-cluster"
-  task_to_test="test-tiered-storage-cluster"
   is_tiered="true"
 fi
 
-DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO TIERED_STORAGE_ENABLED=$is_tiered task apply -- -var='tags={
+DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO TIERED_STORAGE_ENABLED=$is_tiered TF_DIR=$TF_DIR task build -- -var='tags={
   "VantaOwner" : "devex@redpanda.com"
   "VantaNonProd" : "true"
   "VantaDescription" : "cicd-instance-for-devex"
@@ -75,7 +79,7 @@ if [ $error_code -ne 0 ]; then
 fi
 
 echo "building cluster"
-DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO IS_USING_UNSTABLE=$UNSTABLE task $task_to_create
+DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO IS_USING_UNSTABLE=$UNSTABLE task "create-$TASK_NAME"
 error_code=$?
 if [ $error_code -ne 0 ]; then
   echo "error in ansible standup"
@@ -83,14 +87,14 @@ if [ $error_code -ne 0 ]; then
 fi
 
 echo "testing cluster"
-DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO task $task_to_test
+DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO task "test-$TASK_NAME"
 error_code=$?
 if [ $error_code -ne 0 ]; then
   echo "error in test-tls-cluster"
   exit 1
 fi
 
-DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO TIERED_STORAGE_ENABLED=$is_tiered  task destroy -- '-var=tags={
+DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO TIERED_STORAGE_ENABLED=$is_tiered TF_CMD=destroy task build -- '-var=tags={
   "VantaOwner" : "devex@redpanda.com"
   "VantaNonProd" : "true"
   "VantaDescription" : "cicd-instance-for-devex"

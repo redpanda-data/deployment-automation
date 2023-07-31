@@ -8,7 +8,7 @@
     redpanda_version: "23.1.13-1" # note that the -1 is the build number for this version. it is typically -1 but if the version is incremented it will be higher
     rpm_or_deb: "deb"
   tasks:
-    - name: Install and configure proxy on client
+    - name: Bundle debs for airgap
       ansible.builtin.include_role:
         name: redpanda.cluster.binary_bundler
       run_once: true
