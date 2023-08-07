@@ -27,7 +27,7 @@
 
 - hosts: monitor
   roles:
-    - cloudalchemy.grafana
+    - grafana.grafana.grafana
   vars:
     grafana_version: 9.5.7
     grafana_security:
@@ -39,7 +39,6 @@
         access: proxy
         url: 'http://localhost:9090'
         basicAuth: false
-    grafana_dashboards_dir: '{{ playbook_dir }}/grafana_dashboards'
     grafana_dashboards:
       - dashboard_id: 1860
         revision_id: 31
