@@ -4,7 +4,7 @@ module "redpanda-cluster" {
   source                   = "redpanda-data/redpanda-cluster/aws"
   version                  = "~> 1.0.0"
   public_key_path          = var.public_key_path
-  broker_count             = var.nodes
+  broker_count             = var.broker_count
   deployment_prefix        = var.deployment_prefix
   enable_monitoring        = var.enable_monitoring
   tiered_storage_enabled   = var.tiered_storage_enabled
@@ -34,7 +34,7 @@ variable "public_key_path" {
   default = "~/.ssh/id_rsa.pub"
 }
 
-variable "nodes" {
+variable "broker_count" {
   type    = number
   default = 3
 }

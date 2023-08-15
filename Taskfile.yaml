@@ -76,7 +76,7 @@ tasks:
         terraform {{.TF_CMD}} -auto-approve {{.TF_SSH_USER_VAR}} \
           -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
           -var='public_key_path={{.PUBLIC_KEY}}' \
-          -var='nodes={{.NUM_NODES}}' \
+          -var='broker_count={{.NUM_NODES}}' \
           -var='enable_monitoring={{.ENABLE_MONITORING}}' \
           -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
           -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
