@@ -1,0 +1,69 @@
+## This is a semi-airgapped cluster deployment. The cluster can only access the internet via a proxied connection. This is currently only used for enabling download of Redpanda packages. If you have a centralized proxy, you may substitute that for the configured squid instance.
+
+## In most instances you will be better off with the provision-private-proxied-cluster.yml playbook as your starting point.
+---
+# if you want to disable squid install, comment out this play
+- name: Provision proxy on client
+  hosts: client
+  vars:
+    squid_acl_localnet:
+      - "10.0.1.0/24"
+  tasks:
+    - name: Install and configure proxy on client
+      ansible.builtin.include_role:
+        name: mrlesmithjr.squid
+
+# if doing an airgap install, you will only need this if you haven't used a repo management tool, reposync or apt-mirror to sync the Redpanda releases
+# if you have done any of the above, you can safely skip this play
+- name: Bundle DEBs
+  hosts: client
+  vars:
+    basearch: "amd64" # must match the output of `uname -m`. however on ubuntu you need to use the debian version of the output. So for example x86_64 is amd64
+    os_distribution_major_version: "focal" # must match the output of `. /etc/os-release && echo ${VERSION_ID%%.*}`
+    os_distribution: "ubuntu" # must match the output of `. /etc/os-release && echo $ID`
+    redpanda_version: "23.1.13-1" # note that the -1 is the build number for this version. it is typically -1 but if the version is incremented it will be higher
+    rpm_or_deb: "deb"
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /app/artifacts/testkey -W %h:%p -q {{ hostvars[groups['client'][0]].ansible_user }}@{{ hostvars[groups['client'][0]].inventory_hostname }}'"
+  tasks:
+    - name: Install and configure proxy on client
+      ansible.builtin.include_role:
+        name: redpanda.cluster.binary_bundler
+      run_once: true
+
+# Uses proxied SSH and HTTP to install redpanda on broker nodes
+# If you are using ansible on a node within the relevant network that can correctly resolve your IPs you can comment out the ansible_ssh_common_args
+- name: Provision proxied private cluster
+  hosts: redpanda
+  vars:
+    https_proxy_value: "{{ hostvars[groups['client'][0]].private_ip }}:3128" # this should be set to your actual proxy value
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
+    enable_tls: true
+    advertise_public_ips: true
+    create_demo_certs: true # in any production scenario this would be disabled
+    handle_cert_install: true # this can be commented out if your team has already installed the necessary certs on your broker instances
+    redpanda_version: latest
+    create_pkg_mgr_proxy: true # this should be commented out if your infrastructure team has already handled dependencies. otherwise, this sets up apt/dnf proxies to enable updates and installing thru the squid proxy
+    ca_cert_file: "tls/ca/ca.crt"
+    node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
+    cloud_storage_credentials_source: "aws_instance_metadata"
+    ansible_ssh_common_args: "-o ProxyCommand='ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /app/artifacts/testkey -W %h:%p -q {{ hostvars[groups['client'][0]].ansible_user }}@{{ hostvars[groups['client'][0]].inventory_hostname }}'"
+    enable_airgap: true # if you are using an internal proxy, comment this value out
+  tasks:
+    - name: Install system prereqs # this can be commented out if your internal team has already handled instance configuration
+      ansible.builtin.include_role:
+        name: redpanda.cluster.system_setup
+    - name: Install and configure CA certs for running tls # this can be commented out if your internal team has already put the necessary certs on the brokers
+      ansible.builtin.include_role:
+        name: redpanda.cluster.demo_certs
+    - name: Install and start redpanda
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_broker
+      when: not skip_node | default(false) | bool
+
+# Not necessary if you aren't intending to manage the cluster via rpk on a client
+- name: Provision rpk and ca.crt on client
+  hosts: client
+  tasks:
+    - name: Configure client for use with RPK
+      ansible.builtin.include_role:
+        name: redpanda.cluster.client_config

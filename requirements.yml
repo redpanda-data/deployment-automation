@@ -6,6 +6,7 @@ collections:
 
 roles:
   - src: mrlesmithjr.mdadm
+  - src: mrlesmithjr.squid
   - src: cloudalchemy.prometheus
   - src: cloudalchemy.grafana
   - src: geerlingguy.node_exporter

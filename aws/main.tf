@@ -2,9 +2,9 @@
 
 module "redpanda-cluster" {
   source                   = "redpanda-data/redpanda-cluster/aws"
-  version                  = "~> 0.1"
+  version                  = "~> 1.0.0"
   public_key_path          = var.public_key_path
-  nodes                    = var.nodes
+  broker_count             = var.broker_count
   deployment_prefix        = var.deployment_prefix
   enable_monitoring        = var.enable_monitoring
   tiered_storage_enabled   = var.tiered_storage_enabled
@@ -15,8 +15,8 @@ module "redpanda-cluster" {
   tags                     = var.tags
   aws_region               = var.aws_region
   associate_public_ip_addr = var.associate_public_ip_addr
-  subnet_id                = var.subnet_id
   availability_zone        = var.availability_zone
+  client_count             = 1
 }
 
 variable "availability_zone" {
@@ -34,7 +34,7 @@ variable "public_key_path" {
   default = "~/.ssh/id_rsa.pub"
 }
 
-variable "nodes" {
+variable "broker_count" {
   type    = number
   default = 3
 }
@@ -100,11 +100,6 @@ terraform {
       version = "~> 0.9"
     }
   }
-}
-
-variable "subnet_id" {
-  default = ""
-  type    = string
 }
 
 variable "aws_region" {

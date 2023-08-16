@@ -24,6 +24,9 @@
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
         name: redpanda.cluster.demo_certs
+    - name: Install system prereqs
+      ansible.builtin.include_role:
+        name: redpanda.cluster.system_setup
     - name: Install and start redpanda
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker
