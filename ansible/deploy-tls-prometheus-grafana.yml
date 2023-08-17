@@ -7,7 +7,7 @@
 
     - name: generate the redpanda grafana dashboard
       ansible.builtin.shell: |
-        rpk generate grafana-dashboard --datasource prometheus --metrics-endpoint 'http://{{hostvars[inventory_hostname].private_ip}}:9644/public_metrics' > '/tmp/redpanda-grafana.json'
+        rpk generate grafana-dashboard --datasource prometheus --metrics-endpoint 'https://{{hostvars[inventory_hostname].private_ip}}:9644/public_metrics' > '/tmp/redpanda-grafana.json'
       when: not dashboard.stat.exists
 
     - name: fetch grafana dashboard
@@ -29,15 +29,35 @@
         name: python3-jmespath
         state: present
 
+- name: Install certs on monitor
+  hosts: monitor
+  vars:
+    handle_cert_install: true
+    install_certs_only: true
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
+    ca_cert_file: "tls/ca/ca.crt"
+    redpanda_truststore_file: "/etc/redpanda/certs/ca.crt"
+    node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
+  tasks:
+    - name: Install and configure CA certs for running tls
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_broker
+      tags:
+        - install_certs
+
 - hosts: monitor
   roles:
     - cloudalchemy.prometheus
   vars:
+    tls: true
     prometheus_scrape_configs:
       - job_name: "redpanda"
+        scheme: "{{ 'https' if tls else 'http' }}"
         metrics_path: "/public_metrics"
         static_configs:
           - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9644') | list  }}"
+        tls_config:
+          ca_file: "/etc/redpanda/certs/ca.crt"
       - job_name: "node"
         metrics_path: "/metrics"
         static_configs:
