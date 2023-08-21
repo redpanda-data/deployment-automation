@@ -3,10 +3,10 @@ collections:
   - name: redpanda.cluster
     type: galaxy
   - name: ansible.posix
+  - name: grafana.grafana
 
 roles:
   - src: mrlesmithjr.mdadm
   - src: mrlesmithjr.squid
   - src: cloudalchemy.prometheus
-  - src: cloudalchemy.grafana
   - src: geerlingguy.node_exporter

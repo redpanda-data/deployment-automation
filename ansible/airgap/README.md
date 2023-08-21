@@ -1,11 +1,11 @@
-## Information for Creating a Proxied or Airgapped Redpanda Cluster
+## Information for Creating an Airgapped Redpanda Cluster
 
 ### What is Airgapping
 
 An airgapped cluster is inaccessible to the wider internet. While a truly airgapped cluster has no physical connection
 whatsoever to external networks, in our context it mostly means firewalled from external access.
 
-### What is Proxying
+### Cluster Characteristics
 
 A proxy enables external access through a gateway of some sort. In our proxied cluster the network layout we've chosen
 is:
@@ -14,6 +14,8 @@ is:
 * 3 brokers and a monitor node on an internal only subnet
 * Firewall rules allowing limited traffic between the client and the brokers/monitor
 * Squid proxy enabling passthrough traffic
+* manual install of Redpanda binaries
+* playbooks to download and bundle Redpanda binaries for install
 
 It's important to note that while we fully support a proxied cluster and can deploy one from scratch using our terraform
 and ansible modules, it may make sense for you to make changes to the configuration we provide depending on your

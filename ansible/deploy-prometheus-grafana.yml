@@ -45,9 +45,9 @@
 
 - hosts: monitor
   roles:
-    - cloudalchemy.grafana
+    - grafana.grafana.grafana
   vars:
-    grafana_version: 9.0.0
+    grafana_version: 9.5.7
     grafana_security:
       admin_user: admin
       admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
@@ -57,10 +57,13 @@
         access: proxy
         url: 'http://localhost:9090'
         basicAuth: false
-    grafana_dashboards_dir: '{{ playbook_dir }}/grafana_dashboards'
-
-- hosts: localhost
-  tasks:
-    - ansible.builtin.file:
-        path: '{{ playbook_dir }}/grafana_dashboards/redpanda-grafana.json'
-        state: absent
+    grafana_dashboards:
+      - dashboard_id: 1860
+        revision_id: 31
+        datasource: prometheus
+      - dashboard_id: 7496
+        revision_id: 1
+        datasource: prometheus
+      - dashboard_id: 18135
+        revision_id: 1
+        datasource: prometheus
