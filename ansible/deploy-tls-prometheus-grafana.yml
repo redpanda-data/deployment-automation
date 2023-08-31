@@ -1,0 +1,71 @@
+- hosts: redpanda
+  tasks:
+    - name: Node dependencies - include geerlingguy nodeexporter
+      ansible.builtin.include_role:
+        name: geerlingguy.node_exporter
+
+- hosts: monitor
+  tasks:
+    - name: install deps
+      ansible.builtin.package:
+        name: python3-jmespath
+        state: present
+
+- name: Install certs on monitor
+  hosts: monitor
+  vars:
+    handle_cert_install: true
+    install_certs_only: true
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
+    ca_cert_file: "tls/ca/ca.crt"
+    redpanda_truststore_file: "/etc/redpanda/certs/ca.crt"
+    node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
+  tasks:
+    - name: Install and configure CA certs for running tls
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_broker
+      tags:
+        - install_certs
+
+- hosts: monitor
+  roles:
+    - cloudalchemy.prometheus
+  vars:
+    tls: true
+    prometheus_scrape_configs:
+      - job_name: "redpanda"
+        scheme: "{{ 'https' if tls else 'http' }}"
+        metrics_path: "/public_metrics"
+        static_configs:
+          - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9644') | list  }}"
+        tls_config:
+          ca_file: "/etc/redpanda/certs/ca.crt"
+      - job_name: "node"
+        metrics_path: "/metrics"
+        static_configs:
+          - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
+
+- hosts: monitor
+  roles:
+    - grafana.grafana.grafana
+  vars:
+    grafana_version: 9.5.7
+    grafana_security:
+      admin_user: admin
+      admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
+    grafana_datasources:
+      - name: prometheus
+        type: prometheus
+        access: proxy
+        url: 'http://localhost:9090'
+        basicAuth: false
+    grafana_dashboards:
+      - dashboard_id: 1860
+        revision_id: 31
+        datasource: prometheus
+      - dashboard_id: 7496
+        revision_id: 1
+        datasource: prometheus
+      - dashboard_id: 18135
+        revision_id: 1
+        datasource: prometheus
