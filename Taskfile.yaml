@@ -83,6 +83,8 @@ tasks:
           -var='vpc_id={{.VPC_ID}}' \
           -var='distro={{.DISTRO}}' \
           -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='instance_type={{.INSTANCE_TYPE}}' \
           {{.CLI_ARGS}}
 
   install-role-requirements:
