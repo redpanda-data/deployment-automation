@@ -2,7 +2,7 @@
 
 module "redpanda-cluster" {
   source                   = "redpanda-data/redpanda-cluster/aws"
-  version                  = "~> 1.0.0"
+  version                  = "~> 1.0.2"
   public_key_path          = var.public_key_path
   broker_count             = var.broker_count
   deployment_prefix        = var.deployment_prefix
@@ -17,6 +17,10 @@ module "redpanda-cluster" {
   associate_public_ip_addr = var.associate_public_ip_addr
   availability_zone        = var.availability_zone
   client_count             = 1
+  broker_instance_type     = var.instance_type
+  client_instance_type     = var.instance_type
+  prometheus_instance_type = var.instance_type
+  machine_architecture     = var.machine_architecture
 }
 
 variable "availability_zone" {
@@ -109,4 +113,13 @@ variable "aws_region" {
 
 provider "aws" {
   region = var.aws_region
+}
+
+variable "instance_type" {
+  type    = string
+  default = "i3.2xlarge"
+}
+variable "machine_architecture" {
+  type    = string
+  default = "x86_64"
 }
