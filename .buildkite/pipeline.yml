@@ -2,6 +2,16 @@ agents:
   queue: "k8s-builders"
 
 steps:
+  - label: test basic cluster standup ubuntu
+    key: basic-up-ubuntu
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-basic-ub --distro=ubuntu-focal --tiered=false --unstable=false --taskname=basic-cluster
+    plugins:
+      - docker#v5.4.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
   - label: test tiered-storage-up cluster standup ubuntu
     key: tiered-up-ubuntu
     command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-ub --distro=ubuntu-focal --tiered=true --unstable=false --taskname=tiered-storage-cluster

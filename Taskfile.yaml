@@ -132,6 +132,18 @@ tasks:
       - task: basic
         vars: { ANSIBLE_PLAYBOOK: "provision-tls-cluster.yml" }
 
+  create-basic-cluster:
+    desc: run multiple ansible playbooks to create a basic cluster
+    summary: |
+      This command assumes you have the infrastructure in place and does not build it for you.
+      Ensure you have a hosts file in the artifacts directory with name hosts_[CLOUD_PROVIDER]_[DEPLOYMENT_ID].ini
+    deps:
+      - install-role-requirements
+    run: always
+    cmds:
+      - task: basic
+        vars: { ANSIBLE_PLAYBOOK: "provision-basic-cluster.yml" }
+
   create-tiered-storage-cluster:
     desc: run multiple ansible playbooks to create a cluster with tls
     summary: |
