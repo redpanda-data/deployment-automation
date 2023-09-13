@@ -44,6 +44,13 @@ sed 's/$/:9092/' | \
 tr '\n' ',' | \
 sed 's/,$/\n/')
 
+export REDPANDA_REGISTRY=$(sed -n '/^\[redpanda\]/,/^$/p' "${PATH_TO_HOSTS_FILE}" | \
+grep 'private_ip=' | \
+cut -d' ' -f1 |  \
+sed 's/$/:8081/' | \
+tr '\n' ',' | \
+sed 's/,$/\n/')
+
 ## test that we can check status, create a topic and produce to the topic
 echo "checking cluster status"
 "${PATH_TO_RPK_FILE}" cluster status --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v || exit 1
@@ -62,6 +69,9 @@ sleep 30
 echo "consuming from topic"
 testoutput=$("${PATH_TO_RPK_FILE}" topic consume testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v -o :end)
 echo $testoutput | grep squirrels || exit 1
+
+echo "testing schema registry"
+for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do curl $ip_port/subjects -k --cacert "$PATH_TO_CA_CRT" ; done 
 
 echo "checking that bucket is not empty"
 # Check if the bucket is empty
