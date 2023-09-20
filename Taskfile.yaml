@@ -187,7 +187,7 @@ tasks:
     vars:
       SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
       IS_USING_UNSTABLE: '{{ default false .IS_USING_UNSTABLE }}'
-      ANSIBLE_PLAYBOOK: '{{ default "provision-private-proxied-cluster.yml" .ANSIBLE_PLAYBOOK }}'
+      ANSIBLE_PLAYBOOK: '{{ default "proxy/provision-private-proxied-cluster.yml" .ANSIBLE_PLAYBOOK }}'
       SKIP_TAGS: '{{ default "" .SKIP_TAGS }}'
     cmds:
       - task: basic
@@ -227,7 +227,7 @@ tasks:
       RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
       # this needs to go somewhere else badly
       CA_CRT: '{{ default "ansible/tls/ca/ca.crt" .CA_CRT }}'
-      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test-tls-cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}}'
 
@@ -239,7 +239,7 @@ tasks:
       RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
       # this needs to go somewhere else badly
       CA_CRT: '{{ default "ansible/tls/ca/ca.crt" .CA_CRT }}'
-      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test-tiered-storage-cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}} --bucket={{.BUCKET_NAME}}'
 
@@ -247,6 +247,6 @@ tasks:
     desc: tests that a proxied cluster is WAD
     vars:
       CA_CRT: '{{ default "/opt/rpk/certs/ca.crt" .CA_CRT }}'
-      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test-proxy-cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --bucket={{.BUCKET_NAME}} --sshkey=artifacts/testkey'

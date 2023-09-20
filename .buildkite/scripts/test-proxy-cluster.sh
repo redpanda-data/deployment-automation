@@ -15,6 +15,9 @@ while [ $# -gt 0 ]; do
     --sshkey=*)
       SSHKEY="${1#*=}"
       ;;
+    --cloud=*)
+      CLOUD_PROVIDER="${1#*=}"
+      ;;
     *)
       echo "Invalid argument: $1"
       exit 1
@@ -68,6 +71,10 @@ echo "consuming from topic"
 testoutput=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i $SSHKEY $CLIENT_SSH_USER@$CLIENT_PUBLIC_IP 'rpk topic consume testtopic --brokers '"$REDPANDA_BROKERS"' --tls-truststore '"$PATH_TO_CA_CRT"' -v -o :end')
 echo $testoutput | grep squirrels || exit 1
 
+if [ "$CLOUD_PROVIDER" == "gcp" ]; then
+  echo "success"
+  exit 0
+fi
 echo "checking that bucket is not empty"
 # Check if the bucket is empty
 object_count=$(aws s3api list-objects --bucket "${BUCKET_NAME}" --region us-west-2 --output json | jq '.Contents | length')

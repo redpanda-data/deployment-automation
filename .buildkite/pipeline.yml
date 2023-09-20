@@ -92,3 +92,19 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
+  - label: gcp ubuntu
+    key: tiered-up-gcp-ubuntu
+    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "ubuntu-os-cloud/ubuntu-2204-lts" --prefix "ci-ub-ts" --cluster_type "tiered-storage-cluster" --gcp_creds "$GCP_CREDS"
+    plugins:
+      - docker#v5.4.0:
+          image: glrp/atgt:latest
+          environment:
+            - GCP_CREDS
+  - label: gcp fedora
+    key: tiered-up-gcp-fedora
+    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "fedora-cloud/fedora-cloud-37" --prefix "ci-fd-ts" --cluster_type "tiered-storage-cluster" --gcp_creds "$GCP_CREDS"
+    plugins:
+      - docker#v5.4.0:
+          image: glrp/atgt:latest
+          environment:
+            - GCP_CREDS
