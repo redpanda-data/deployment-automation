@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export GCP_CREDS=$GCP_CREDS
-
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -17,6 +15,8 @@ done
 
 # Check if TF_DIR and PREFIX are set
 if [ -z "$TF_DIR" ] || [ -z "$PREFIX" ] || [ -z "$GCP_CREDS" ] || [ -z "$TASK_NAME" ]; then
+    echo "TF_DIR : $TF_DIR"
+    echo "TASK_NAME : $TASK_NAME"
     echo "TF_DIR, PREFIX, CLUSTER_TYPE and GCP_CREDS must be set. Exiting."
     exit 1
 fi

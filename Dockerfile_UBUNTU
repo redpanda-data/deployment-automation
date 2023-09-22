@@ -4,19 +4,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV DA_AWS_ACCESS_KEY_ID="default"
 ENV DA_AWS_SECRET_ACCESS_KEY="default"
 ENV AWS_DEFAULT_REGION="default"
+ENV GCP_CREDS="default"
 
 # Install required packages
 RUN apt-get update \
-    && apt install unzip -y \
-    && apt install wget -y \
-    && apt install curl -y \
-    && apt install vim -y \
-    && apt-get install -y git \
-    && apt-get install -y software-properties-common \
+    && apt install -y unzip wget curl vim git software-properties-common awscli jq \
     && apt-add-repository --yes --update ppa:ansible/ansible \
     && apt-get install -y ansible \
-    && apt-get install -y awscli \
-    && apt-get install -y jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Terraform

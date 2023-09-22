@@ -3,6 +3,7 @@ FROM fedora:36
 ENV DA_AWS_ACCESS_KEY_ID="default"
 ENV DA_AWS_SECRET_ACCESS_KEY="default"
 ENV AWS_DEFAULT_REGION="default"
+ENV GCP_CREDS="default"
 
 # Install required packages
 RUN dnf -y update \
