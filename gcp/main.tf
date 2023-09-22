@@ -110,7 +110,7 @@ variable "disks" {
 variable "image" {
   # See https://cloud.google.com/compute/docs/images#os-compute-support
   # for an updated list.
-  default = "ubuntu-os-cloud/ubuntu-2004-lts"
+  default = "ubuntu-os-cloud/ubuntu-2204-lts"
 }
 
 variable machine_type {

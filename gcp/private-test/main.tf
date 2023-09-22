@@ -29,6 +29,7 @@ module "redpanda-cluster" {
   public_key_path            = var.public_key_path
   deployment_prefix          = var.deployment_prefix
   hosts_file                 = var.hosts_file
+  image                      = var.image
 }
 
 resource "google_compute_network" "test-net" {
@@ -101,7 +102,7 @@ resource "google_compute_firewall" "internet-to-client" {
 
   allow {
     protocol = "tcp"
-    ports    = ["22"]
+    ports    = ["22", "80", "443", "21", "20"]
   }
   target_tags   = ["client"]
   source_ranges = ["0.0.0.0/0"]
@@ -153,4 +154,9 @@ variable "project_name" {
 
 variable "hosts_file" {
   type = string
+}
+
+variable "image" {
+  default = "ubuntu-os-cloud/ubuntu-2204-lts"
+  type    = string
 }

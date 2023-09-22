@@ -189,11 +189,12 @@ tasks:
       IS_USING_UNSTABLE: '{{ default false .IS_USING_UNSTABLE }}'
       ANSIBLE_PLAYBOOK: '{{ default "proxy/provision-private-proxied-cluster.yml" .ANSIBLE_PLAYBOOK }}'
       SKIP_TAGS: '{{ default "" .SKIP_TAGS }}'
+      SQUID_ACL_LOCALNET: '{{ default "" .SQUID_ACL_LOCALNET }}'
     cmds:
       - task: basic
         vars: {
             ANSIBLE_PLAYBOOK: "{{ .ANSIBLE_PLAYBOOK }}",
-            CLI_ARGS: "--extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
+            CLI_ARGS: "--extra-vars '{\"squid_acl_localnet\": [\"{{.SQUID_ACL_LOCALNET}}\"]}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
             IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}",
             SKIP_TAGS: "{{ .SKIP_TAGS }}"
         }

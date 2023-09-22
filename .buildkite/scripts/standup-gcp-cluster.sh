@@ -9,6 +9,7 @@ while [[ "$#" -gt 0 ]]; do
         --prefix) PREFIX="$2"; shift ;;
         --gcp_creds) GCP_CREDS="$2"; shift ;;
         --cluster_type) TASK_NAME="$2"; shift ;;
+        --image) IMAGE="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -41,10 +42,10 @@ cleanup() {
 }
 
 terraform init
-terraform apply --auto-approve --var="deployment_prefix=$PREFIX" --var="gcp_creds=$GCP_CREDS" --var="public_key_path=$KEY_FILE.pub" --var="project_name=hallowed-ray-376320" --var="hosts_file=$HOSTS_FILE_DIR"
+terraform apply --auto-approve  --var="image=$IMAGE" --var="deployment_prefix=$PREFIX" --var="gcp_creds=$GCP_CREDS" --var="public_key_path=$KEY_FILE.pub" --var="project_name=hallowed-ray-376320" --var="hosts_file=$HOSTS_FILE_DIR"
 
 echo "building cluster"
-DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO IS_USING_UNSTABLE=$UNSTABLE CLOUD_PROVIDER="gcp" task "create-$TASK_NAME"
+DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO IS_USING_UNSTABLE=$UNSTABLE SQUID_ACL_LOCALNET="10.0.0.0/24" CLOUD_PROVIDER="gcp" task "create-$TASK_NAME"
 error_code=$?
 if [ $error_code -ne 0 ]; then
   echo "error in ansible standup"
