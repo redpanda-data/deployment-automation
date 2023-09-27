@@ -32,22 +32,24 @@ module "redpanda-cluster" {
   version = ">= 0.6.3"
   region  = var.region
 
-  ssh_user             = var.ssh_user
-  subnet               = coalesce(var.subnet, google_compute_subnetwork.test-subnet.id)
-  image                = var.image
-  availability_zone    = var.availability_zone
-  broker_count         = var.nodes
-  client_count         = var.client_nodes
-  disks                = var.disks
-  ha                   = var.ha
-  broker_machine_type  = var.machine_type
-  client_machine_type  = var.client_machine_type
-  monitor_machine_type = var.monitor_machine_type
-  public_key_path      = var.public_key_path
-  enable_monitoring    = var.enable_monitoring
-  labels               = var.labels
-  deployment_prefix    = var.deployment_prefix
-  hosts_file           = var.hosts_file
+  ssh_user              = var.ssh_user
+  subnet                = coalesce(var.subnet, google_compute_subnetwork.test-subnet.id)
+  image                 = var.image
+  availability_zone     = var.availability_zone
+  broker_count          = var.nodes
+  client_count          = var.client_nodes
+  disks                 = var.disks
+  ha                    = var.ha
+  broker_machine_type   = var.machine_type
+  client_machine_type   = var.client_machine_type
+  monitor_machine_type  = var.monitor_machine_type
+  public_key_path       = var.public_key_path
+  enable_monitoring     = var.enable_monitoring
+  labels                = var.labels
+  deployment_prefix     = var.deployment_prefix
+  hosts_file            = var.hosts_file
+  enable_tiered_storage = true
+  allow_force_destroy   = true
 }
 
 provider "google" {

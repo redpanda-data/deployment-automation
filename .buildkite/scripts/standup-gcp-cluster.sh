@@ -35,7 +35,8 @@ ssh-keygen -t rsa -b 4096 -C "test@redpanda.com" -N "" -f "$KEY_FILE" <<< y && c
 trap cleanup EXIT INT TERM
 cleanup() {
     error_code=$?
-    terraform destroy --auto-approve --var="gcp_creds=$GCP_CREDS" --var="deployment_prefix=$PREFIX" --var="public_key_path=$KEY_FILE" --var="project_name=hallowed-ray-376320" --var="hosts_file=$HOSTS_FILE_DIR"
+    terraform destroy --auto-approve --var="gcp_creds=$GCP_CREDS" --var="deployment_prefix=$PREFIX" --var="public_key_path=$KEY_FILE" --var="project_name=t" --var="hosts_file=$HOSTS_FILE_DIR"
+    rm -rf /app/ansible/tls
     rm -f "$KEY_FILE"
     rm -f "${KEY_FILE}.pub"
     exit $error_code
@@ -45,10 +46,10 @@ terraform init
 terraform apply --auto-approve  --var="image=$IMAGE" --var="deployment_prefix=$PREFIX" --var="gcp_creds=$GCP_CREDS" --var="public_key_path=$KEY_FILE.pub" --var="project_name=hallowed-ray-376320" --var="hosts_file=$HOSTS_FILE_DIR"
 
 echo "building cluster"
-DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO IS_USING_UNSTABLE=$UNSTABLE SQUID_ACL_LOCALNET="10.0.0.0/24" CLOUD_PROVIDER="gcp" task "create-$TASK_NAME"
+DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO IS_USING_UNSTABLE=$UNSTABLE CLOUD_STORAGE_CREDENTIALS_SOURCE="gcp_instance_metadata" SQUID_ACL_LOCALNET="10.0.0.0/24" CLOUD_PROVIDER="gcp" task "create-$TASK_NAME"
 error_code=$?
 if [ $error_code -ne 0 ]; then
-  echo "error in ansible standup"
+  echo "error in ansible standup $TASK_NAME"
   exit 1
 fi
 
@@ -56,7 +57,7 @@ echo "testing cluster"
 DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO CLOUD_PROVIDER="gcp" task "test-$TASK_NAME"
 error_code=$?
 if [ $error_code -ne 0 ]; then
-  echo "error in test-tls-cluster"
+  echo "error in test $TASK_NAME"
   exit 1
 fi
 

@@ -118,6 +118,7 @@ tasks:
       SKIP_TAGS: '{{ default "" .SKIP_TAGS }}'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo ansible-playbook ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} {{ .SKIP_TAGS }} {{.CLI_ARGS}}
       - ansible-playbook ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} {{ .SKIP_TAGS }} {{.CLI_ARGS}}
 
   create-tls-cluster:
@@ -162,11 +163,12 @@ tasks:
       SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
       IS_USING_UNSTABLE: '{{ default false .IS_USING_UNSTABLE }}'
       ANSIBLE_PLAYBOOK: '{{ default "provision-tiered-storage-cluster.yml" .ANSIBLE_PLAYBOOK }}'
+      CLOUD_STORAGE_CREDENTIALS_SOURCE: '{{ default "aws_instance_metadata" .CLOUD_STORAGE_CREDENTIALS_SOURCE}}'
     cmds:
       - task: basic
         vars: {
             ANSIBLE_PLAYBOOK: "{{ .ANSIBLE_PLAYBOOK }}",
-            CLI_ARGS: "--extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
+            CLI_ARGS: "--extra-vars cloud_storage_credentials_source='{{ .CLOUD_STORAGE_CREDENTIALS_SOURCE }}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
             IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}"
         }
 
