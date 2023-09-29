@@ -95,7 +95,5 @@ else
   exit 0
 fi
 
-
-
 echo "fail"
 exit 1
