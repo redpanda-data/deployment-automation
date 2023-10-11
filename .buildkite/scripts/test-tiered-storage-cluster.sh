@@ -15,6 +15,9 @@ while [ $# -gt 0 ]; do
     --bucket=*)
       BUCKET_NAME="${1#*=}"
       ;;
+    --cloud=*)
+      CLOUD_PROVIDER="${1#*=}"
+      ;;
     *)
       echo "Invalid argument: $1"
       exit 1
@@ -71,15 +74,25 @@ testoutput=$("${PATH_TO_RPK_FILE}" topic consume testtopic --brokers "$REDPANDA_
 echo $testoutput | grep squirrels || exit 1
 
 echo "testing schema registry"
-for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do curl $ip_port/subjects -k --cacert "$PATH_TO_CA_CRT" ; done 
+for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do curl $ip_port/subjects -k --cacert "$PATH_TO_CA_CRT" ; done
 
-echo "checking that bucket is not empty"
-# Check if the bucket is empty
-object_count=$(aws s3api list-objects --bucket "${BUCKET_NAME}" --region us-west-2 --output json | jq '.Contents | length')
-
-if [ "$object_count" -gt 0 ]; then
+if [ "$CLOUD_PROVIDER" == "gcp" ]; then
+  echo "checking that gcp bucket is not empty"
+  echo "$DEVEX_GCP_CREDS_BASE64" | base64 -d > /tmp/gcp_creds.json
+  export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp_creds.json"
+  export CLOUDSDK_CORE_PROJECT=hallowed-ray-376320
+  gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+  echo $BUCKET_NAME
+  if [ $(gcloud storage ls $(gcloud storage ls | grep ${BUCKET_NAME%-bucket}) | wc -l) -gt 1 ]; then
     echo "success"
     exit 0
+  fi
+else
+  echo "checking that aws bucket is not empty"
+  # Check if the bucket is empty
+  object_count=$(aws s3api list-objects --bucket "${BUCKET_NAME}" --region us-west-2 --output json | jq '.Contents | length')
+  echo "success"
+  exit 0
 fi
 
 echo "fail"

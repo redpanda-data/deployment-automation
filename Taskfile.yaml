@@ -118,6 +118,7 @@ tasks:
       SKIP_TAGS: '{{ default "" .SKIP_TAGS }}'
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo ansible-playbook ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} {{ .SKIP_TAGS }} {{.CLI_ARGS}}
       - ansible-playbook ansible/{{.ANSIBLE_PLAYBOOK}} --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} {{ .SKIP_TAGS }} {{.CLI_ARGS}}
 
   create-tls-cluster:
@@ -162,11 +163,12 @@ tasks:
       SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
       IS_USING_UNSTABLE: '{{ default false .IS_USING_UNSTABLE }}'
       ANSIBLE_PLAYBOOK: '{{ default "provision-tiered-storage-cluster.yml" .ANSIBLE_PLAYBOOK }}'
+      CLOUD_STORAGE_CREDENTIALS_SOURCE: '{{ default "aws_instance_metadata" .CLOUD_STORAGE_CREDENTIALS_SOURCE}}'
     cmds:
       - task: basic
         vars: {
             ANSIBLE_PLAYBOOK: "{{ .ANSIBLE_PLAYBOOK }}",
-            CLI_ARGS: "--extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
+            CLI_ARGS: "--extra-vars cloud_storage_credentials_source='{{ .CLOUD_STORAGE_CREDENTIALS_SOURCE }}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
             IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}"
         }
 
@@ -187,13 +189,14 @@ tasks:
     vars:
       SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
       IS_USING_UNSTABLE: '{{ default false .IS_USING_UNSTABLE }}'
-      ANSIBLE_PLAYBOOK: '{{ default "provision-private-proxied-cluster.yml" .ANSIBLE_PLAYBOOK }}'
+      ANSIBLE_PLAYBOOK: '{{ default "proxy/provision-private-proxied-cluster.yml" .ANSIBLE_PLAYBOOK }}'
       SKIP_TAGS: '{{ default "" .SKIP_TAGS }}'
+      SQUID_ACL_LOCALNET: '{{ default "" .SQUID_ACL_LOCALNET }}'
     cmds:
       - task: basic
         vars: {
             ANSIBLE_PLAYBOOK: "{{ .ANSIBLE_PLAYBOOK }}",
-            CLI_ARGS: "--extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
+            CLI_ARGS: "--extra-vars '{\"squid_acl_localnet\": [\"{{.SQUID_ACL_LOCALNET}}\"]}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
             IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}",
             SKIP_TAGS: "{{ .SKIP_TAGS }}"
         }
@@ -227,7 +230,7 @@ tasks:
       RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
       # this needs to go somewhere else badly
       CA_CRT: '{{ default "ansible/tls/ca/ca.crt" .CA_CRT }}'
-      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test-tls-cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}}'
 
@@ -239,7 +242,7 @@ tasks:
       RPK_LOC: '{{.ARTIFACT_DIR}}/bin/rpk'
       # this needs to go somewhere else badly
       CA_CRT: '{{ default "ansible/tls/ca/ca.crt" .CA_CRT }}'
-      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test-tiered-storage-cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --rpk={{.RPK_LOC}} --bucket={{.BUCKET_NAME}}'
 
@@ -247,6 +250,6 @@ tasks:
     desc: tests that a proxied cluster is WAD
     vars:
       CA_CRT: '{{ default "/opt/rpk/certs/ca.crt" .CA_CRT }}'
-      ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
+      ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test-proxy-cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --bucket={{.BUCKET_NAME}} --sshkey=artifacts/testkey'
