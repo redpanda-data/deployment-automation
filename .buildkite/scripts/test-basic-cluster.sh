@@ -45,16 +45,16 @@ sed 's/,$/\n/')
 
 ## test that we can check status, create a topic and produce to the topic
 echo "checking cluster status"
-"${PATH_TO_RPK_FILE}" cluster status --brokers "$REDPANDA_BROKERS" -v || exit 1
+"${PATH_TO_RPK_FILE}" cluster status --user admin --password admin --brokers "$REDPANDA_BROKERS" -v || exit 1
 
 echo "creating topic"
 "${PATH_TO_RPK_FILE}" topic create testtopic --brokers "$REDPANDA_BROKERS" -v || exit 1
 
 echo "producing to topic"
-echo squirrel | "${PATH_TO_RPK_FILE}" topic produce testtopic --brokers "$REDPANDA_BROKERS" -v || exit 1
+echo squirrel | "${PATH_TO_RPK_FILE}" topic produce --user admin --password admin testtopic --brokers "$REDPANDA_BROKERS" -v || exit 1
 
 echo "consuming from topic"
-"${PATH_TO_RPK_FILE}" topic consume testtopic --brokers "$REDPANDA_BROKERS" -v -o :end | grep squirrel || exit 1
+"${PATH_TO_RPK_FILE}" topic consume --user admin --password admin testtopic --brokers "$REDPANDA_BROKERS" -v -o :end | grep squirrel || exit 1
 
 echo "testing schema registry"
 for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do curl $ip_port/subjects ; done 

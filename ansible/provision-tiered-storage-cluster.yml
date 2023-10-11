@@ -22,6 +22,7 @@
     ca_cert_file: "tls/ca/ca.crt"
     node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
     cloud_storage_credentials_source: "aws_instance_metadata"
+    enable_sasl: true
   tasks:
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
@@ -46,6 +47,7 @@
     root_ca_dir: "{{ playbook_dir }}/tls/ca"
     ca_cert_file: "tls/ca/ca.crt"
     node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
+    enable_sasl: true
   tasks:
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
@@ -54,3 +56,6 @@
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker
       when: not skip_node | default(false) | bool
+    - name: Configure client for use with RPK
+      ansible.builtin.include_role:
+        name: redpanda.cluster.client_config

@@ -51,9 +51,9 @@ tasks:
     vars:
       SSH_EMAIL: '{{default "test@redpanda.com" .SSH_EMAIL | lower}}'
     cmds:
-      - ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey <<< y && chmod 0700 artifacts/testkey
+      - ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f {{ .PRIVATE_KEY }} <<< y && chmod 0700 {{ .PRIVATE_KEY }}
     status:
-      - test f artifacts/testkey
+      - test -f {{ .PRIVATE_KEY }}
 
   build:
     desc: init and apply terraform

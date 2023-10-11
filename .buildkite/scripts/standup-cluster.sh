@@ -50,6 +50,7 @@ if [ -z "$PREFIX" ] || [ -z "$DISTRO" ] || [ -z "$UNSTABLE" ] || [ -z "$TIERED" 
   exit 1
 fi
 
+trap cleanup EXIT INT TERM
 cleanup() {
   exit_code=$?
   echo "trapped exit, cleaning up"
@@ -63,7 +64,6 @@ cleanup() {
   }'
   exit $exit_code
 }
-trap cleanup EXIT INT TERM
 
 if [ -z "$MACHINE_ARCH" ]; then
   MACHINE_ARCH="x86_64"
@@ -105,7 +105,7 @@ echo "building cluster"
 DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO IS_USING_UNSTABLE=$UNSTABLE task "create-$TASK_NAME"
 error_code=$?
 if [ $error_code -ne 0 ]; then
-  echo "error in ansible standup"
+  echo "error in create $TASK_NAME"
   exit 1
 fi
 
@@ -113,7 +113,7 @@ echo "testing cluster"
 DEPLOYMENT_ID=$PREFIX DISTRO=$DISTRO task "test-$TASK_NAME"
 error_code=$?
 if [ $error_code -ne 0 ]; then
-  echo "error in test-tls-cluster"
+  echo "error in test $TASK_NAME"
   exit 1
 fi
 

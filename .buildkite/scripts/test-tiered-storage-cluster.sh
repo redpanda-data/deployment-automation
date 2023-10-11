@@ -56,21 +56,21 @@ sed 's/,$/\n/')
 
 ## test that we can check status, create a topic and produce to the topic
 echo "checking cluster status"
-"${PATH_TO_RPK_FILE}" cluster status --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v || exit 1
+"${PATH_TO_RPK_FILE}" cluster status --user admin --password password --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v || exit 1
 
 echo "creating topic"
-"${PATH_TO_RPK_FILE}" topic create testtopic \
+"${PATH_TO_RPK_FILE}" topic create --user admin --password password testtopic \
 --brokers "$REDPANDA_BROKERS" \
 --tls-truststore "$PATH_TO_CA_CRT" \
 -v || exit 1
 
 echo "producing to topic"
-echo squirrels | "${PATH_TO_RPK_FILE}" topic produce testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v || exit 1
+echo squirrels | "${PATH_TO_RPK_FILE}" topic produce --user admin --password password testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v || exit 1
 
 sleep 30
 
 echo "consuming from topic"
-testoutput=$("${PATH_TO_RPK_FILE}" topic consume testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v -o :end)
+testoutput=$("${PATH_TO_RPK_FILE}" topic consume --user admin --password password testtopic --brokers "$REDPANDA_BROKERS" --tls-truststore "$PATH_TO_CA_CRT" -v -o :end)
 echo $testoutput | grep squirrels || exit 1
 
 echo "testing schema registry"
