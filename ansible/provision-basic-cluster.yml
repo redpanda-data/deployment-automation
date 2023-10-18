@@ -7,6 +7,7 @@
   vars:
     advertise_public_ips: true
     redpanda_version: latest
+    enable_sasl: true
   tasks:
     - name: Install system prereqs
       ansible.builtin.include_role:
@@ -22,6 +23,7 @@
     advertise_public_ips: true
     redpanda_version: latest
     install_console: true
+    enable_sasl: true
   tasks:
     - name: Install and start redpanda console
       ansible.builtin.include_role:
