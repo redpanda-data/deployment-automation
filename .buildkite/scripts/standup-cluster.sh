@@ -50,6 +50,11 @@ if [ -z "$PREFIX" ] || [ -z "$DISTRO" ] || [ -z "$UNSTABLE" ] || [ -z "$TIERED" 
   exit 1
 fi
 
+# Trap to handle terraform destroy on exit
+if [ ! "$DESTROY_TF_ENV" == "false" ]; then
+  trap cleanup EXIT INT TERM
+fi
+
 cleanup() {
   exit_code=$?
   echo "trapped exit, cleaning up"
@@ -63,7 +68,6 @@ cleanup() {
   }'
   exit $exit_code
 }
-trap cleanup EXIT INT TERM
 
 if [ -z "$MACHINE_ARCH" ]; then
   MACHINE_ARCH="x86_64"

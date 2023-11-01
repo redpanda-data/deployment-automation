@@ -48,7 +48,7 @@ module "redpanda-cluster" {
   labels                = var.labels
   deployment_prefix     = var.deployment_prefix
   hosts_file            = var.hosts_file
-  enable_tiered_storage = true
+  enable_tiered_storage = var.tiered_storage_enabled
   allow_force_destroy   = true
 }
 
@@ -156,4 +156,9 @@ variable "hosts_file" {
   type        = string
   description = "location of ansible hosts file"
   default     = "../hosts.ini"
+}
+
+variable "tiered_storage_enabled" {
+  default = false
+  type    = bool
 }

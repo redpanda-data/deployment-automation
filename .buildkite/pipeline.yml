@@ -2,17 +2,33 @@ agents:
   queue: "k8s-builders"
 
 steps:
-  - label: gcp ubuntu
+  - label: gcp ubuntu tiered
     key: tiered-up-gcp-ubuntu
-    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "ubuntu-os-cloud/ubuntu-2204-lts" --prefix "ci-ub-ts" --cluster_type "tiered-storage-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64"
+    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "ubuntu-os-cloud/ubuntu-2204-lts" --prefix "ci-ub-ts" --cluster_type "tiered-storage-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64" --tiered true
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
             - DEVEX_GCP_CREDS_BASE64
-  - label: gcp fedora
+  - label: gcp fedora tiered
     key: tiered-up-gcp-fedora
-    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "fedora-cloud/fedora-cloud-37" --prefix "ci-fd-ts" --cluster_type "tiered-storage-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64"
+    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "fedora-cloud/fedora-cloud-37" --prefix "ci-fd-ts" --cluster_type "tiered-storage-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64" --tiered true
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DEVEX_GCP_CREDS_BASE64
+  - label: gcp ubuntu basic
+    key: basic-up-gcp-ubuntu
+    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "ubuntu-os-cloud/ubuntu-2204-lts" --prefix "ci-ub-bs" --cluster_type "basic-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64" --tiered false
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DEVEX_GCP_CREDS_BASE64
+  - label: gcp fedora basic
+    key: basic-up-gcp-fedora
+    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "fedora-cloud/fedora-cloud-37" --prefix "ci-fd-bs" --cluster_type "basic-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64" --tiered false
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
