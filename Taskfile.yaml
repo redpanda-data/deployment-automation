@@ -72,6 +72,7 @@ tasks:
       DEPLOYMENT_ID: '{{ .DEPLOYMENT_ID }}'
     cmds:
       - |
+        echo $PWD
         terraform init
         terraform {{.TF_CMD}} -auto-approve {{.TF_SSH_USER_VAR}} \
           -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
@@ -252,3 +253,38 @@ tasks:
       ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
     cmds:
       - '{{.TASKFILE_DIR}}/.buildkite/scripts/test-proxy-cluster.sh --hosts={{.ANSIBLE_INVENTORY}} --cert={{.CA_CRT}} --bucket={{.BUCKET_NAME}} --sshkey=artifacts/testkey'
+
+  integration-aws:
+    desc: Stand up an AWS cluster for integration testing
+    vars:
+      PREFIX: '{{default "" .PREFIX}}'
+      DISTRO: '{{default "" .DISTRO}}'
+      UNSTABLE: '{{default "" .UNSTABLE}}'
+      TIERED: '{{default "false" .TIERED}}'
+      TF_DIR: '{{default "" .TF_DIR}}'
+      TASK_NAME: '{{default "" .TASK_NAME}}'
+      MACHINE_ARCH: '{{default "x86_64" .MACHINE_ARCH}}'
+      INSTANCE_TYPE: '{{default "i3.2xlarge" .INSTANCE_TYPE}}'
+      NUM_NODES: '{{default "3" .NUM_NODES}}'
+    cmds:
+      - task: keygen
+      - defer: |
+          DEPLOYMENT_ID={{.PREFIX}} DISTRO={{.DISTRO}} MACHINE_ARCH={{.MACHINE_ARCH}} INSTANCE_TYPE={{.INSTANCE_TYPE}} TIERED_STORAGE_ENABLED={{.TIERED}} TF_DIR={{.TF_DIR}} TF_CMD=destroy task build -- '-var=tags={
+            "VantaOwner" : "devex@redpanda.com",
+            "VantaNonProd" : "true",
+            "VantaDescription" : "cicd-instance-for-devex",
+            "VantaContainsUserData" : "false",
+            "VantaUserDataStored" : "none",
+            "VantaNoAlert" : "this-is-a-testing-instance-with-no-stored-data"
+          }'
+      - |
+        DEPLOYMENT_ID={{.PREFIX}} NUM_NODES={{.NUM_NODES}} DISTRO={{.DISTRO}} MACHINE_ARCH={{.MACHINE_ARCH}} INSTANCE_TYPE={{.INSTANCE_TYPE}} TIERED_STORAGE_ENABLED={{.TIERED}} TF_DIR={{.TF_DIR}} task build -- '-var=tags={
+          "VantaOwner" : "devex@redpanda.com",
+          "VantaNonProd" : "true",
+          "VantaDescription" : "cicd-instance-for-devex",
+          "VantaContainsUserData" : "false",
+          "VantaUserDataStored" : "none",
+          "VantaNoAlert" : "this-is-a-testing-instance-with-no-stored-data"
+        }'
+      - DEPLOYMENT_ID={{.PREFIX}} DISTRO={{.DISTRO}} IS_USING_UNSTABLE={{.UNSTABLE}} task "create-{{.TASK_NAME}}"
+      - DEPLOYMENT_ID={{.PREFIX}} DISTRO={{.DISTRO}} task "test-{{.TASK_NAME}}"
