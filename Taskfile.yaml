@@ -25,7 +25,7 @@ vars:
   ANSIBLE_INSTALL_DIR: '{{.ARTIFACT_DIR}}/ansible/{{.ANSIBLE_VERSION}}'
   ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.log'
   ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.CLOUD_PROVIDER}}_{{.DEPLOYMENT_ID}}.ini'
-  ANSIBLE_COLLECTIONS_PATHS: '{{ .ARTIFACT_DIR }}/collections'
+  ANSIBLE_COLLECTIONS_PATH: '{{ .ARTIFACT_DIR }}/collections'
   ANSIBLE_ROLES_PATH: '{{ .ARTIFACT_DIR }}/roles'
   TF_SSH_USER_VAR:
     sh: |
@@ -92,7 +92,7 @@ tasks:
     env:
       ANSIBLE_ROLES_PATH: '{{.ROLES_DIR}}'
       ANSIBLE_COLLECTION_INSTALL: '{{ .ANSIBLE_COLLECTION_INSTALL }}'
-      ANSIBLE_COLLECTIONS_PATHS: '{{ .ANSIBLE_COLLECTIONS_PATHS }}'
+      ANSIBLE_COLLECTIONS_PATH: '{{ .ANSIBLE_COLLECTIONS_PATH }}'
     run: once
     cmds:
       - mkdir -p "{{ .ANSIBLE_ROLES_PATH}}"
@@ -107,11 +107,11 @@ tasks:
       - install-role-requirements
     run: always
     env:
-        ANSIBLE_INSTALL_DIR: '{{.ANSIBLE_INSTALL_DIR}}'
-        ANSIBLE_LOG_PATH: '{{.ANSIBLE_LOG_PATH}}'
-        ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
-        ANSIBLE_COLLECTIONS_PATHS: '{{.ANSIBLE_COLLECTIONS_PATHS}}'
-        ANSIBLE_ROLES_PATH: '{{.ANSIBLE_ROLES_PATH}}'
+      ANSIBLE_INSTALL_DIR: '{{.ANSIBLE_INSTALL_DIR}}'
+      ANSIBLE_LOG_PATH: '{{.ANSIBLE_LOG_PATH}}'
+      ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
+      ANSIBLE_COLLECTIONS_PATH: '{{.ANSIBLE_COLLECTIONS_PATH}}'
+      ANSIBLE_ROLES_PATH: '{{.ANSIBLE_ROLES_PATH}}'
     vars:
       ANSIBLE_PLAYBOOK: '{{default "provision-basic-cluster.yml" .ANSIBLE_PLAYBOOK}}'
       IS_USING_UNSTABLE: '{{ default false .IS_USING_UNSTABLE }}'
@@ -156,7 +156,7 @@ tasks:
       ANSIBLE_INSTALL_DIR: '{{.ANSIBLE_INSTALL_DIR}}'
       ANSIBLE_LOG_PATH: '{{.ANSIBLE_LOG_PATH}}'
       ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
-      ANSIBLE_COLLECTIONS_PATHS: '{{.ANSIBLE_COLLECTIONS_PATHS}}'
+      ANSIBLE_COLLECTIONS_PATH: '{{.ANSIBLE_COLLECTIONS_PATH}}'
       ANSIBLE_ROLES_PATH: '{{.ANSIBLE_ROLES_PATH}}'
     vars:
       SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
@@ -166,9 +166,9 @@ tasks:
     cmds:
       - task: basic
         vars: {
-            ANSIBLE_PLAYBOOK: "{{ .ANSIBLE_PLAYBOOK }}",
-            CLI_ARGS: "--extra-vars cloud_storage_credentials_source='{{ .CLOUD_STORAGE_CREDENTIALS_SOURCE }}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
-            IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}"
+          ANSIBLE_PLAYBOOK: "{{ .ANSIBLE_PLAYBOOK }}",
+          CLI_ARGS: "--extra-vars cloud_storage_credentials_source='{{ .CLOUD_STORAGE_CREDENTIALS_SOURCE }}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
+          IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}"
         }
 
   create-proxy-cluster:
@@ -183,7 +183,7 @@ tasks:
       ANSIBLE_INSTALL_DIR: '{{.ANSIBLE_INSTALL_DIR}}'
       ANSIBLE_LOG_PATH: '{{.ANSIBLE_LOG_PATH}}'
       ANSIBLE_INVENTORY: '{{.ANSIBLE_INVENTORY}}'
-      ANSIBLE_COLLECTIONS_PATHS: '{{.ANSIBLE_COLLECTIONS_PATHS}}'
+      ANSIBLE_COLLECTIONS_PATH: '{{.ANSIBLE_COLLECTIONS_PATH}}'
       ANSIBLE_ROLES_PATH: '{{.ANSIBLE_ROLES_PATH}}'
     vars:
       SEGMENT_UPLOAD_INTERVAL: '{{ default "1" .SEGMENT_UPLOAD_INTERVAL }}'
@@ -194,10 +194,10 @@ tasks:
     cmds:
       - task: basic
         vars: {
-            ANSIBLE_PLAYBOOK: "{{ .ANSIBLE_PLAYBOOK }}",
-            CLI_ARGS: "--extra-vars '{\"squid_acl_localnet\": [\"{{.SQUID_ACL_LOCALNET}}\"]}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
-            IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}",
-            SKIP_TAGS: "{{ .SKIP_TAGS }}"
+          ANSIBLE_PLAYBOOK: "{{ .ANSIBLE_PLAYBOOK }}",
+          CLI_ARGS: "--extra-vars '{\"squid_acl_localnet\": [\"{{.SQUID_ACL_LOCALNET}}\"]}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"{{.SEGMENT_UPLOAD_INTERVAL}}\"}}'",
+          IS_USING_UNSTABLE: "{{ .IS_USING_UNSTABLE }}",
+          SKIP_TAGS: "{{ .SKIP_TAGS }}"
         }
 
   install-rpk:

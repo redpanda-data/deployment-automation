@@ -32,7 +32,7 @@ brew install gnu-tar
 ```shell
 # Set required ansible variables
 export CLOUD_PROVIDER=aws
-export ANSIBLE_COLLECTIONS_PATHS=${PWD}/artifacts/collections
+export ANSIBLE_COLLECTIONS_PATH=${PWD}/artifacts/collections
 export ANSIBLE_ROLES_PATH=${PWD}/artifacts/roles
 export ANSIBLE_INVENTORY=${PWD}/${CLOUD_PROVIDER}/hosts.ini
 

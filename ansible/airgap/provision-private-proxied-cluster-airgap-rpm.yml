@@ -55,6 +55,9 @@
     - name: Install and configure CA certs for running tls # this can be commented out if your internal team has already put the necessary certs on the brokers
       ansible.builtin.include_role:
         name: redpanda.cluster.demo_certs
+    - name: Configure sysctl
+      ansible.builtin.include_role:
+        name: redpanda.cluster.sysctl_setup
     - name: Install and start redpanda
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker
