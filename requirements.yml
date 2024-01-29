@@ -1,7 +1,8 @@
 collections:
   - name: community.general
-  - name: redpanda.cluster
-    type: galaxy
+  - name: https://github.com/redpanda-data/redpanda-ansible-collection.git
+    type: git
+    version: fix-sysctl-for-large-ssytems
   - name: ansible.posix
   - name: grafana.grafana
 
