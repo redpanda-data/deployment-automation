@@ -87,6 +87,7 @@ tasks:
           -var='machine_architecture={{.MACHINE_ARCH}}' \
           -var='instance_type={{.INSTANCE_TYPE}}' \
           -var='aws_region={{.AWS_REGION}}' \
+          -var='az_string={{.AZ_STRING}}' \
           {{.CLI_ARGS}}
 
   install-role-requirements:
@@ -268,10 +269,11 @@ tasks:
       INSTANCE_TYPE: '{{default "i3.2xlarge" .INSTANCE_TYPE}}'
       NUM_NODES: '{{default "3" .NUM_NODES}}'
       AWS_REGION: '{{default "us-west-2" .AWS_REGION}}'
+      AVAILABILITY_ZONE: '{{default "us-west-2a" .AVAILABILITY_ZONE}}'
     cmds:
       - task: keygen
       - defer: |
-          DEPLOYMENT_ID={{.PREFIX}} DISTRO={{.DISTRO}} AWS_REGION={{.AWS_REGION}} MACHINE_ARCH={{.MACHINE_ARCH}} INSTANCE_TYPE={{.INSTANCE_TYPE}} TIERED_STORAGE_ENABLED={{.TIERED}} TF_DIR={{.TF_DIR}} TF_CMD=destroy task build -- '-var=tags={
+          DEPLOYMENT_ID={{.PREFIX}} DISTRO={{.DISTRO}} AZ_STRING={{.AZ_STRING}} AWS_REGION={{.AWS_REGION}} MACHINE_ARCH={{.MACHINE_ARCH}} INSTANCE_TYPE={{.INSTANCE_TYPE}} TIERED_STORAGE_ENABLED={{.TIERED}} TF_DIR={{.TF_DIR}} TF_CMD=destroy task build -- '-var=tags={
             "VantaOwner" : "devex@redpanda.com",
             "VantaNonProd" : "true",
             "VantaDescription" : "cicd-instance-for-devex",
@@ -280,7 +282,7 @@ tasks:
             "VantaNoAlert" : "this-is-a-testing-instance-with-no-stored-data"
           }'
       - |
-        DEPLOYMENT_ID={{.PREFIX}} NUM_NODES={{.NUM_NODES}} AWS_REGION={{.AWS_REGION}} DISTRO={{.DISTRO}} MACHINE_ARCH={{.MACHINE_ARCH}} INSTANCE_TYPE={{.INSTANCE_TYPE}} TIERED_STORAGE_ENABLED={{.TIERED}} TF_DIR={{.TF_DIR}} task build -- '-var=tags={
+        DEPLOYMENT_ID={{.PREFIX}} NUM_NODES={{.NUM_NODES}} AZ_STRING={{.AZ_STRING}} AWS_REGION={{.AWS_REGION}} DISTRO={{.DISTRO}} MACHINE_ARCH={{.MACHINE_ARCH}} INSTANCE_TYPE={{.INSTANCE_TYPE}} TIERED_STORAGE_ENABLED={{.TIERED}} TF_DIR={{.TF_DIR}} task build -- '-var=tags={
           "VantaOwner" : "devex@redpanda.com",
           "VantaNonProd" : "true",
           "VantaDescription" : "cicd-instance-for-devex",

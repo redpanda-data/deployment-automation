@@ -15,7 +15,7 @@ module "redpanda-cluster" {
   tags                     = var.tags
   aws_region               = var.aws_region
   associate_public_ip_addr = var.associate_public_ip_addr
-  availability_zone        = var.availability_zone
+  availability_zone        = local.preferred_az
   client_count             = 1
   broker_instance_type     = var.instance_type
   client_instance_type     = var.instance_type
@@ -122,4 +122,14 @@ variable "instance_type" {
 variable "machine_architecture" {
   type    = string
   default = "x86_64"
+}
+
+variable "az_string" {
+  description = "A comma-separated string of availability zones"
+  type        = string
+  default     = ""
+}
+
+locals {
+  preferred_az = var.az_string != "" ? split(",", var.az_string) : var.availability_zone
 }

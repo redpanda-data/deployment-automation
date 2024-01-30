@@ -126,7 +126,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test large unstable tiered-storage-up cluster standup fedora with im4gn.8xlarge
     key: large-up-unstable-fedora-is4
-    command: NUM_NODES=15 PREFIX="rp-un-lrg-fd-is" AWS_REGION="us-east-1" DISTRO="Fedora-Cloud-Base-36" TIERED=true UNSTABLE=true TASK_NAME="tiered-storage-cluster" MACHINE_ARCH="arm64" INSTANCE_TYPE="im4gn.8xlarge" task integration-aws
+    command: NUM_NODES=5 PREFIX="rp-un-lrg-fd-is" AZ_STRING="us-east-1a,us-east-1b,us-east-1c" AWS_REGION="us-east-1" DISTRO="Fedora-Cloud-Base-36" TIERED=true UNSTABLE=true TASK_NAME="tiered-storage-cluster" MACHINE_ARCH="arm64" INSTANCE_TYPE="im4gn.8xlarge" task integration-aws
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -136,7 +136,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test large unstable tiered-storage-up cluster standup ubuntu with im4gn.8xlarge
     key: large-up-unstable-ubuntu-is4
-    command: NUM_NODES=15 PREFIX="rp-un-lrg-ub-is" AWS_REGION="us-east-1" DISTRO="ubuntu-focal" TIERED=true UNSTABLE=true TASK_NAME="tiered-storage-cluster" MACHINE_ARCH="arm64" INSTANCE_TYPE="im4gn.8xlarge" task integration-aws
+    command: NUM_NODES=5 PREFIX="rp-un-lrg-ub-is" AZ_STRING="us-east-1a,us-east-1b,us-east-1c" AWS_REGION="us-east-1" DISTRO="ubuntu-focal" TIERED=true UNSTABLE=true TASK_NAME="tiered-storage-cluster" MACHINE_ARCH="arm64" INSTANCE_TYPE="im4gn.8xlarge" task integration-aws
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
