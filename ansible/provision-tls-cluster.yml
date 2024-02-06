@@ -27,6 +27,9 @@
     - name: Install system prereqs
       ansible.builtin.include_role:
         name: redpanda.cluster.system_setup
+    - name: Handle sysctl changes
+      ansible.builtin.include_role:
+        name: redpanda.cluster.sysctl_setup
     - name: Install and start redpanda
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker
