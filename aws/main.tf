@@ -1,21 +1,26 @@
 ## we assume a default vpc. if you have one you want to use you will need to provide a vpc and subnet ID
 
 module "redpanda-cluster" {
-  source                   = "redpanda-data/redpanda-cluster/aws"
-  version                  = "~> 1.0.2"
-  public_key_path          = var.public_key_path
-  broker_count             = var.broker_count
-  deployment_prefix        = var.deployment_prefix
-  enable_monitoring        = var.enable_monitoring
-  tiered_storage_enabled   = var.tiered_storage_enabled
-  allow_force_destroy      = var.allow_force_destroy
-  vpc_id                   = var.vpc_id
-  distro                   = var.distro
-  hosts_file               = var.hosts_file
+  source                 = "redpanda-data/redpanda-cluster/aws"
+  version                = "~> 1.0.2"
+  public_key_path        = var.public_key_path
+  broker_count           = var.broker_count
+  deployment_prefix      = var.deployment_prefix
+  enable_monitoring      = var.enable_monitoring
+  tiered_storage_enabled = var.tiered_storage_enabled
+  allow_force_destroy    = var.allow_force_destroy
+  vpc_id                 = var.vpc_id
+  distro                 = var.distro
+  hosts_file             = var.hosts_file
+  subnets                = {
+    "broker" : {
+      "${var.availability_zone}" : var.subnet_id
+    }
+  }
   tags                     = var.tags
   aws_region               = var.aws_region
   associate_public_ip_addr = var.associate_public_ip_addr
-  availability_zone        = var.availability_zone
+  availability_zone        = [var.availability_zone]
   client_count             = 1
   broker_instance_type     = var.instance_type
   client_instance_type     = var.instance_type
@@ -24,8 +29,8 @@ module "redpanda-cluster" {
 }
 
 variable "availability_zone" {
-  default = ["us-west-2a"]
-  type    = list(string)
+  default = "us-west-2a"
+  type    = string
 }
 
 variable "associate_public_ip_addr" {
@@ -122,4 +127,9 @@ variable "instance_type" {
 variable "machine_architecture" {
   type    = string
   default = "x86_64"
+}
+
+variable "subnet_id" {
+  type    = string
+  default = ""
 }
