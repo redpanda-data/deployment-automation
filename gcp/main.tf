@@ -29,7 +29,7 @@ resource "google_compute_firewall" "test-fire" {
 
 module "redpanda-cluster" {
   source  = "redpanda-data/redpanda-cluster/gcp"
-  version = ">= 0.6.3"
+  version = ">= 0.7.0"
   region  = var.region
 
   ssh_user              = var.ssh_user
