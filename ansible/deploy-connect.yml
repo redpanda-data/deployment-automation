@@ -1,0 +1,5 @@
+- hosts: connect
+  tasks:
+    - name: install connect
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_connect
