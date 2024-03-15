@@ -1,11 +1,6 @@
-.PHONY: all keygen build_aws build_gcp destroy_aws destroy_gcp ansible-prereqs collection role basic create-tls-cluster create-basic-cluster create-tiered-storage-cluster create-proxy-cluster install-rpk test-basic-cluster test-tls-cluster test-tiered-storage-cluster test-proxy-cluster
+.PHONY: all keygen connect connect-simple build_aws build_gcp destroy_aws destroy_gcp ansible-prereqs collection role basic create-tls-cluster create-basic-cluster create-tiered-storage-cluster create-proxy-cluster install-rpk test-basic-cluster test-tls-cluster test-tiered-storage-cluster test-proxy-cluster
 
 ARTIFACT_DIR := $(PWD)/artifacts
-
-PUBLIC_KEY_DEFAULT := $(ARTIFACT_DIR)/testkey.pub
-PRIVATE_KEY_DEFAULT := $(ARTIFACT_DIR)/testkey
-PUBLIC_KEY ?= $(PUBLIC_KEY_DEFAULT)
-PRIVATE_KEY ?= $(PRIVATE_KEY_DEFAULT)
 DEPLOYMENT_ID ?= devex-cicd
 NUM_NODES ?= 3
 ENABLE_MONITORING ?= true
@@ -16,24 +11,31 @@ BUCKET_NAME := $(subst _,-,$(DEPLOYMENT_ID))-bucket
 DISTRO ?= ubuntu-focal
 IS_USING_UNSTABLE ?= false
 
+# RPK
+RPK_PATH ?= $(ARTIFACT_DIR)/bin/rpk
+
 # Terraform environment values
 TERRAFORM_VERSION := 1.7.4
 TERRAFORM_INSTALL_DIR := $(ARTIFACT_DIR)/terraform/$(TERRAFORM_VERSION)
+ENABLE_CONNECT ?= false
 
 # Ansible environment values
 export ANSIBLE_VERSION := 2.11.12
 export ANSIBLE_INSTALL_DIR := $(ARTIFACT_DIR)/ansible/$(ANSIBLE_VERSION)
 export ANSIBLE_LOG_PATH := $(ARTIFACT_DIR)/logs/$(DEPLOYMENT_ID).log
 export ANSIBLE_INVENTORY := $(ARTIFACT_DIR)/hosts_$(DEPLOYMENT_ID).ini
-export ANSIBLE_COLLECTIONS_PATHS := $(ARTIFACT_DIR)/collections
+export ANSIBLE_COLLECTIONS_PATH := $(ARTIFACT_DIR)/collections
 export ANSIBLE_ROLES_PATH := $(ARTIFACT_DIR)/roles
 
+# hosts and keys
+HOSTS_FILE ?= $(ARTIFACT_DIR)/hosts_$(DEPLOYMENT_ID).ini
+PUBLIC_KEY ?= $(ARTIFACT_DIR)/testkey.pub
+PRIVATE_KEY ?= $(ARTIFACT_DIR)/testkey
+
 # copy_file environment values
-RPM_VERSION := v1.0.0-7ae9d19
-SSH_USER := ${SSH_USER}
-TARGET_SERVER := example.com
-SERVER_DIR := /tmp
-LOCAL_FILE := $(ARTIFACT_DIR)/redpanda-connect.rpm
+RPM_VERSION ?= v1.0.0-7ae9d19
+SERVER_DIR ?= /tmp
+LOCAL_FILE := $(ARTIFACT_DIR)/redpanda-connect.x86_64.rpm
 TOKEN := ${TOKEN}
 DL_LINK :=  https://dl.redpanda.com/$(TOKEN)/connectors-artifacts/raw/names/redpanda-connectors/versions/$(RPM_VERSION)/redpanda-connectors-$(RPM_VERSION).x86_64.rpm
 
@@ -58,8 +60,13 @@ get_rpm:
 	curl -o $(LOCAL_FILE) $(DL_LINK)
 
 copy_rpm:
+	@echo "Copying $(LOCAL_FILE).tar.gz to $(SERVER_DIR)"
+	$(eval IPS_USERS=$(shell awk '/^\[connect\]/{f=1; next} /^\[/{f=0} f && /^[0-9]/{split($$2,a,"="); print a[2] "@" $$1}' $(HOSTS_FILE)))
+	@echo $(IPS_USERS)
+	@for IP_USER in $(IPS_USERS); do \
+		scp -o StrictHostKeyChecking=no -i "$(PRIVATE_KEY)" "$(LOCAL_FILE)" "$$IP_USER:$(SERVER_DIR)"; \
+	done
 
-	@scp -i $(PRIVATE_KEY) $(LOCAL_FILE) $(SSH_USER)@$(TARGET_SERVER):$(SERVER_DIR)
 
 keygen:
 	@ssh-keygen -t rsa -b 4096 -C "$(SSH_EMAIL)" -N "" -f artifacts/testkey <<< y && chmod 0700 artifacts/testkey
@@ -78,7 +85,9 @@ build_aws:
 		-var='distro=$(DISTRO)' \
 		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
+		-var='enable_connect=$(ENABLE_CONNECT)' \
 		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+
 
 build_gcp:
 	@cd gcp/$(TF_DIR) && \
@@ -110,6 +119,7 @@ destroy_aws:
 		-var='distro=$(DISTRO)' \
 		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
+		-var='enable_connect=$(ENABLE_CONNECT)' \
 		-var='instance_type=$(INSTANCE_TYPE)'
 
 destroy_gcp:
@@ -129,8 +139,8 @@ destroy_gcp:
 		-var='instance_type=$(INSTANCE_TYPE)'
 
 collection:
-	@mkdir -p $(ANSIBLE_COLLECTIONS_PATHS)
-	@ansible-galaxy collection install -r $(PWD)/requirements.yml --force -p $(ANSIBLE_COLLECTIONS_PATHS)
+	@mkdir -p $(ANSIBLE_COLLECTIONS_PATH)
+	@ansible-galaxy collection install -r $(PWD)/requirements.yml --force -p $(ANSIBLE_COLLECTIONS_PATH)
 
 role:
 	@mkdir -p $(ANSIBLE_ROLES_PATH)
@@ -139,6 +149,15 @@ role:
 basic: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/provision-basic-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+connect: ENABLE_CONNECT := true
+connect: build_aws basic ansible-prereqs get_rpm copy_rpm
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+connect-simple:
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-connect.yml -vv --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
 create-tls-cluster: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
@@ -161,10 +180,30 @@ install-rpk:
 	@curl -L https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip -o $(ARTIFACT_DIR)/tmp/rpk-linux-amd64.zip
 	@mkdir -p $(ARTIFACT_DIR)/bin
 	@unzip -o $(ARTIFACT_DIR)/tmp/rpk-linux-amd64.zip -d $(ARTIFACT_DIR)/bin/
-	@chmod 755 $(ARTIFACT_DIR)/bin/rpk
+	@chmod 755
 
-test-basic-cluster: install-rpk
-	@$(PWD)/.buildkite/scripts/test-basic-cluster.sh --hosts=$(ANSIBLE_INVENTORY) --rpk=$(ARTIFACT_DIR)/bin/rpk
+test-basic-cluster:
+	@# Assemble the redpanda brokers by chopping up the hosts file
+	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
+
+	$(eval REDPANDA_REGISTRY := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":8081,"); sub(/,$$/,":8081")}1'))
+
+	@echo $(REDPANDA_REGISTRY)
+	@echo $(REDPANDA_BROKERS)
+	@echo "checking cluster status"
+	@$(RPK_PATH) cluster status --brokers $(REDPANDA_BROKERS) -v || exit 1
+
+	@echo "creating topic"
+	@$(RPK_PATH) topic create testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1
+
+	@echo "producing to topic"
+	@echo squirrel | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1
+
+	@echo "consuming from topic"
+	@$(RPK_PATH) topic consume testtopic --brokers $(REDPANDA_BROKERS) -v -o :end | grep squirrel || exit 1
+
+	@echo "testing schema registry"
+	@for ip_port in $$(echo $(REDPANDA_REGISTRY) | tr ',' ' '); do curl $$ip_port/subjects ; done
 
 test-tls-cluster: install-rpk
 	@$(PWD)/.buildkite/scripts/test-tls-cluster.sh --hosts=$(ANSIBLE_INVENTORY) --cert=$(CA_CRT) --rpk=$(ARTIFACT_DIR)/bin/rpk
