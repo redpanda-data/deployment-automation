@@ -1,3 +1,4 @@
+# jmespath is a required dependency for this playbook. Install it with `pip install jmespath`.
 - hosts: redpanda
   tasks:
     - name: Node dependencies - include geerlingguy nodeexporter
@@ -13,7 +14,7 @@
 
 - hosts: monitor
   roles:
-    - cloudalchemy.prometheus
+    - prometheus.prometheus.prometheus
   vars:
     prometheus_scrape_configs:
       - job_name: "redpanda"
@@ -29,7 +30,7 @@
   roles:
     - grafana.grafana.grafana
   vars:
-    grafana_version: 9.5.7
+    grafana_version: 10.4.1
     grafana_security:
       admin_user: admin
       admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
