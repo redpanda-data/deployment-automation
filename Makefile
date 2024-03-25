@@ -157,7 +157,7 @@ connect: build_aws basic ansible-prereqs get_rpm copy_rpm
 
 connect-simple:
 	@mkdir -p $(ARTIFACT_DIR)/logs
-	@ansible-playbook ansible/deploy-connect.yml -vv --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
 create-tls-cluster: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
@@ -166,6 +166,10 @@ create-tls-cluster: ansible-prereqs
 create-basic-cluster: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/provision-basic-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) $(SKIP_TAGS) $(CLI_ARGS)
+
+monitor: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-prometheus-grafana.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) $(SKIP_TAGS) $(CLI_ARGS)
 
 create-tiered-storage-cluster: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
