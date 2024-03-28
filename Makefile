@@ -88,6 +88,23 @@ build_aws:
 		-var='enable_connect=$(ENABLE_CONNECT)' \
 		-var='instance_type=$(INSTANCE_TYPE_AWS)'
 
+build_aws2:
+	@cd aws2/$(TF_DIR) && \
+	terraform init && \
+	terraform apply -auto-approve \
+		-var='deployment_prefix=$(DEPLOYMENT_ID)' \
+		-var='public_key_path=$(PUBLIC_KEY)' \
+		-var='broker_count=$(NUM_NODES)' \
+		-var='enable_monitoring=$(ENABLE_MONITORING)' \
+		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
+		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
+		-var='vpc_id=$(VPC_ID)' \
+		-var='distro=$(DISTRO)' \
+		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
+		-var='machine_architecture=$(MACHINE_ARCH)' \
+		-var='enable_connect=$(ENABLE_CONNECT)' \
+		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+
 
 build_gcp:
 	@cd gcp/$(TF_DIR) && \
@@ -107,6 +124,23 @@ build_gcp:
 
 destroy_aws:
 	@cd aws/$(TF_DIR) && \
+	terraform init && \
+	terraform destroy -auto-approve \
+		-var='deployment_prefix=$(DEPLOYMENT_ID)' \
+		-var='public_key_path=$(PUBLIC_KEY)' \
+		-var='broker_count=$(NUM_NODES)' \
+		-var='enable_monitoring=$(ENABLE_MONITORING)' \
+		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
+		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
+		-var='vpc_id=$(VPC_ID)' \
+		-var='distro=$(DISTRO)' \
+		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
+		-var='machine_architecture=$(MACHINE_ARCH)' \
+		-var='enable_connect=$(ENABLE_CONNECT)' \
+		-var='instance_type=$(INSTANCE_TYPE)'
+
+destroy_aws2:
+	@cd aws2/$(TF_DIR) && \
 	terraform init && \
 	terraform destroy -auto-approve \
 		-var='deployment_prefix=$(DEPLOYMENT_ID)' \
@@ -152,6 +186,10 @@ basic: ansible-prereqs
 
 connect: ENABLE_CONNECT := true
 connect: build_aws basic ansible-prereqs get_rpm copy_rpm
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+connect2: build_aws2 basic ansible-prereqs get_rpm copy_rpm
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
