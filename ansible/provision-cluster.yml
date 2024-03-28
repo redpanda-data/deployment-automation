@@ -18,15 +18,3 @@
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker
       when: not skip_node | default(false) | bool
-
-- name: Provision redpanda console
-  hosts: client
-  vars:
-    advertise_public_ips: true
-    redpanda_version: latest
-    install_console: true
-  tasks:
-    - name: Install and start redpanda console
-      ansible.builtin.include_role:
-        name: redpanda.cluster.redpanda_console
-      when: not skip_node | default(false) | bool

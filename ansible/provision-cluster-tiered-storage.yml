@@ -36,24 +36,3 @@
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_broker
       when: not skip_node | default(false) | bool
-
-- name: Provision redpanda console
-  hosts: client
-  vars:
-    advertise_public_ips: true
-    redpanda_version: latest
-    install_console: true
-    enable_tls: true
-    create_demo_certs: true
-    handle_cert_install: true
-    root_ca_dir: "{{ playbook_dir }}/tls/ca"
-    ca_cert_file: "tls/ca/ca.crt"
-    node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
-  tasks:
-    - name: Install and configure CA certs for running tls
-      ansible.builtin.include_role:
-        name: redpanda.cluster.demo_certs
-    - name: Install and start redpanda console
-      ansible.builtin.include_role:
-        name: redpanda.cluster.redpanda_console
-      when: not skip_node | default(false) | bool
