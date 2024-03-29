@@ -36,8 +36,8 @@ module "redpanda-cluster" {
   subnet                = coalesce(var.subnet, google_compute_subnetwork.test-subnet.id)
   image                 = var.image
   availability_zone     = var.availability_zone
-  broker_count          = var.nodes
-  client_count          = var.client_nodes
+  broker_count          = var.broker_count
+  client_count          = var.client_count
   disks                 = var.disks
   ha                    = var.ha
   broker_machine_type   = var.machine_type
@@ -85,7 +85,7 @@ variable "project_name" {
   description = "The project name on GCP."
 }
 
-variable "nodes" {
+variable "broker_count" {
   description = "The number of nodes to deploy."
   type        = number
   default     = "3"
@@ -97,7 +97,7 @@ variable "ha" {
   default     = false
 }
 
-variable "client_nodes" {
+variable "client_count" {
   description = "The number of clients to deploy."
   type        = number
   default     = "1"

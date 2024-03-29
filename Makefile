@@ -1,5 +1,3 @@
-.PHONY: all keygen connect connect-simple build_aws build_gcp destroy_aws destroy_gcp ansible-prereqs collection role cluster cluster-tls create-basic-cluster create-tiered-storage-cluster create-proxy-cluster install-rpk test-basic-cluster test-tls-cluster test-tiered-storage-cluster test-proxy-cluster
-
 ARTIFACT_DIR := $(PWD)/artifacts
 DEPLOYMENT_ID ?= devex-cicd
 NUM_NODES ?= 3
@@ -33,6 +31,9 @@ HOSTS_FILE ?= $(ARTIFACT_DIR)/hosts_$(DEPLOYMENT_ID).ini
 PUBLIC_KEY ?= $(ARTIFACT_DIR)/testkey.pub
 PRIVATE_KEY ?= $(ARTIFACT_DIR)/testkey
 
+# gcp env
+GOOGLE_PROJECT_ID ?= "hallowed-ray-376320"
+
 # copy_file environment values
 RPM_VERSION ?= v1.0.0-7ae9d19
 SERVER_DIR ?= /tmp
@@ -49,17 +50,21 @@ export AWS_SECRET_ACCESS_KEY := $(if $(AWS_SECRET_ACCESS_KEY),$(AWS_SECRET_ACCES
 export AWS_DEFAULT_REGION ?= us-west-2
 
 all: keygen build_aws ansible-prereqs
+test-cluster-tiered-storage-aws: test-cluster-tls test-storage-aws
+test-cluster-tiered-storage-gcp: test-cluster-tls test-storage-gcp
 
+.PHONY: ansible-prereqs
 ansible-prereqs: collection role
 	@echo "Ansible prereqs installed"
 
-basic_aws: build_aws create-basic-cluster
-
+.PHONY: teardown
 teardown: destroy_aws destroy_gcp
 
+.PHONY: get_rpm
 get_rpm:
 	curl -o $(LOCAL_FILE) $(DL_LINK)
 
+.PHONY: copy_rpm
 copy_rpm:
 	@echo "Copying $(LOCAL_FILE).tar.gz to $(SERVER_DIR)"
 	$(eval IPS_USERS=$(shell awk '/^\[connect\]/{f=1; next} /^\[/{f=0} f && /^[0-9]/{split($$2,a,"="); print a[2] "@" $$1}' $(HOSTS_FILE)))
@@ -68,10 +73,11 @@ copy_rpm:
 		scp -o StrictHostKeyChecking=no -i "$(PRIVATE_KEY)" "$(LOCAL_FILE)" "$$IP_USER:$(SERVER_DIR)"; \
 	done
 
-
+.PHONY: keygen
 keygen:
 	@ssh-keygen -t rsa -b 4096 -C "$(SSH_EMAIL)" -N "" -f artifacts/testkey <<< y && chmod 0700 artifacts/testkey
 
+.PHONY: build_aws
 build_aws:
 	@cd aws/$(TF_DIR) && \
 	terraform init && \
@@ -89,6 +95,10 @@ build_aws:
 		-var='enable_connect=$(ENABLE_CONNECT)' \
 		-var='instance_type=$(INSTANCE_TYPE_AWS)'
 
+GCP_IMAGE ?= ubuntu-os-cloud/ubuntu-2204-lts
+GCP_INSTANCE_TYPE ?= n2-standard-2
+GCP_CREDS ?= $(shell echo $$GCP_CREDS)
+.PHONY: build_gcp
 build_gcp:
 	@cd gcp/$(TF_DIR) && \
 	terraform init && \
@@ -98,13 +108,12 @@ build_gcp:
 		-var='broker_count=$(NUM_NODES)' \
 		-var='enable_monitoring=$(ENABLE_MONITORING)' \
 		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
-		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
-		-var='vpc_id=$(VPC_ID)' \
-		-var='distro=$(DISTRO)' \
+		-var='image=$(GCP_IMAGE)' \
 		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
-		-var='machine_architecture=$(MACHINE_ARCH)' \
-		-var='instance_type=$(INSTANCE_TYPE)'
+		-var='machine_type=$(GCP_INSTANCE_TYPE)' \
+		-var='gcp_creds=$(GCP_CREDS)'
 
+.PHONY: destroy_aws
 destroy_aws:
 	@cd aws/$(TF_DIR) && \
 	terraform init && \
@@ -122,6 +131,7 @@ destroy_aws:
 		-var='enable_connect=$(ENABLE_CONNECT)' \
 		-var='instance_type=$(INSTANCE_TYPE)'
 
+.PHONY: destroy_gcp
 destroy_gcp:
 	@cd gcp/$(TF_DIR) && \
 	terraform init && \
@@ -131,34 +141,38 @@ destroy_gcp:
 		-var='broker_count=$(NUM_NODES)' \
 		-var='enable_monitoring=$(ENABLE_MONITORING)' \
 		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
-		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
-		-var='vpc_id=$(VPC_ID)' \
-		-var='distro=$(DISTRO)' \
+		-var='image=$(GCP_IMAGE)' \
 		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
-		-var='machine_architecture=$(MACHINE_ARCH)' \
-		-var='instance_type=$(INSTANCE_TYPE)'
+		-var='machine_type=$(GCP_INSTANCE_TYPE)' \
+		-var='gcp_creds=$(GCP_CREDS)'
 
+.PHONY: collection
 collection:
 	@mkdir -p $(ANSIBLE_COLLECTIONS_PATH)
 	@ansible-galaxy collection install -r $(PWD)/requirements.yml --force -p $(ANSIBLE_COLLECTIONS_PATH)
 
+.PHONY: role
 role:
 	@mkdir -p $(ANSIBLE_ROLES_PATH)
 	@ansible-galaxy role install -r $(PWD)/requirements.yml --force -p $(ANSIBLE_ROLES_PATH)
 
+.PHONY: monitor
 monitor: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-monitor.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+.PHONY: monitor-tls
 monitor-tls: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-monitor-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+.PHONY: connect
 connect: ENABLE_CONNECT := true
 connect: build_aws cluster monitor get_rpm copy_rpm
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+.PHONY: connect-simple
 connect-simple: ENABLE_CONNECT := true
 connect-simple: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
@@ -166,6 +180,8 @@ connect-simple: ansible-prereqs
 
 MAC_RPK := "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-darwin-amd64.zip"
 LINUX_RPK := "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip"
+
+.PHONY: install-rpk
 install-rpk:
 	@mkdir -p $(ARTIFACT_DIR)/tmp
 	@mkdir -p $(ARTIFACT_DIR)/bin
@@ -178,10 +194,12 @@ endif
 	@chmod 755 $(ARTIFACT_DIR)/bin/rpk
 	@rm $(ARTIFACT_DIR)/tmp/rpk.zip
 
+.PHONY: cluster
 cluster: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/provision-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+.PHONY: test-cluster
 test-cluster:
 	@# Assemble the redpanda brokers by chopping up the hosts file
 	chmod 775 $(RPK_PATH)
@@ -207,10 +225,12 @@ test-cluster:
 	@echo "testing schema registry"
 	@for ip_port in $$(echo $(REDPANDA_REGISTRY) | tr ',' ' '); do curl $$ip_port/subjects ; done
 
+.PHONY: cluster-tls
 cluster-tls: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	 ansible-playbook ansible/provision-cluster-tls.yml --private-key $(PRIVATE_KEY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+.PHONY: test-cluster-tls
 test-cluster-tls:
 	$(eval REDPANDA_BROKERS := $(shell sed -n '/^\[redpanda\]/,/^$$/p' "$(ANSIBLE_INVENTORY)" | \
 		grep 'private_ip=' | \
@@ -243,17 +263,29 @@ test-cluster-tls:
 		curl $$ip_port/subjects -k --cacert "$(CA_CRT)"; \
 	done
 
-#create-tiered-storage-cluster: ansible-prereqs
-#	@mkdir -p $(ARTIFACT_DIR)/logs
-#	@ansible-playbook ansible/provision-tiered-storage-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) $(SKIP_TAGS) --extra-vars cloud_storage_credentials_source='$(CLOUD_STORAGE_CREDENTIALS_SOURCE)' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"$(SEGMENT_UPLOAD_INTERVAL)\"}}' $(CLI_ARGS)
-#
+SEGMENT_UPLOAD_INTERVAL ?= "1"
+CLOUD_STORAGE_CREDENTIALS_SOURCE ?= "aws_instance_metadata"
+
+.PHONY: cluster-tiered-storage
+cluster-tiered-storage: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	 ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key $(PRIVATE_KEY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars segment_upload_interval=$(SEGMENT_UPLOAD_INTERVAL) --extra-vars cloud_storage_credentials_source=$(CLOUD_STORAGE_CREDENTIALS_SOURCE)
+
+.PHONY: test-cluster-tiered-storage
+test-storage-gcp:
+	@echo "$DEVEX_GCP_CREDS_BASE64" | base64 -d > /tmp/gcp_creds.json
+	export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp_creds.json"
+	export CLOUDSDK_CORE_PROJECT=$(GOOGLE_PROJECT_ID)
+	@gcloud auth activate-service-account --key-file=$(GOOGLE_APPLICATION_CREDENTIALS)
+	@gcloud storage ls | grep ${BUCKET_NAME%-bucket}
+
+.PHONY: test-storage-aws
+test-storage-aws:
+	@aws s3api list-objects-v2 --bucket "${BUCKET_NAME}" --region us-west-2 --max-items 1 --output text --query 'Contents[0].Key' | grep testtopic || exit 1
+
 #create-proxy-cluster: ansible-prereqs
 #	@mkdir -p $(ARTIFACT_DIR)/logs
 #	@ansible-playbook ansible/proxy/provision-private-proxied-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars '{\"squid_acl_localnet\": [\"$(SQUID_ACL_LOCALNET)\"]}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"$(SEGMENT_UPLOAD_INTERVAL)\"}}' $(SKIP_TAGS) $(CLI_ARGS)
-#
 
-#test-tiered-storage-cluster: install-rpk
-#	@$(PWD)/.buildkite/scripts/test-tiered-storage-cluster.sh --hosts=$(ANSIBLE_INVENTORY) --cert=$(CA_CRT) --rpk=$(ARTIFACT_DIR)/bin/rpk --bucket=$(BUCKET_NAME)
-#
 #test-proxy-cluster:
 #	@$(PWD)/.buildkite/scripts/test-proxy-cluster.sh --hosts=$(ANSIBLE_INVENTORY) --cert=$(CA_CRT) --bucket=$(BUCKET_NAME) --sshkey=artifacts/testkey
