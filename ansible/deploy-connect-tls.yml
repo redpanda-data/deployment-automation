@@ -1,0 +1,19 @@
+---
+- name: Provision tls cluster
+  hosts: connect
+  vars:
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
+    enable_tls: true
+    advertise_public_ips: true
+    create_demo_certs: true
+    handle_cert_install: true
+    redpanda_version: latest
+    ca_cert_file: "tls/ca/ca.crt"
+    node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
+  tasks:
+    - name: Install and configure CA certs for running tls
+      ansible.builtin.include_role:
+        name: redpanda.cluster.demo_certs
+    - name: install connect
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_connect
