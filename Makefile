@@ -178,6 +178,20 @@ connect-simple: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+.PHONY: connect-simple-tls
+connect-simple-tls: ENABLE_CONNECT := true
+connect-simple-tls: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+
+.PHONY: connect-tls
+connect-tls: ENABLE_CONNECT := true
+connect-tls: build_aws cluster-tls monitor-tls get_rpm copy_rpm
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+
 MAC_RPK := "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-darwin-amd64.zip"
 LINUX_RPK := "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip"
 
@@ -283,11 +297,13 @@ test-storage-gcp:
 test-storage-aws:
 	@aws s3api list-objects-v2 --bucket "${BUCKET_NAME}" --region us-west-2 --max-items 1 --output text --query 'Contents[0].Key' | grep testtopic || exit 1
 
+.PHONY: cluster-proxy
 cluster-proxy: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/proxy/provision-private-proxied-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars '{\"squid_acl_localnet\": [\"$(SQUID_ACL_LOCALNET)\"]}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"$(SEGMENT_UPLOAD_INTERVAL)\"}}' $(SKIP_TAGS) $(CLI_ARGS)
 
-test-cluster-tls:
+.PHONY: test-cluster-proxy
+test-cluster-proxy:
 	$(eval REDPANDA_BROKERS := $(shell sed -n '/^\[redpanda\]/,/^$$/p' "$(PATH_TO_HOSTS_FILE)" | \
 		grep 'private_ip=' | \
 		cut -d' ' -f1 | \
