@@ -283,9 +283,40 @@ test-storage-gcp:
 test-storage-aws:
 	@aws s3api list-objects-v2 --bucket "${BUCKET_NAME}" --region us-west-2 --max-items 1 --output text --query 'Contents[0].Key' | grep testtopic || exit 1
 
-#create-proxy-cluster: ansible-prereqs
-#	@mkdir -p $(ARTIFACT_DIR)/logs
-#	@ansible-playbook ansible/proxy/provision-private-proxied-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars '{\"squid_acl_localnet\": [\"$(SQUID_ACL_LOCALNET)\"]}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"$(SEGMENT_UPLOAD_INTERVAL)\"}}' $(SKIP_TAGS) $(CLI_ARGS)
+cluster-proxy: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/proxy/provision-private-proxied-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars '{\"squid_acl_localnet\": [\"$(SQUID_ACL_LOCALNET)\"]}' --extra-vars redpanda='{\"cluster\":{\"cloud_storage_segment_max_upload_interval_sec\":\"$(SEGMENT_UPLOAD_INTERVAL)\"}}' $(SKIP_TAGS) $(CLI_ARGS)
 
-#test-proxy-cluster:
-#	@$(PWD)/.buildkite/scripts/test-proxy-cluster.sh --hosts=$(ANSIBLE_INVENTORY) --cert=$(CA_CRT) --bucket=$(BUCKET_NAME) --sshkey=artifacts/testkey
+test-cluster-tls:
+	$(eval REDPANDA_BROKERS := $(shell sed -n '/^\[redpanda\]/,/^$$/p' "$(PATH_TO_HOSTS_FILE)" | \
+		grep 'private_ip=' | \
+		cut -d' ' -f1 | \
+		sed 's/$$/:9092/' | \
+		tr '\n' ',' | \
+		sed 's/,$$/\n/'))
+
+	$(eval CLIENT_SSH_USER := $(shell sed -n '/\[redpanda\]/,/\[/p' "$(PATH_TO_HOSTS_FILE)" | \
+		grep ansible_user | \
+		head -n1 | \
+		tr ' ' '\n' | \
+		grep ansible_user | \
+		cut -d'=' -f2))
+
+	$(eval CLIENT_PUBLIC_IP := $(shell sed -n '/^\[client\]/,/^$$/p' "$(PATH_TO_HOSTS_FILE)" | \
+		grep 'private_ip=' | \
+		cut -f1 -d' '))
+
+	@echo "checking cluster status"
+	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk cluster status --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v' || exit 1
+
+	@echo "creating topic"
+	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic create testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v' || exit 1
+
+	@echo "producing to topic"
+	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'echo squirrels | rpk topic produce testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v' || exit 1
+
+	@sleep 30
+
+	@echo "consuming from topic"
+	$(eval testoutput := $(shell ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic consume testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v -o :end'))
+	@echo "$(testoutput)" | grep squirrels || exit 1
