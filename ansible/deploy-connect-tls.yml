@@ -7,6 +7,8 @@
     advertise_public_ips: true
     create_demo_certs: true
     handle_cert_install: true
+    connect_tls_enabled: true
+    connect_trusted_certs: true
     redpanda_version: latest
     ca_cert_file: "tls/ca/ca.crt"
     node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"

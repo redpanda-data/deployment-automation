@@ -62,7 +62,12 @@ teardown: destroy_aws destroy_gcp
 
 .PHONY: get_rpm
 get_rpm:
-	curl -o $(LOCAL_FILE) $(DL_LINK)
+	@if [ ! -f $(LOCAL_FILE) ]; then \
+		echo "Downloading $(LOCAL_FILE)..."; \
+		curl -o $(LOCAL_FILE) $(DL_LINK); \
+	else \
+		echo "$(LOCAL_FILE) already exists. Skipping download."; \
+	fi
 
 .PHONY: copy_rpm
 copy_rpm:
@@ -166,6 +171,17 @@ monitor-tls: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-monitor-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+.PHONY: console
+console: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-console.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+.PHONY: console-tls
+console-tls: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-console-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+
 .PHONY: connect
 connect: ENABLE_CONNECT := true
 connect: build_aws cluster monitor get_rpm copy_rpm
@@ -178,16 +194,16 @@ connect-simple: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
-.PHONY: connect-simple-tls
-connect-simple-tls: ENABLE_CONNECT := true
-connect-simple-tls: ansible-prereqs
+.PHONY: connect-tls-simple
+connect-tls-simple: ENABLE_CONNECT := true
+connect-tls-simple: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
 
 .PHONY: connect-tls
 connect-tls: ENABLE_CONNECT := true
-connect-tls: build_aws cluster-tls monitor-tls get_rpm copy_rpm
+connect-tls: build_aws cluster-tls monitor-tls console-tls get_rpm copy_rpm
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
