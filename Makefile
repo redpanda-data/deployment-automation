@@ -181,7 +181,6 @@ console-tls: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-console-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
-
 .PHONY: connect
 connect: ENABLE_CONNECT := true
 connect: build_aws cluster monitor get_rpm copy_rpm
@@ -196,16 +195,16 @@ connect-simple: ansible-prereqs
 
 .PHONY: connect-tls-simple
 connect-tls-simple: ENABLE_CONNECT := true
-connect-tls-simple: ansible-prereqs
+connect-tls-simple:
 	@mkdir -p $(ARTIFACT_DIR)/logs
-	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+	@ansible-playbook ansible/deploy-connect-tls-truststore.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
 
 .PHONY: connect-tls
 connect-tls: ENABLE_CONNECT := true
 connect-tls: build_aws cluster-tls monitor-tls console-tls get_rpm copy_rpm
 	@mkdir -p $(ARTIFACT_DIR)/logs
-	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+	@ansible-playbook ansible/deploy-connect-tls-truststore.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
 
 MAC_RPK := "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-darwin-amd64.zip"
@@ -320,21 +319,21 @@ cluster-proxy: ansible-prereqs
 
 .PHONY: test-cluster-proxy
 test-cluster-proxy:
-	$(eval REDPANDA_BROKERS := $(shell sed -n '/^\[redpanda\]/,/^$$/p' "$(PATH_TO_HOSTS_FILE)" | \
+	$(eval REDPANDA_BROKERS := $(shell sed -n '/^\[redpanda\]/,/^$$/p' "$(HOSTS_FILE)" | \
 		grep 'private_ip=' | \
 		cut -d' ' -f1 | \
 		sed 's/$$/:9092/' | \
 		tr '\n' ',' | \
 		sed 's/,$$/\n/'))
 
-	$(eval CLIENT_SSH_USER := $(shell sed -n '/\[redpanda\]/,/\[/p' "$(PATH_TO_HOSTS_FILE)" | \
+	$(eval CLIENT_SSH_USER := $(shell sed -n '/\[redpanda\]/,/\[/p' "$(HOSTS_FILE)" | \
 		grep ansible_user | \
 		head -n1 | \
 		tr ' ' '\n' | \
 		grep ansible_user | \
 		cut -d'=' -f2))
 
-	$(eval CLIENT_PUBLIC_IP := $(shell sed -n '/^\[client\]/,/^$$/p' "$(PATH_TO_HOSTS_FILE)" | \
+	$(eval CLIENT_PUBLIC_IP := $(shell sed -n '/^\[client\]/,/^$$/p' "$(HOSTS_FILE)" | \
 		grep 'private_ip=' | \
 		cut -f1 -d' '))
 
@@ -352,3 +351,34 @@ test-cluster-proxy:
 	@echo "consuming from topic"
 	$(eval testoutput := $(shell ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic consume testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v -o :end'))
 	@echo "$(testoutput)" | grep squirrels || exit 1
+
+CLIENT_NAME ?= client
+CLIENT_DIR := ansible/tls/clients
+CA_DIR := ansible/tls/ca
+CERT_DIR := ansible/tls/certs
+
+$(CLIENT_DIR):
+	mkdir -p $@
+
+$(CLIENT_DIR)/$(CLIENT_NAME).key:
+	openssl genrsa -out $@ 2048
+
+$(CLIENT_DIR)/$(CLIENT_NAME).csr: $(CLIENT_DIR)/$(CLIENT_NAME).key
+	openssl req -new -key $< -out $@ -subj "/CN=$(CLIENT_NAME)"
+
+$(CLIENT_DIR)/$(CLIENT_NAME).crt: $(CLIENT_DIR)/$(CLIENT_NAME).csr
+	openssl x509 -req -in $< -CA $(CA_DIR)/ca.crt -CAkey $(CA_DIR)/ca.key -CAcreateserial -out $@ -days 365 -sha256
+
+.PHONY: cert-client
+cert-client: $(CLIENT_DIR) $(CLIENT_DIR)/$(CLIENT_NAME).key $(CLIENT_DIR)/$(CLIENT_NAME).csr $(CLIENT_DIR)/$(CLIENT_NAME).crt
+
+.PHONY: cert-clean
+cert-clean:
+	rm -rf $(CA_DIR)
+	rm -rf $(CERT_DIR)
+	rm -rf $(CLIENT_DIR)
+
+.PHONY: test-connect
+test-connect: cert-client
+	$(eval CONNECT_TARGET := $(shell awk '/^\[connect\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | head -n1))
+	curl -vvvvv -k --cert ansible/tls/clients/client.crt --key ansible/tls/clients/client.key --cacert ansible/tls/ca/ca.crt -X GET https://$(CONNECT_TARGET):8083/connectors
