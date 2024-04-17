@@ -78,6 +78,7 @@ copy_rpm:
 		scp -o StrictHostKeyChecking=no -i "$(PRIVATE_KEY)" "$(LOCAL_FILE)" "$$IP_USER:$(SERVER_DIR)"; \
 	done
 
+SSH_EMAIL ?= test@test.com
 .PHONY: keygen
 keygen:
 	@ssh-keygen -t rsa -b 4096 -C "$(SSH_EMAIL)" -N "" -f artifacts/testkey <<< y && chmod 0700 artifacts/testkey
@@ -171,6 +172,12 @@ monitor-tls: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-monitor-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+.PHONY: monitor-tls-connect
+monitor-tls-connect: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-monitor-tls-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+
 .PHONY: console
 console: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
@@ -183,7 +190,7 @@ console-tls: ansible-prereqs
 
 .PHONY: connect
 connect: ENABLE_CONNECT := true
-connect: build_aws cluster monitor get_rpm copy_rpm
+connect: build_aws cluster monitor console get_rpm copy_rpm
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
@@ -195,16 +202,16 @@ connect-simple: ansible-prereqs
 
 .PHONY: connect-tls-simple
 connect-tls-simple: ENABLE_CONNECT := true
-connect-tls-simple:
+connect-tls-simple: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
-	@ansible-playbook ansible/deploy-connect-tls-truststore.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
 
 .PHONY: connect-tls
 connect-tls: ENABLE_CONNECT := true
-connect-tls: build_aws cluster-tls monitor-tls console-tls get_rpm copy_rpm
+connect-tls: build_aws cluster-tls monitor-tls-connect console-tls get_rpm copy_rpm
 	@mkdir -p $(ARTIFACT_DIR)/logs
-	@ansible-playbook ansible/deploy-connect-tls-truststore.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
 
 MAC_RPK := "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-darwin-amd64.zip"
@@ -378,7 +385,15 @@ cert-clean:
 	rm -rf $(CERT_DIR)
 	rm -rf $(CLIENT_DIR)
 
+.PHONY: cert-clean-client
+cert-clean-client:
+	rm -rf $(CLIENT_DIR)
+
 .PHONY: test-connect
 test-connect: cert-client
 	$(eval CONNECT_TARGET := $(shell awk '/^\[connect\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | head -n1))
 	curl -vvvvv -k --cert ansible/tls/clients/client.crt --key ansible/tls/clients/client.key --cacert ansible/tls/ca/ca.crt -X GET https://$(CONNECT_TARGET):8083/connectors
+
+test-prometheus-exporter: cert-client
+	$(eval PROMETHEUS_EXPORTER_TARGET := $(shell awk '/^\[connect\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | head -n1))
+	curl -vvvvv -k --cert ansible/tls/clients/client.crt --key ansible/tls/clients/client.key --cacert ansible/tls/ca/ca.crt -X GET https://$(PROMETHEUS_EXPORTER_TARGET):9404/metrics

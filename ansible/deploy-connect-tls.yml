@@ -14,6 +14,8 @@
     copy_truststore: true
     copy_keystore: true
     create_keystore: true
+    jmx_ssl: true
+    jmx_auth_enabled: false
     ca_cert_file: "tls/ca/ca.crt"
     node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
   tasks:

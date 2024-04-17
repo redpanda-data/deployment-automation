@@ -1,6 +1,6 @@
 - hosts: redpanda
   tasks:
-    - name: Node dependencies - include geerlingguy nodeexporter
+    - name: Include geerlingguy nodeexporter
       ansible.builtin.include_role:
         name: geerlingguy.node_exporter
 
@@ -28,6 +28,35 @@
         - install_certs
 
 - hosts: monitor
+  tasks:
+    - name: Create prometheus group
+      ansible.builtin.group:
+        name: prometheus
+        state: present
+        system: true
+    - name: Create prometheus user
+      ansible.builtin.user:
+          name: prometheus
+          group: prometheus
+          system: true
+          shell: /bin/false
+          home: /var/lib/prometheus
+    - name: Create /etc/redpanda directory
+      ansible.builtin.file:
+        path: "/etc/redpanda"
+        state: directory
+        owner: redpanda
+        group: redpanda
+        mode: "0755"
+    - name: Copy CA certificate to Prometheus server
+      ansible.builtin.copy:
+        src: "tls/ca/ca.crt"
+        dest: "/etc/redpanda/certs/ca.crt"
+        mode: "0644"
+        owner: prometheus
+        group: prometheus
+
+- hosts: monitor
   roles:
     - prometheus.prometheus.prometheus
   vars:
@@ -45,9 +74,14 @@
         static_configs:
           - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
       - job_name: "connect"
+        scheme: "https"
         metrics_path: "/metrics"
         static_configs:
           - targets: "{{ groups['connect'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9404') | list  }}"
+        tls_config:
+          ca_file: "/etc/redpanda/certs/ca.crt"
+#          cert_file: "/path/to/client.crt"
+#          key_file: "/path/to/client.key"
 
 - hosts: monitor
   roles:
