@@ -37,17 +37,21 @@
         scheme: "https"
         metrics_path: "/public_metrics"
         static_configs:
-          - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9644') | list  }}"
+          - targets: "{{ groups['redpanda'] | default([]) | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9644') | list  }}"
         tls_config:
           ca_file: "/etc/redpanda/certs/ca.crt"
       - job_name: "node"
+        scheme: "https"
         metrics_path: "/metrics"
         static_configs:
-          - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
+          - targets: "{{ groups['redpanda'] | default([]) | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
       - job_name: "connect"
         metrics_path: "/metrics"
+        scheme: "https"
         static_configs:
-          - targets: "{{ groups['connect'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9404') | list  }}"
+          - targets: "{{ groups['connect'] | default([]) | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9404') | list  }}"
+        tls_config:
+          ca_file: "/etc/redpanda/certs/ca.crt"
 
 - hosts: monitor
   roles:

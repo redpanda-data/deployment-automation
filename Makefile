@@ -49,7 +49,7 @@ export AWS_ACCESS_KEY_ID := $(if $(AWS_ACCESS_KEY_ID),$(AWS_ACCESS_KEY_ID),$(DA_
 export AWS_SECRET_ACCESS_KEY := $(if $(AWS_SECRET_ACCESS_KEY),$(AWS_SECRET_ACCESS_KEY),$(DA_AWS_SECRET_ACCESS_KEY))
 export AWS_DEFAULT_REGION ?= us-west-2
 
-all: keygen build_aws ansible-prereqs
+all: keygen build-aws ansible-prereqs
 test-cluster-tiered-storage-aws: test-cluster-tls test-storage-aws
 test-cluster-tiered-storage-gcp: test-cluster-tls test-storage-gcp
 
@@ -58,10 +58,22 @@ ansible-prereqs: collection role
 	@echo "Ansible prereqs installed"
 
 .PHONY: teardown
-teardown: destroy_aws destroy_gcp
+teardown: destroy-aws destroy-gcp
 
-.PHONY: get_rpm
-get_rpm:
+.PHONY: deploy-rp
+deploy-rp: build-aws cluster monitor console
+
+.PHONY: deploy-rp-tls
+deploy-rp-tls: build-aws cluster-tls monitor-tls console-tls
+
+.PHONY: deploy-connect
+deploy-connect: get-rpm copy-rpm connect
+
+.PHONY: deploy-connect-tls
+deploy-connect-tls: get-rpm copy-rpm connect-tls
+
+.PHONY: get-rpm
+get-rpm:
 	@if [ ! -f $(LOCAL_FILE) ]; then \
 		echo "Downloading $(LOCAL_FILE)..."; \
 		curl -o $(LOCAL_FILE) $(DL_LINK); \
@@ -69,8 +81,8 @@ get_rpm:
 		echo "$(LOCAL_FILE) already exists. Skipping download."; \
 	fi
 
-.PHONY: copy_rpm
-copy_rpm:
+.PHONY: copy-rpm
+copy-rpm:
 	@echo "Copying $(LOCAL_FILE).tar.gz to $(SERVER_DIR)"
 	$(eval IPS_USERS=$(shell awk '/^\[connect\]/{f=1; next} /^\[/{f=0} f && /^[0-9]/{split($$2,a,"="); print a[2] "@" $$1}' $(HOSTS_FILE)))
 	@echo $(IPS_USERS)
@@ -83,8 +95,8 @@ SSH_EMAIL ?= test@test.com
 keygen:
 	@ssh-keygen -t rsa -b 4096 -C "$(SSH_EMAIL)" -N "" -f artifacts/testkey <<< y && chmod 0700 artifacts/testkey
 
-.PHONY: build_aws
-build_aws:
+.PHONY: build-aws
+build-aws:
 	@cd aws/$(TF_DIR) && \
 	terraform init && \
 	terraform apply -auto-approve \
@@ -104,8 +116,8 @@ build_aws:
 GCP_IMAGE ?= ubuntu-os-cloud/ubuntu-2204-lts
 GCP_INSTANCE_TYPE ?= n2-standard-2
 GCP_CREDS ?= $(shell echo $$GCP_CREDS)
-.PHONY: build_gcp
-build_gcp:
+.PHONY: build-gcp
+build-gcp:
 	@cd gcp/$(TF_DIR) && \
 	terraform init && \
 	terraform apply -auto-approve \
@@ -119,8 +131,8 @@ build_gcp:
 		-var='machine_type=$(GCP_INSTANCE_TYPE)' \
 		-var='gcp_creds=$(GCP_CREDS)'
 
-.PHONY: destroy_aws
-destroy_aws:
+.PHONY: destroy-aws
+destroy-aws:
 	@cd aws/$(TF_DIR) && \
 	terraform init && \
 	terraform destroy -auto-approve \
@@ -137,8 +149,8 @@ destroy_aws:
 		-var='enable_connect=$(ENABLE_CONNECT)' \
 		-var='instance_type=$(INSTANCE_TYPE)'
 
-.PHONY: destroy_gcp
-destroy_gcp:
+.PHONY: destroy-gcp
+destroy-gcp:
 	@cd gcp/$(TF_DIR) && \
 	terraform init && \
 	terraform destroy -auto-approve \
@@ -190,26 +202,13 @@ console-tls: ansible-prereqs
 
 .PHONY: connect
 connect: ENABLE_CONNECT := true
-connect: build_aws cluster monitor console get_rpm copy_rpm
+connect: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
-
-.PHONY: connect-simple
-connect-simple: ENABLE_CONNECT := true
-connect-simple: ansible-prereqs
-	@mkdir -p $(ARTIFACT_DIR)/logs
-	@ansible-playbook ansible/deploy-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
-
-.PHONY: connect-tls-simple
-connect-tls-simple: ENABLE_CONNECT := true
-connect-tls-simple: ansible-prereqs
-	@mkdir -p $(ARTIFACT_DIR)/logs
-	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
-
 
 .PHONY: connect-tls
 connect-tls: ENABLE_CONNECT := true
-connect-tls: build_aws cluster-tls monitor-tls-connect console-tls get_rpm copy_rpm
+connect-tls: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-connect-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
@@ -397,3 +396,114 @@ test-connect: cert-client
 test-prometheus-exporter: cert-client
 	$(eval PROMETHEUS_EXPORTER_TARGET := $(shell awk '/^\[connect\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | head -n1))
 	curl -vvvvv -k --cert ansible/tls/clients/client.crt --key ansible/tls/clients/client.key --cacert ansible/tls/ca/ca.crt -X GET https://$(PROMETHEUS_EXPORTER_TARGET):9404/metrics
+
+# Extra deployment enables deploying a second cluster
+EXTRA_INVENTORY = $(ARTIFACT_DIR)/hosts2_$(DEPLOYMENT_ID).ini
+
+.PHONY: deploy-extra-rp
+deploy-extra-rp: extra-aws extra-cluster extra-monitor extra-console
+
+.PHONY: extra-aws-copy
+extra-aws-copy:
+	cp -r aws aws-extra && \
+	rm -rf aws-extra/$(TF_DIR)/terraform.tfstate && \
+	rm -rf aws-extra/$(TF_DIR)/terraform.tfstate.backup && \
+	rm -rf aws-extra/$(TF_DIR)/.terraform && \
+	rm -rf aws-extra/$(TF_DIR)/.terraform.lock.hcl
+
+
+.PHONY: extra-aws-cleanup
+extra-aws-cleanup:
+	rm -rf aws-extra
+
+.PHONY: extra-aws
+extra-aws:
+	@cd aws-extra/$(TF_DIR) && \
+	terraform init && \
+	terraform apply -auto-approve \
+		-var='deployment_prefix=$(DEPLOYMENT_ID)2' \
+		-var='public_key_path=$(PUBLIC_KEY)' \
+		-var='broker_count=$(NUM_NODES)' \
+		-var='enable_monitoring=$(ENABLE_MONITORING)' \
+		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
+		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
+		-var='vpc_id=$(VPC_ID)' \
+		-var='distro=$(DISTRO)' \
+		-var='hosts_file=$(EXTRA_INVENTORY)' \
+		-var='machine_architecture=$(MACHINE_ARCH)' \
+		-var='enable_connect=false' \
+		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+
+.PHONY: extra-aws-destroy
+extra-aws-destroy:
+	@cd aws-extra/$(TF_DIR) && \
+	terraform init && \
+	terraform destroy -auto-approve \
+		-var='deployment_prefix=$(DEPLOYMENT_ID)2' \
+		-var='public_key_path=$(PUBLIC_KEY)' \
+		-var='broker_count=$(NUM_NODES)' \
+		-var='enable_monitoring=$(ENABLE_MONITORING)' \
+		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
+		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
+		-var='vpc_id=$(VPC_ID)' \
+		-var='distro=$(DISTRO)' \
+		-var='hosts_file=$(EXTRA_INVENTORY)' \
+		-var='machine_architecture=$(MACHINE_ARCH)' \
+		-var='enable_connect=false' \
+		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+
+
+.PHONY: extra-cluster
+extra-cluster: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/provision-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(EXTRA_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+.PHONY: extra-monitor
+extra-monitor: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-monitor.yml --private-key $(PRIVATE_KEY) --inventory $(EXTRA_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+.PHONY: extra-console
+extra-console: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-console.yml --private-key $(PRIVATE_KEY) --inventory $(EXTRA_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+.PHONY: deploy-rp-tls-extra
+deploy-extra-rp-tls: extra-aws extra-cluster extra-monitor-tls extra-console-tls
+
+.PHONY: extra-monitor-tls
+extra-monitor-tls: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-monitor-tls.yml --private-key $(PRIVATE_KEY) --inventory $(EXTRA_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+.PHONY: extra-console-tls
+extra-console-tls: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/deploy-console-tls.yml --private-key $(PRIVATE_KEY) --inventory $(EXTRA_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+.PHONY: extra-cluster-tls
+extra-cluster-tls: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/provision-cluster-tls.yml --private-key $(PRIVATE_KEY) --inventory $(EXTRA_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
+
+.PHONY: extra-copy-rpm
+extra-copy-rpm:
+	@echo "Copying $(LOCAL_FILE).tar.gz to $(SERVER_DIR)"
+	$(eval IPS_USERS=$(shell awk '/^\[connect\]/{f=1; next} /^\[/{f=0} f && /^[0-9]/{split($$2,a,"="); print a[2] "@" $$1}' $(EXTRA_INVENTORY)))
+	@echo $(IPS_USERS)
+	@for IP_USER in $(IPS_USERS); do \
+		scp -o StrictHostKeyChecking=no -i "$(PRIVATE_KEY)" "$(LOCAL_FILE)" "$$IP_USER:$(SERVER_DIR)"; \
+	done
+
+# spam messages at an existing topic
+.PHONY: test-cluster-spam-messages
+test-cluster-spam-messages:
+	@# Assemble the redpanda brokers by chopping up the hosts file
+	chmod 775 $(RPK_PATH)
+	echo $(RPK_PATH)
+	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
+
+	@echo "producing to topic"
+	$(foreach i,$(shell seq 1 1000), \
+		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1; \
+	)
