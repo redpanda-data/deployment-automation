@@ -1,3 +1,5 @@
+# This is a limited access Alpha playbook. Please contact Redpanda for more information.
+
 ---
 - name: Provision tls cluster
   hosts: connect

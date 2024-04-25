@@ -1,3 +1,6 @@
+# This is a limited access Alpha playbook. Please contact Redpanda for more information.
+
+---
 - hosts: connect
   tasks:
     - name: install connect
