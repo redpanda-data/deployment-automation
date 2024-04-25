@@ -184,12 +184,6 @@ monitor-tls: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/deploy-monitor-tls.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
-.PHONY: monitor-tls-connect
-monitor-tls-connect: ansible-prereqs
-	@mkdir -p $(ARTIFACT_DIR)/logs
-	@ansible-playbook ansible/deploy-monitor-tls-connect.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
-
-
 .PHONY: console
 console: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
