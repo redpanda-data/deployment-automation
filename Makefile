@@ -105,7 +105,7 @@ copy-rpm:
 SSH_EMAIL ?= test@test.com
 .PHONY: keygen
 keygen:
-	@ssh-keygen -t rsa -b 4096 -C "$(SSH_EMAIL)" -N "" -f artifacts/testkey <<< y && chmod 0700 artifacts/testkey
+	@printf 'y\n' | ssh-keygen -t rsa -b 4096 -C "$(SSH_EMAIL)" -N "" -f artifacts/testkey && chmod 0700 artifacts/testkey
 
 .PHONY: build-aws
 build-aws:
