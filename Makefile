@@ -50,8 +50,6 @@ export AWS_SECRET_ACCESS_KEY := $(if $(AWS_SECRET_ACCESS_KEY),$(AWS_SECRET_ACCES
 export AWS_DEFAULT_REGION ?= us-west-2
 
 all: keygen build-aws ansible-prereqs
-test-cluster-tiered-storage-aws: test-cluster-tls test-storage-aws
-test-cluster-tiered-storage-gcp: test-cluster-tls test-storage-gcp
 
 .PHONY: ansible-prereqs
 ansible-prereqs: collection role
@@ -60,11 +58,25 @@ ansible-prereqs: collection role
 .PHONY: teardown
 teardown: destroy-aws destroy-gcp
 
-.PHONY: deploy-rp
-deploy-rp: build-aws cluster monitor console
+.PHONY: ci-aws-rp
+deploy-aws-rp: build-aws cluster monitor console test-cluster
 
-.PHONY: deploy-rp-tls
-deploy-rp-tls: build-aws cluster-tls monitor-tls console-tls
+.PHONY: ci-aws-rp-tls
+deploy-aws-rp-tls: build-aws cluster-tls monitor-tls console-tls test-cluster-tls
+
+.PHONY: ci-aws-rp-tiered
+ci-aws-rp-tiered: TIERED_STORAGE_ENABLED := true
+ci-aws-rp-tiered: build-aws cluster-tiered-storage monitor-tls console-tls test-cluster-tls test-aws-storage
+
+.PHONY: ci-gcp-rp
+deploy-gcp-rp: build-gcp cluster monitor console test-cluster
+
+.PHONY: ci-gcp-rp-tls
+deploy-gcp-rp-tls: build-gcp cluster-tls monitor-tls console-tls test-cluster-tls
+
+.PHONY: ci-gcp-rp-tiered
+ci-gcp-rp-tiered: TIERED_STORAGE_ENABLED := true
+ci-gcp-rp-tiered: build-gcp cluster-tiered-storage monitor-tls console-tls test-cluster-tls test-gcp-storage
 
 .PHONY: deploy-connect
 deploy-connect: get-rpm copy-rpm connect
@@ -97,6 +109,7 @@ keygen:
 
 .PHONY: build-aws
 build-aws:
+	@echo $(TIERED_STORAGE_ENABLED)
 	@cd aws/$(TF_DIR) && \
 	terraform init && \
 	terraform apply -auto-approve \
@@ -235,8 +248,6 @@ test-cluster:
 	echo $(RPK_PATH)
 	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
 
-	$(eval REDPANDA_REGISTRY := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":8081,"); sub(/,$$/,":8081")}1'))
-
 	@echo $(REDPANDA_REGISTRY)
 	@echo $(REDPANDA_BROKERS)
 	@echo "checking cluster status"
@@ -250,6 +261,10 @@ test-cluster:
 
 	@echo "consuming from topic"
 	@$(RPK_PATH) topic consume testtopic --brokers $(REDPANDA_BROKERS) -v -o :end | grep squirrel || exit 1
+
+.PHONY: test-schema
+test-schema:
+	$(eval REDPANDA_REGISTRY := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":8081,"); sub(/,$$/,":8081")}1'))
 
 	@echo "testing schema registry"
 	@for ip_port in $$(echo $(REDPANDA_REGISTRY) | tr ',' ' '); do curl $$ip_port/subjects ; done
@@ -268,13 +283,6 @@ test-cluster-tls:
 		tr '\n' ',' | \
 		sed 's/,$$/\n/'))
 
-	$(eval REDPANDA_REGISTRY := $(shell sed -n '/^\[redpanda\]/,/^$$/p' "$(ANSIBLE_INVENTORY)" | \
-		grep 'private_ip=' | \
-		cut -d' ' -f1 | \
-		sed 's/$$/:8081/' | \
-		tr '\n' ',' | \
-		sed 's/,$$/\n/'))
-
 	@echo "checking cluster status"
 	@$(ARTIFACT_DIR)/bin/rpk cluster status --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(CA_CRT)" -v || exit 1
 
@@ -286,6 +294,15 @@ test-cluster-tls:
 
 	@echo "consuming from topic"
 	@$(ARTIFACT_DIR)/bin/rpk topic consume testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(CA_CRT)" -v -o :end | grep squirrels || exit 1
+
+.PHONY: test-schema-tls
+test-schema-tls:
+	$(eval REDPANDA_REGISTRY := $(shell sed -n '/^\[redpanda\]/,/^$$/p' "$(ANSIBLE_INVENTORY)" | \
+		grep 'private_ip=' | \
+		cut -d' ' -f1 | \
+		sed 's/$$/:8081/' | \
+		tr '\n' ',' | \
+		sed 's/,$$/\n/'))
 
 	@echo "testing schema registry"
 	@for ip_port in $$(echo $(REDPANDA_REGISTRY) | tr ',' ' '); do \
@@ -300,17 +317,18 @@ cluster-tiered-storage: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	 ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key $(PRIVATE_KEY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars segment_upload_interval=$(SEGMENT_UPLOAD_INTERVAL) --extra-vars cloud_storage_credentials_source=$(CLOUD_STORAGE_CREDENTIALS_SOURCE)
 
-.PHONY: test-cluster-tiered-storage
-test-storage-gcp:
-	@echo "$DEVEX_GCP_CREDS_BASE64" | base64 -d > /tmp/gcp_creds.json
-	export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp_creds.json"
+GOOGLE_APPLICATION_CREDENTIALS ?= "/tmp/gcp_creds.json"
+SIMPLE_BUCKET_NAME=$(shell echo $(BUCKET_NAME) | sed 's/-bucket$$//')
+.PHONY: test-gcp-storage
+test-gcp-storage:
+	@echo "$(DEVEX_GCP_CREDS_BASE64)" | base64 -d > /tmp/gcp_creds.json
 	export CLOUDSDK_CORE_PROJECT=$(GOOGLE_PROJECT_ID)
 	@gcloud auth activate-service-account --key-file=$(GOOGLE_APPLICATION_CREDENTIALS)
-	@gcloud storage ls | grep ${BUCKET_NAME%-bucket}
+	@gcloud storage ls | grep $(SIMPLE_BUCKET_NAME)
 
-.PHONY: test-storage-aws
-test-storage-aws:
-	@aws s3api list-objects-v2 --bucket "${BUCKET_NAME}" --region us-west-2 --max-items 1 --output text --query 'Contents[0].Key' | grep testtopic || exit 1
+.PHONY: test-aws-storage
+test-aws-storage:
+	@aws s3api list-objects-v2 --bucket "$(BUCKET_NAME)" --region $(AWS_DEFAULT_REGION) --query "Contents[?contains(Key, 'testtopic/')]" --output text | wc -l | xargs -I {} sh -c 'if [ "{}" -ge 1 ]; then exit 0; else echo "testtopic folder not found" && exit 1; fi'
 
 .PHONY: cluster-proxy
 cluster-proxy: ansible-prereqs
