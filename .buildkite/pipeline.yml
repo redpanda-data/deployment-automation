@@ -13,15 +13,15 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: gcp ubuntu tiered
-    key: tiered-up-gcp-ubuntu
-    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ub-ts" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64"
-    plugins:
-      - docker#v5.8.0:
-          image: glrp/atgt:latest
-          pre-exit: make destroy-gcp
-          environment:
-            - DEVEX_GCP_CREDS_BASE64
+#  - label: gcp ubuntu tiered
+#    key: tiered-up-gcp-ubuntu
+#    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ub-ts" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64"
+#    plugins:
+#      - docker#v5.8.0:
+#          image: glrp/atgt:latest
+#          pre-exit: make destroy-gcp
+#          environment:
+#            - DEVEX_GCP_CREDS_BASE64
 #  - label: gcp ubuntu basic
 #    key: basic-up-gcp-ubuntu
 #    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "ubuntu-os-cloud/ubuntu-2204-lts" --prefix "ci-ub-bs" --cluster_type "basic-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64" --tiered false

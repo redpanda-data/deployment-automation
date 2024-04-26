@@ -49,30 +49,28 @@ export AWS_ACCESS_KEY_ID := $(if $(AWS_ACCESS_KEY_ID),$(AWS_ACCESS_KEY_ID),$(DA_
 export AWS_SECRET_ACCESS_KEY := $(if $(AWS_SECRET_ACCESS_KEY),$(AWS_SECRET_ACCESS_KEY),$(DA_AWS_SECRET_ACCESS_KEY))
 export AWS_DEFAULT_REGION ?= us-west-2
 
-all: keygen build-aws ansible-prereqs
-
 .PHONY: ansible-prereqs
 ansible-prereqs: collection role
 	@echo "Ansible prereqs installed"
 
-.PHONY: teardown
-teardown: destroy-aws destroy-gcp
-
 .PHONY: ci-aws-rp
-ci-aws-rp: keygen build-aws cluster monitor console test-cluster
+ci-aws-rp: keygen build-aws cluster monitor console test-cluster destroy-aws
+ci-aws-rp: export SHELL:=/bin/bash
+ci-aws-rp:
+	trap 'make destroy-aws' ERR EXIT
 
 .PHONY: ci-aws-rp-tls
-ci-aws-rp-tls: build-aws cluster-tls monitor-tls console-tls test-cluster-tls
+ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls test-cluster-tls
 
 .PHONY: ci-aws-rp-tiered
 ci-aws-rp-tiered: TIERED_STORAGE_ENABLED := true
-ci-aws-rp-tiered: build-aws cluster-tiered-storage monitor-tls console-tls test-cluster-tls test-aws-storage
+ci-aws-rp-tiered: keygen build-aws cluster-tiered-storage monitor-tls console-tls test-cluster-tls test-aws-storage
 
 .PHONY: ci-gcp-rp
-ci-gcp-rp: build-gcp cluster monitor console test-cluster
+ci-gcp-rp: keygen build-gcp cluster monitor console test-cluster
 
 .PHONY: ci-gcp-rp-tls
-ci-gcp-rp-tls: build-gcp cluster-tls monitor-tls console-tls test-cluster-tls
+ci-gcp-rp-tls: keygen build-gcp cluster-tls monitor-tls console-tls test-cluster-tls
 
 .PHONY: ci-gcp-rp-tiered
 ci-gcp-rp-tiered: TIERED_STORAGE_ENABLED := true
