@@ -5,10 +5,10 @@ steps:
   - label: test basic cluster standup ubuntu
     key: basic-up-ubuntu
     command: make ci-aws-rp -e DEPLOYMENT_ID=rp-basic-ub -e DISTRO=ubuntu-focal
-    pre-exit: make destroy-aws
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
+          pre-exit: make destroy-aws
           environment:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
@@ -16,10 +16,10 @@ steps:
   - label: gcp ubuntu tiered
     key: tiered-up-gcp-ubuntu
     command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ub-ts" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64"
-    pre-exit: make destroy-gcp
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
+          pre-exit: make destroy-gcp
           environment:
             - DEVEX_GCP_CREDS_BASE64
 #  - label: gcp ubuntu basic
