@@ -59,20 +59,20 @@ ansible-prereqs: collection role
 teardown: destroy-aws destroy-gcp
 
 .PHONY: ci-aws-rp
-deploy-aws-rp: build-aws cluster monitor console test-cluster
+ci-aws-rp: build-aws cluster monitor console test-cluster
 
 .PHONY: ci-aws-rp-tls
-deploy-aws-rp-tls: build-aws cluster-tls monitor-tls console-tls test-cluster-tls
+ci-aws-rp-tls: build-aws cluster-tls monitor-tls console-tls test-cluster-tls
 
 .PHONY: ci-aws-rp-tiered
 ci-aws-rp-tiered: TIERED_STORAGE_ENABLED := true
 ci-aws-rp-tiered: build-aws cluster-tiered-storage monitor-tls console-tls test-cluster-tls test-aws-storage
 
 .PHONY: ci-gcp-rp
-deploy-gcp-rp: build-gcp cluster monitor console test-cluster
+ci-gcp-rp: build-gcp cluster monitor console test-cluster
 
 .PHONY: ci-gcp-rp-tls
-deploy-gcp-rp-tls: build-gcp cluster-tls monitor-tls console-tls test-cluster-tls
+ci-gcp-rp-tls: build-gcp cluster-tls monitor-tls console-tls test-cluster-tls
 
 .PHONY: ci-gcp-rp-tiered
 ci-gcp-rp-tiered: TIERED_STORAGE_ENABLED := true
