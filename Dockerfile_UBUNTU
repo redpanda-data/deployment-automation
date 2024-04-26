@@ -8,7 +8,7 @@ ENV GCP_CREDS="default"
 
 # Install required packages
 RUN apt-get update \
-    && apt install -y unzip wget curl vim git software-properties-common awscli jq lsb-release gnupg \
+    && apt install -y unzip wget curl vim git software-properties-common awscli jq lsb-release gnupg make \
     && apt-add-repository --yes --update ppa:ansible/ansible \
     && apt-get install -y ansible \
     && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
