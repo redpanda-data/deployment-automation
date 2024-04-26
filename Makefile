@@ -63,9 +63,8 @@ ansible-prereqs: collection role
 
 .PHONY: ci-aws-rp
 ci-aws-rp:
-	make keygen build-aws cluster monitor console test-cluster --keep-going
+	make keygen build-aws cluster monitor console test-cluster destroy-aws --keep-going
 	if [ $$? -ne 0 ]; then \
-  		make destroy-aws \
 		echo "ci-aws-rp target encountered an error"; \
 		exit 1; \
 	fi
