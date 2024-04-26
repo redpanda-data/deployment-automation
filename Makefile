@@ -53,22 +53,10 @@ export AWS_DEFAULT_REGION ?= us-west-2
 ansible-prereqs: collection role
 	@echo "Ansible prereqs installed"
 
-.END:
-	ifeq ($(IS_CI),true)
-		@echo "Running destroy-aws in CI environment"
-		make destroy-aws
-	else
-		@echo "Skipping destroy-aws in non-CI environment"
-	endif
-
 .PHONY: ci-aws-rp
-ci-aws-rp:
-	make keygen build-aws cluster monitor console test-cluster destroy-aws --keep-going
-	if [ $$? -ne 0 ]; then \
-		echo "ci-aws-rp target encountered an error"; \
-		exit 1; \
-	fi
+ci-aws-rp: keygen build-aws cluster monitor console test-cluster destroy-aws
 
+#install-rpk
 .PHONY: ci-aws-rp-tls
 ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls test-cluster-tls
 

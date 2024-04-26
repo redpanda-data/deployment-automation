@@ -4,7 +4,7 @@ agents:
 steps:
   - label: test basic cluster standup ubuntu
     key: basic-up-ubuntu
-    command: make ci-aws-rp -e DEPLOYMENT_ID=rp-basic-ub -e DISTRO=ubuntu-focal
+    command: make ci-aws-rp -e DEPLOYMENT_ID=rp-basic-ub -e DISTRO=ubuntu-focal --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
