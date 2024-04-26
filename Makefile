@@ -54,25 +54,25 @@ ansible-prereqs: collection role
 	@echo "Ansible prereqs installed"
 
 .PHONY: ci-aws-rp
-ci-aws-rp: keygen build-aws cluster monitor console test-cluster destroy-aws
+ci-aws-rp: keygen build-aws cluster monitor console install-rpk test-cluster destroy-aws
 
-#install-rpk
+#
 .PHONY: ci-aws-rp-tls
-ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls test-cluster-tls
+ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls install-rpk test-cluster-tls destroy-aws
 
 .PHONY: ci-aws-rp-tiered
 ci-aws-rp-tiered: TIERED_STORAGE_ENABLED := true
-ci-aws-rp-tiered: keygen build-aws cluster-tiered-storage monitor-tls console-tls test-cluster-tls test-aws-storage
+ci-aws-rp-tiered: keygen build-aws cluster-tiered-storage monitor-tls console-tls install-rpk test-cluster-tls test-aws-storage destroy-aws
 
 .PHONY: ci-gcp-rp
-ci-gcp-rp: keygen build-gcp cluster monitor console test-cluster
+ci-gcp-rp: keygen build-gcp cluster monitor console install-rpk test-cluster destroy-aws
 
 .PHONY: ci-gcp-rp-tls
-ci-gcp-rp-tls: keygen build-gcp cluster-tls monitor-tls console-tls test-cluster-tls
+ci-gcp-rp-tls: keygen build-gcp cluster-tls monitor-tls console-tls install-rpk test-cluster-tls destroy-aws
 
 .PHONY: ci-gcp-rp-tiered
 ci-gcp-rp-tiered: TIERED_STORAGE_ENABLED := true
-ci-gcp-rp-tiered: build-gcp cluster-tiered-storage monitor-tls console-tls test-cluster-tls test-gcp-storage
+ci-gcp-rp-tiered: build-gcp cluster-tiered-storage monitor-tls console-tls install-rpk test-cluster-tls test-gcp-storage destroy-aws
 
 .PHONY: deploy-connect
 deploy-connect: get-rpm copy-rpm connect

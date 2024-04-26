@@ -2,128 +2,136 @@ agents:
   queue: "k8s-builders"
 
 steps:
-  - label: test basic cluster standup ubuntu
-    key: basic-up-ubuntu
+  - label: aws standup ubuntu
+    key: aws-up-ubuntu
     command: make ci-aws-rp -e DEPLOYMENT_ID=rp-basic-ub -e DISTRO=ubuntu-focal --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
-          pre-exit: make destroy-aws
           environment:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-#  - label: gcp ubuntu tiered
-#    key: tiered-up-gcp-ubuntu
-#    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ub-ts" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64"
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          pre-exit: make destroy-gcp
-#          environment:
-#            - DEVEX_GCP_CREDS_BASE64
-#  - label: gcp ubuntu basic
-#    key: basic-up-gcp-ubuntu
-#    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "ubuntu-os-cloud/ubuntu-2204-lts" --prefix "ci-ub-bs" --cluster_type "basic-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64" --tiered false
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DEVEX_GCP_CREDS_BASE64
-#  - label: gcp fedora basic
-#    key: basic-up-gcp-fedora
-#    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "fedora-cloud/fedora-cloud-37" --prefix "ci-fd-bs" --cluster_type "basic-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64" --tiered false
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DEVEX_GCP_CREDS_BASE64
-
-#  - label: gcp fedora tiered
-#    key: tiered-up-gcp-fedora
-#    command: ./.buildkite/scripts/standup-gcp-cluster.sh --tf_dir "gcp" --image "fedora-cloud/fedora-cloud-37" --prefix "ci-fd-ts" --cluster_type "tiered-storage-cluster" --gcp_creds "$DEVEX_GCP_CREDS_BASE64" --tiered true
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DEVEX_GCP_CREDS_BASE64
-#  - label: test tiered-storage-up cluster standup ubuntu
-#    key: tiered-up-ubuntu
-#    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-ub --distro=ubuntu-focal --tiered=true --unstable=false --taskname=tiered-storage-cluster
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DA_AWS_ACCESS_KEY_ID
-#            - DA_AWS_SECRET_ACCESS_KEY
-#            - AWS_DEFAULT_REGION
-#  - label: test unstable tiered-storage-up cluster standup ubuntu
-#    key: tiered-up-unstable-ubuntu
-#    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-ub --distro=ubuntu-focal --tiered=true --unstable=true --taskname=tiered-storage-cluster
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DA_AWS_ACCESS_KEY_ID
-#            - DA_AWS_SECRET_ACCESS_KEY
-#            - AWS_DEFAULT_REGION
-#  - label: test tiered-storage-up cluster standup fedora
-#    key: tiered-up-fedora
-#    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-fd --distro=Fedora-Cloud-Base-36 --tiered=true --unstable=false --taskname=tiered-storage-cluster
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DA_AWS_ACCESS_KEY_ID
-#            - DA_AWS_SECRET_ACCESS_KEY
-#            - AWS_DEFAULT_REGION
-#  - label: test unstable tiered-storage-up cluster standup fedora
-#    key: tiered-up-unstable-fedora
-#    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-fd --distro=Fedora-Cloud-Base-36 --tiered=true --unstable=true --taskname=tiered-storage-cluster
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DA_AWS_ACCESS_KEY_ID
-#            - DA_AWS_SECRET_ACCESS_KEY
-#            - AWS_DEFAULT_REGION
-#  - label: test tiered-storage-up cluster standup ubuntu with is4gen.4xlarge
-#    key: tiered-up-ubuntu-is4
-#    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-ub-is --distro=ubuntu-focal --tiered=true --unstable=false --taskname=tiered-storage-cluster --machinearch=arm64 --instancetype=is4gen.4xlarge
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DA_AWS_ACCESS_KEY_ID
-#            - DA_AWS_SECRET_ACCESS_KEY
-#            - AWS_DEFAULT_REGION
-#  - label: test unstable tiered-storage-up cluster standup ubuntu with is4gen.4xlarge
-#    key: tiered-up-unstable-ubuntu-is4
-#    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-ub-is --distro=ubuntu-focal --tiered=true --unstable=true --taskname=tiered-storage-cluster --machinearch=arm64 --instancetype=is4gen.4xlarge
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DA_AWS_ACCESS_KEY_ID
-#            - DA_AWS_SECRET_ACCESS_KEY
-#            - AWS_DEFAULT_REGION
-#  - label: test tiered-storage-up cluster standup fedora with is4gen.4xlarge
-#    key: tiered-up-fedora-is4
-#    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-fd-is --distro=Fedora-Cloud-Base-36 --tiered=true --unstable=false --taskname=tiered-storage-cluster --machinearch=arm64 --instancetype=is4gen.4xlarge
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DA_AWS_ACCESS_KEY_ID
-#            - DA_AWS_SECRET_ACCESS_KEY
-#            - AWS_DEFAULT_REGION
-#  - label: test unstable tiered-storage-up cluster standup fedora with is4gen.4xlarge
-#    key: tiered-up-unstable-fedora-is4
-#    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-fd-is --distro=Fedora-Cloud-Base-36 --tiered=true --unstable=true --taskname=tiered-storage-cluster --machinearch=arm64 --instancetype=is4gen.4xlarge
-#    plugins:
-#      - docker#v5.8.0:
-#          image: glrp/atgt:latest
-#          environment:
-#            - DA_AWS_ACCESS_KEY_ID
-#            - DA_AWS_SECRET_ACCESS_KEY
-#            - AWS_DEFAULT_REGION
+  - label: aws standup ubuntu tiered
+    key: aws-up-ubuntu-tiered
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub -e DISTRO=ubuntu-focal --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: aws standup ubuntu tiered large
+    key: aws-up-ubuntu-ts-large
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub -e DISTRO=ubuntu-focal -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: aws standup fedora
+    key: aws-up-fedora
+    command: make ci-aws-rp -e DEPLOYMENT_ID=rp-basic-fd -e DISTRO=Fedora-Cloud-Base-36 --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: aws standup fedora tiered
+    key: aws-up-fedora-tiered
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=rp-basic-fd -e DISTRO=Fedora-Cloud-Base-36 --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: aws standup fedora tiered large
+    key: aws-up-fedora-ts-large
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=rp-basic-fd -e DISTRO=Fedora-Cloud-Base-36 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: gcp ubuntu basic
+    key: gcp-up-ubuntu
+    command: make ci-gcp-rp -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ub-bs" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DEVEX_GCP_CREDS_BASE64
+  - label: gcp ubuntu tiered
+    key: gcp-up-ubuntu-tiered
+    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ub-ts" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          pre-exit: make destroy-gcp
+          environment:
+            - DEVEX_GCP_CREDS_BASE64
+  - label: gcp fedora basic
+    key: gcp-up-fedora
+    command: make ci-gcp-rp -e GCP_IMAGE="fedora-cloud/fedora-cloud-37" -e DEPLOYMENT_ID="ci-fd-bs" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DEVEX_GCP_CREDS_BASE64
+  - label: gcp fedora tiered
+    key: gcp-up-fedora-tiered
+    command: make ci-gcp-rp-tiered -e GCP_IMAGE="fedora-cloud/fedora-cloud-37" -e DEPLOYMENT_ID="ci-fd-bs" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DEVEX_GCP_CREDS_BASE64
+  - label: unstable aws standup fedora tiered
+    key: aws-us-fedora-tiered
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=rp-basic-fd -e DISTRO=Fedora-Cloud-Base-36 -e IS_USING_UNSTABLE=true --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: unstable aws standup fedora tiered large
+    key: aws-us-fedora-ts-large
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=rp-basic-fd -e DISTRO=Fedora-Cloud-Base-36 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: unstable aws standup ubuntu tiered
+    key: aws-us-ubuntu-tiered
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub -e DISTRO=ubuntu-focal -e IS_USING_UNSTABLE=true --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+  - label: unstable aws standup ubuntu tiered large
+    key: aws-us-ubuntu-ts-large
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub -e DISTRO=ubuntu-focal -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - DA_AWS_ACCESS_KEY_ID
+            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
