@@ -59,7 +59,7 @@ ansible-prereqs: collection role
 teardown: destroy-aws destroy-gcp
 
 .PHONY: ci-aws-rp
-ci-aws-rp: build-aws cluster monitor console test-cluster
+ci-aws-rp: keygen build-aws cluster monitor console test-cluster
 
 .PHONY: ci-aws-rp-tls
 ci-aws-rp-tls: build-aws cluster-tls monitor-tls console-tls test-cluster-tls
