@@ -319,8 +319,8 @@ SIMPLE_BUCKET_NAME=$(shell echo $(BUCKET_NAME) | sed 's/-bucket$$//')
 test-gcp-storage:
 	@echo "$(DEVEX_GCP_CREDS_BASE64)" | base64 -d > /tmp/gcp_creds.json
 	export CLOUDSDK_CORE_PROJECT=$(GOOGLE_PROJECT_ID)
-	@gcloud auth activate-service-account --key-file=$(GOOGLE_APPLICATION_CREDENTIALS)
-	@gcloud storage ls | grep $(SIMPLE_BUCKET_NAME)
+	@gcloud auth activate-service-account --key-file=$(GOOGLE_APPLICATION_CREDENTIALS) --project=$(GOOGLE_PROJECT_ID)
+	@gcloud storage --project $(GOOGLE_PROJECT_ID) ls | grep $(SIMPLE_BUCKET_NAME)
 
 .PHONY: test-aws-storage
 test-aws-storage:

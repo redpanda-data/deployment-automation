@@ -2,7 +2,7 @@ agents:
   queue: "k8s-builders"
 
 steps:
-  - label: aws standup ubuntu
+  - label: aws ubuntu
     key: aws-up-ubuntu
     command: make ci-aws-rp -e DEPLOYMENT_ID=ci-bs-ub -e DISTRO=ubuntu-focal --keep-going
     plugins:
@@ -12,7 +12,7 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: aws standup ubuntu tiered
+  - label: aws ubuntu tiered
     key: aws-up-ubuntu-tiered
     command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub -e DISTRO=ubuntu-focal --keep-going
     plugins:
@@ -22,7 +22,7 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: aws standup ubuntu tiered large
+  - label: aws ubuntu tiered large
     key: aws-up-ubuntu-ts-large
     command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub-lg -e DISTRO=ubuntu-focal -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
@@ -32,7 +32,7 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: aws standup fedora
+  - label: aws fedora
     key: aws-up-fedora
     command: make ci-aws-rp -e DEPLOYMENT_ID=ci-bs-fd -e DISTRO=Fedora-Cloud-Base-36 --keep-going
     plugins:
@@ -42,7 +42,7 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: aws standup fedora tiered
+  - label: aws fedora tiered
     key: aws-up-fedora-tiered
     command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd -e DISTRO=Fedora-Cloud-Base-36 --keep-going
     plugins:
@@ -52,7 +52,7 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: aws standup fedora tiered large
+  - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
     command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-lg -e DISTRO=Fedora-Cloud-Base-36 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
@@ -95,7 +95,7 @@ steps:
           image: glrp/atgt:latest
           environment:
             - DEVEX_GCP_CREDS_BASE64
-  - label: unstable aws standup fedora tiered
+  - label: unstable aws fedora tiered
     key: aws-us-fedora-tiered
     command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us -e DISTRO=Fedora-Cloud-Base-36 -e IS_USING_UNSTABLE=true --keep-going
     plugins:
@@ -105,7 +105,7 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: unstable aws standup fedora tiered large
+  - label: unstable aws fedora tiered large
     key: aws-us-fedora-ts-large
     command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-lg -e DISTRO=Fedora-Cloud-Base-36 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
@@ -115,7 +115,7 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: unstable aws standup ubuntu tiered
+  - label: unstable aws ubuntu tiered
     key: aws-us-ubuntu-tiered
     command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub-us -e DISTRO=ubuntu-focal -e IS_USING_UNSTABLE=true --keep-going
     plugins:
@@ -125,7 +125,7 @@ steps:
             - DA_AWS_ACCESS_KEY_ID
             - DA_AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-  - label: unstable aws standup ubuntu tiered large
+  - label: unstable aws ubuntu tiered large
     key: aws-us-ubuntu-ts-large
     command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub-us-lg -e DISTRO=ubuntu-focal -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
