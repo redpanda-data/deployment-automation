@@ -1,9 +1,14 @@
 # jmespath is a required dependency for this playbook. Install it with `pip install jmespath`.
 - hosts: redpanda
   tasks:
-    - name: Node dependencies - include geerlingguy nodeexporter
+    - name: Set node_exporter_arch based on host architecture
+      ansible.builtin.set_fact:
+        rp_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+    - name: Include geerlingguy nodeexporter
       ansible.builtin.include_role:
         name: geerlingguy.node_exporter
+      vars:
+        node_exporter_arch: "{{ rp_arch }}"
 
 - hosts: monitor
   tasks:
