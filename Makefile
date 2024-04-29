@@ -67,12 +67,6 @@ ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls install-rpk 
 ci-aws-rp-tiered: TIERED_STORAGE_ENABLED := true
 ci-aws-rp-tiered: keygen build-aws cluster-tiered-storage monitor-tls console-tls install-rpk test-cluster-tls test-aws-storage destroy-aws
 
-.PHONY: ci-aws-rp-ts-connect
-ci-aws-rp-ts-connect: TIERED_STORAGE_ENABLED := true
-ci-aws-rp-ts-connect: ENABLE_CONNECT := true
-ci-aws-rp-ts-connect: keygen build-aws cluster-tiered-storage deploy-connect-tls monitor-tls console-tls install-rpk test-cluster-tls test-aws-storage destroy-aws
-
-
 .PHONY: ci-gcp-rp
 ci-gcp-rp: keygen build-gcp cluster monitor console install-rpk test-cluster destroy-gcp
 
@@ -531,7 +525,7 @@ create-connector:
 	$(eval EXTRA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1":9092"}' "$(EXTRA_INVENTORY)" | paste -sd ',' -))
 	$(eval CONNECT_IP := $(shell awk '/^\[connect\]/{f=1; next} f{print $$1; exit}' $(HOSTS_FILE)))
 
-	echo curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$(CONNECT_IP):8083/connectors -d '{ \
+	curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$(CONNECT_IP):8083/connectors -d '{ \
   		"name": "mirror-source-connector", \
   		"config": { \
     	"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", \
