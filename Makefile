@@ -56,13 +56,22 @@ ansible-prereqs: collection role
 .PHONY: ci-aws-rp
 ci-aws-rp: keygen build-aws cluster monitor console install-rpk test-cluster destroy-aws
 
-#
+.PHONY: ci-aws-rp-connect
+ci-aws-rp-connect: ENABLE_CONNECT := true
+ci-aws-rp-connect: keygen build-aws cluster deploy-connect monitor console install-rpk deploy-extra-rp test-cluster test-cluster-spam-messages extra-aws-destroy destroy-aws
+
 .PHONY: ci-aws-rp-tls
 ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls install-rpk test-cluster-tls destroy-aws
 
 .PHONY: ci-aws-rp-tiered
 ci-aws-rp-tiered: TIERED_STORAGE_ENABLED := true
 ci-aws-rp-tiered: keygen build-aws cluster-tiered-storage monitor-tls console-tls install-rpk test-cluster-tls test-aws-storage destroy-aws
+
+.PHONY: ci-aws-rp-ts-connect
+ci-aws-rp-ts-connect: TIERED_STORAGE_ENABLED := true
+ci-aws-rp-ts-connect: ENABLE_CONNECT := true
+ci-aws-rp-ts-connect: keygen build-aws cluster-tiered-storage deploy-connect-tls monitor-tls console-tls install-rpk test-cluster-tls test-aws-storage destroy-aws
+
 
 .PHONY: ci-gcp-rp
 ci-gcp-rp: keygen build-gcp cluster monitor console install-rpk test-cluster destroy-gcp
@@ -409,7 +418,7 @@ test-prometheus-exporter: cert-client
 EXTRA_INVENTORY = $(ARTIFACT_DIR)/hosts2_$(DEPLOYMENT_ID).ini
 
 .PHONY: deploy-extra-rp
-deploy-extra-rp: extra-aws extra-cluster extra-monitor extra-console
+deploy-extra-rp: extra-aws extra-cluster
 
 .PHONY: extra-aws-copy
 extra-aws-copy:
@@ -515,3 +524,21 @@ test-cluster-spam-messages:
 	$(foreach i,$(shell seq 1 1000), \
 		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1; \
 	)
+
+.PHONY: create-connector
+create-connector:
+	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1":9092"}' "$(HOSTS_FILE)" | paste -sd ',' -))
+	$(eval EXTRA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1":9092"}' "$(EXTRA_INVENTORY)" | paste -sd ',' -))
+	$(eval CONNECT_IP := $(shell awk '/^\[connect\]/{f=1; next} f{print $$1; exit}' $(HOSTS_FILE)))
+
+	echo curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$(CONNECT_IP):8083/connectors -d '{ \
+  		"name": "mirror-source-connector", \
+  		"config": { \
+    	"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", \
+    	"topics": "testtopic", \
+    	"replication.factor": "1", \
+    	"source.cluster.bootstrap.servers": "$(REDPANDA_BROKERS)", \
+    	"source.cluster.security.protocol": "PLAINTEXT", \
+    	"target.cluster.bootstrap.servers": "$(EXTRA_BROKERS)", \
+    	"target.cluster.security.protocol": "PLAINTEXT", \
+    	"source.cluster.alias": "source" }}'
