@@ -1,4 +1,4 @@
-LIMITED ALPHA RELEASE - CAN NOT BE USED WITHOUT CONTACTING REDPANDA
+## LIMITED ALPHA RELEASE - CAN NOT BE USED WITHOUT CONTACTING REDPANDA
 
 * Have an existing, ready to go Redpanda cluster using the standard documentation 
 * Have at least one instance for a Connect cluster to install on
@@ -57,4 +57,24 @@ You will most likely need to customize at least some of these values, especially
 This command is relative to the root of the repository. Private key should be the path to the ssh key file with access to the hosts. Ansible inventory should be the ansible inventory with the connect group defined.
 ```shell
 ansible-playbook ansible/deploy-connect.yml --private-key $PRIVATE_KEY --inventory $ANSIBLE_INVENTORY
+```
+
+## TLS
+
+Currently we do not support transitioning a non TLS cluster to TLS. 
+
+To enable TLS across your RP and Connect clusters you will need to make sure that
+* the Connect cluster has the necessary keystore and truststore to access the RP clusters
+* the JMX Exporter has the necessary keystore and truststore
+* Console has the necessary certs to access the Connect cluster
+* Prometheus has the necessary certs to access the JMX Exporter
+
+The Connect, Console and Demo Certs roles have all the necessary elements to demonstrate how this process works. 
+
+For the Monitoring configuration you will need to check the TLS playbook to see how it uses the demo certs role to generate and deploy certs, keystores and truststores as needed. 
+
+Once the cert side of the process is set up you can use the deploy-connect-tls playbook to deploy the Connect cluster with TLS enabled.
+
+```shell
+ansible-playbook ansible/deploy-connect-tls.yml --private-key $PRIVATE_KEY --inventory $ANSIBLE_INVENTORY
 ```
