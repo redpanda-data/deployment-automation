@@ -38,7 +38,7 @@ GOOGLE_PROJECT_ID ?= "hallowed-ray-376320"
 RPM_VERSION ?= v1.0.0-7ae9d19
 SERVER_DIR ?= /tmp
 LOCAL_FILE := $(ARTIFACT_DIR)/redpanda-connect.x86_64.rpm
-TOKEN := ${TOKEN}
+TOKEN := ${CONNECT_RPM_TOKEN}
 DL_LINK :=  https://dl.redpanda.com/$(TOKEN)/connectors-artifacts/raw/names/redpanda-connectors/versions/$(RPM_VERSION)/redpanda-connectors-$(RPM_VERSION).x86_64.rpm
 
 INSTANCE_TYPE_AWS ?= i3.2xlarge
@@ -59,7 +59,6 @@ ci-aws-rp: keygen build-aws cluster monitor console install-rpk test-cluster des
 .PHONY: ci-aws-rp-connect
 ci-aws-rp-connect: ENABLE_CONNECT := true
 ci-aws-rp-connect: DISTRO := Fedora-Cloud-Base-36
-ci-aws-rp-connect: TOKEN ?= $(shell echo $$CONNECT_RPM_TOKEN)
 ci-aws-rp-connect: keygen build-aws cluster deploy-connect monitor console install-rpk deploy-extra-rp test-cluster test-cluster-spam-messages create-connector extra-aws-destroy destroy-aws
 
 .PHONY: ci-aws-rp-tls
