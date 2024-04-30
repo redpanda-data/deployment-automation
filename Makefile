@@ -59,7 +59,7 @@ ci-aws-rp: keygen build-aws cluster monitor console install-rpk test-cluster des
 .PHONY: ci-aws-rp-connect
 ci-aws-rp-connect: ENABLE_CONNECT := true
 ci-aws-rp-connect: DISTRO := Fedora-Cloud-Base-36
-ci-aws-rp-connect: keygen build-aws extra-aws-copy deploy-extra-rp cluster deploy-connect monitor console install-rpk test-cluster test-cluster-spam-messages create-connector extra-aws-destroy destroy-aws
+ci-aws-rp-connect: keygen build-aws extra-aws-copy deploy-extra-rp cluster deploy-connect monitor console install-rpk test-cluster create-connector test-cluster-spam-messages extra-aws-destroy destroy-aws
 
 .PHONY: ci-aws-rp-tls
 ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls install-rpk test-cluster-tls destroy-aws
@@ -67,6 +67,12 @@ ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls install-rpk 
 .PHONY: ci-aws-rp-tiered
 ci-aws-rp-tiered: TIERED_STORAGE_ENABLED := true
 ci-aws-rp-tiered: keygen build-aws cluster-tiered-storage monitor-tls console-tls install-rpk test-cluster-tls test-aws-storage destroy-aws
+
+.PHONY: ci-aws-rp-ts-connect
+ci-aws-rp-ts-connect: ENABLE_CONNECT := true
+ci-aws-rp-ts-connect: DISTRO := Fedora-Cloud-Base-36
+ci-aws-rp-ts-connect: TIERED_STORAGE_ENABLED := true
+ci-aws-rp-ts-connect: keygen build-aws cluster-tiered-storage deploy-connect-tls monitor-tls console-tls extra-aws-copy deploy-extra-rp install-rpk test-cluster-tls test-aws-storage test-connect-tls-client create-connector-tls test-cluster-spam-messages-tls  destroy-aws extra-aws-destroy
 
 .PHONY: ci-gcp-rp
 ci-gcp-rp: keygen build-gcp cluster monitor console install-rpk test-cluster destroy-gcp
@@ -105,12 +111,16 @@ copy-rpm:
 SSH_EMAIL ?= test@test.com
 .PHONY: keygen
 keygen:
-	@printf 'y\n' | ssh-keygen -t rsa -b 4096 -C "$(SSH_EMAIL)" -N "" -f artifacts/testkey && chmod 0700 artifacts/testkey
+	@if [ ! -f artifacts/testkey ]; then \
+		printf 'y\n' | ssh-keygen -t rsa -b 4096 -C "$(SSH_EMAIL)" -N "" -f artifacts/testkey && chmod 0700 artifacts/testkey; \
+	else \
+		echo "artifacts/testkey already exists. Skipping key generation."; \
+	fi
 
 .PHONY: build-aws
 build-aws:
 	@echo $(TIERED_STORAGE_ENABLED)
-	@cd aws/$(TF_DIR) && \
+	@cd aws && \
 	terraform init && \
 	terraform apply -auto-approve \
 		-var='deployment_prefix=$(DEPLOYMENT_ID)' \
@@ -131,7 +141,7 @@ GCP_INSTANCE_TYPE ?= n2-standard-2
 GCP_CREDS ?= $(shell echo $$GCP_CREDS)
 .PHONY: build-gcp
 build-gcp:
-	@cd gcp/$(TF_DIR) && \
+	@cd gcp && \
 	terraform init && \
 	terraform apply -auto-approve \
 		-var='deployment_prefix=$(DEPLOYMENT_ID)' \
@@ -374,6 +384,8 @@ CLIENT_NAME ?= client
 CLIENT_DIR := ansible/tls/clients
 CA_DIR := ansible/tls/ca
 CERT_DIR := ansible/tls/certs
+CLIENT_KEY ?= ansible/tls/clients/client.key
+CLIENT_CERT ?= ansible/tls/ca/ca.crt
 
 $(CLIENT_DIR):
 	mkdir -p $@
@@ -400,10 +412,10 @@ cert-clean:
 cert-clean-client:
 	rm -rf $(CLIENT_DIR)
 
-.PHONY: test-connect
-test-connect: cert-client
+.PHONY: test-connect-tls-client
+test-connect-tls-client: cert-client
 	$(eval CONNECT_TARGET := $(shell awk '/^\[connect\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | head -n1))
-	curl -vvvvv -k --cert ansible/tls/clients/client.crt --key ansible/tls/clients/client.key --cacert ansible/tls/ca/ca.crt -X GET https://$(CONNECT_TARGET):8083/connectors
+	curl -vvvvv -k --cert ansible/tls/clients/client.crt --key $(CLIENT_KEY) --cacert $(CLIENT_CERT)  -X GET https://$(CONNECT_TARGET):8083/connectors
 
 test-prometheus-exporter: cert-client
 	$(eval PROMETHEUS_EXPORTER_TARGET := $(shell awk '/^\[connect\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | head -n1))
@@ -418,10 +430,10 @@ deploy-extra-rp: extra-aws extra-cluster
 .PHONY: extra-aws-copy
 extra-aws-copy:
 	cp -r aws aws-extra && \
-	rm -rf aws-extra/$(TF_DIR)/terraform.tfstate && \
-	rm -rf aws-extra/$(TF_DIR)/terraform.tfstate.backup && \
-	rm -rf aws-extra/$(TF_DIR)/.terraform && \
-	rm -rf aws-extra/$(TF_DIR)/.terraform.lock.hcl
+	rm -rf aws-extra/terraform.tfstate && \
+	rm -rf aws-extra/terraform.tfstate.backup && \
+	rm -rf aws-extra/.terraform && \
+	rm -rf aws-extra/.terraform.lock.hcl
 
 
 .PHONY: extra-aws-cleanup
@@ -436,8 +448,6 @@ extra-aws:
 		-var='deployment_prefix=$(DEPLOYMENT_ID)2' \
 		-var='public_key_path=$(PUBLIC_KEY)' \
 		-var='broker_count=$(NUM_NODES)' \
-		-var='enable_monitoring=$(ENABLE_MONITORING)' \
-		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
 		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
 		-var='vpc_id=$(VPC_ID)' \
 		-var='distro=$(DISTRO)' \
@@ -516,9 +526,23 @@ test-cluster-spam-messages:
 	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
 
 	@echo "producing to topic"
-	$(foreach i,$(shell seq 1 20), \
+	$(foreach i,$(shell seq 1 10), \
 		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1; \
 	)
+
+# spam messages at an existing topic
+.PHONY: test-cluster-spam-messages-tls
+test-cluster-spam-messages-tls:
+	@# Assemble the redpanda brokers by chopping up the hosts file
+	chmod 775 $(RPK_PATH)
+	echo $(RPK_PATH)
+	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
+
+	@echo "producing to topic"
+	$(foreach i,$(shell seq 1 10), \
+		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) --tls-truststore "$(CA_CRT)" -v || exit 1; \
+	)
+
 
 .PHONY: create-connector
 create-connector:
@@ -526,4 +550,27 @@ create-connector:
 	$(eval EXTRA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1":9092"}' "$(EXTRA_INVENTORY)" | paste -sd ',' -))
 	$(eval CONNECT_IP := $(shell awk '/^\[connect\]/{f=1; next} f{print $$1; exit}' $(HOSTS_FILE)))
 
-	curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$(CONNECT_IP):8083/connectors -d '{"name": "mirror-source-connector2","config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector","topics": "testtopic","replication.factor": "1","source.cluster.bootstrap.servers": "$(REDPANDA_BROKERS)","source.cluster.security.protocol": "PLAINTEXT","target.cluster.bootstrap.servers": "$(EXTRA_BROKERS)","target.cluster.security.protocol": "PLAINTEXT","source.cluster.alias": "source" }}'
+	curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$(CONNECT_IP):8083/connectors -d '{"name": "mirror-source-connector","config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector","topics": "testtopic","replication.factor": "1","source.cluster.bootstrap.servers": "$(REDPANDA_BROKERS)","source.cluster.security.protocol": "PLAINTEXT","target.cluster.bootstrap.servers": "$(EXTRA_BROKERS)","target.cluster.security.protocol": "PLAINTEXT","source.cluster.alias": "source" }}'
+
+.PHONY: create-connector-tls
+create-connector-tls:
+	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1":9092"}' "$(HOSTS_FILE)" | paste -sd ',' -))
+	$(eval EXTRA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1":9092"}' "$(EXTRA_INVENTORY)" | paste -sd ',' -))
+	$(eval CONNECT_IP := $(shell awk '/^\[connect\]/{f=1; next} f{print $$1; exit}' $(HOSTS_FILE)))
+
+	curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' --key $(CLIENT_KEY) --cacert $(CLIENT_CERT) https://$(CONNECT_IP):8083/connectors -d '{"name": "mirror-source-connector", \
+  "config": { \
+    "connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", \
+    "topics": "testtopic", \
+    "replication.factor": "1", \
+    "source.cluster.bootstrap.servers": "$(REDPANDA_BROKERS)", \
+    "source.cluster.security.protocol": "SSL", \
+    "source.cluster.ssl.truststore.type": "PKCS12", \
+    "source.cluster.ssl.keystore.type": "PKCS12", \
+    "target.cluster.bootstrap.servers": "$(EXTRA_BROKERS)", \
+    "target.cluster.security.protocol": "SSL", \
+    "source.cluster.alias": "source", \
+    "target.cluster.ssl.truststore.type": "PKCS12", \
+    "target.cluster.ssl.keystore.type": "PKCS12" \
+  } \
+}'
