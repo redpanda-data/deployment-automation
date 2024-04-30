@@ -59,34 +59,6 @@ ansible-playbook ansible/deploy-client.yml --private-key ~/.ssh/id_rsa
 
 The playbooks can all be run in any order. However they are designed with the assumption that you will run only either the TLS or non TLS playbooks, not both. Currently we do not support converting a cluster from non-TLS to TLS or vice versa.
 
-### Connect Cluster LIMITED ALPHA
-
-The connect playbooks are provided in a LIMITED ALPHA state. Please contact Redpanda for access.
-
-#### Limitations of this Alpha Release include
-* Only tested against AWS
-* Fedora only support (Ubuntu support is planned)
-* **No public RPM repository** (you will need to request the RPM from Redpanda and deliver it onto the system yourself as this is a limited Alpha)
-* As this is a limited alpha wil need to request the RPM from Redpanda and deliver it onto the system yourself as there is no public RPM repository
-
-For usage we recommend having a separate cluster to deploy on. If using our AWS Terraform module you will need to set enable_connect=true to deploy the infrastructure. 
-
-In your own hosts file you will need to add a section labeled [connect] that follows the conventions of the existing [redpanda], [monitor] and [client]
-
-For example if you have a three node Connect cluster you would add the following to your hosts file:
-```
-[connect]
-ip ansible_user=ssh_user ansible_become=True private_ip=pip id=0
-ip ansible_user=ssh_user ansible_become=True private_ip=pip id=1
-ip ansible_user=ssh_user ansible_become=True private_ip=pip id=2
-```
-
-As with all ansible roles variables are defined in the role with a necessary subset defined in the playbook. For best results please [review the role thoroughly](https://github.com/redpanda-data/redpanda-ansible-collection/tree/kafka-connect/roles/redpanda_connect) before using it.
-
-Sensible defaults are in place for a subset of the many options available to a user of a Connect cluster, but you may need to adjust them to suit your environment by taking advantage of the override systems to provide your own alternatives.
-
-A sample playbook has been provided for configurations with and without TLS. It is expected that most users will want to configure their own playbook using the Redpanda Ansible Collection roles directly. 
-
 ## Additional Documentation
 
 More information on consuming this collection
