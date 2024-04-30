@@ -59,7 +59,7 @@ ci-aws-rp: keygen build-aws cluster monitor console install-rpk test-cluster des
 .PHONY: ci-aws-rp-connect
 ci-aws-rp-connect: ENABLE_CONNECT := true
 ci-aws-rp-connect: DISTRO := Fedora-Cloud-Base-36
-ci-aws-rp-connect: keygen build-aws deploy-extra-rp cluster deploy-connect monitor console install-rpk test-cluster test-cluster-spam-messages create-connector extra-aws-destroy destroy-aws
+ci-aws-rp-connect: keygen build-aws extra-aws-copy deploy-extra-rp cluster deploy-connect monitor console install-rpk test-cluster test-cluster-spam-messages create-connector extra-aws-destroy destroy-aws
 
 .PHONY: ci-aws-rp-tls
 ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls install-rpk test-cluster-tls destroy-aws
