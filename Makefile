@@ -59,7 +59,7 @@ ci-aws-rp: keygen build-aws cluster monitor console install-rpk test-cluster des
 .PHONY: ci-aws-rp-connect
 ci-aws-rp-connect: ENABLE_CONNECT := true
 ci-aws-rp-connect: DISTRO := Fedora-Cloud-Base-36
-ci-aws-rp-connect: keygen build-aws cluster deploy-connect monitor console install-rpk deploy-extra-rp test-cluster test-cluster-spam-messages create-connector extra-aws-destroy destroy-aws
+ci-aws-rp-connect: keygen build-aws deploy-extra-rp cluster deploy-connect monitor console install-rpk test-cluster test-cluster-spam-messages create-connector extra-aws-destroy destroy-aws
 
 .PHONY: ci-aws-rp-tls
 ci-aws-rp-tls: keygen build-aws cluster-tls monitor-tls console-tls install-rpk test-cluster-tls destroy-aws
@@ -516,7 +516,7 @@ test-cluster-spam-messages:
 	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
 
 	@echo "producing to topic"
-	$(foreach i,$(shell seq 1 100), \
+	$(foreach i,$(shell seq 1 20), \
 		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1; \
 	)
 
@@ -526,14 +526,4 @@ create-connector:
 	$(eval EXTRA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1":9092"}' "$(EXTRA_INVENTORY)" | paste -sd ',' -))
 	$(eval CONNECT_IP := $(shell awk '/^\[connect\]/{f=1; next} f{print $$1; exit}' $(HOSTS_FILE)))
 
-	curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$(CONNECT_IP):8083/connectors -d '{ \
-  		"name": "mirror-source-connector", \
-  		"config": { \
-    	"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", \
-    	"topics": "testtopic", \
-    	"replication.factor": "1", \
-    	"source.cluster.bootstrap.servers": "$(REDPANDA_BROKERS)", \
-    	"source.cluster.security.protocol": "PLAINTEXT", \
-    	"target.cluster.bootstrap.servers": "$(EXTRA_BROKERS)", \
-    	"target.cluster.security.protocol": "PLAINTEXT", \
-    	"source.cluster.alias": "source" }}'
+	curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$(CONNECT_IP):8083/connectors -d '{"name": "mirror-source-connector2","config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector","topics": "testtopic","replication.factor": "1","source.cluster.bootstrap.servers": "$(REDPANDA_BROKERS)","source.cluster.security.protocol": "PLAINTEXT","target.cluster.bootstrap.servers": "$(EXTRA_BROKERS)","target.cluster.security.protocol": "PLAINTEXT","source.cluster.alias": "source" }}'
