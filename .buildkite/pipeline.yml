@@ -34,7 +34,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: aws fedora
     key: aws-up-fedora
-    command: make ci-aws-rp -e DEPLOYMENT_ID=ci-bs-fd -e DISTRO=Fedora-Cloud-Base-36 --keep-going
+    command: make ci-aws-rp -e DEPLOYMENT_ID=ci-bs-fd -e DISTRO=Fedora-Cloud-Base-37 --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -44,7 +44,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: aws fedora connect
     key: aws-up-fed-con
-    command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd -e DISTRO=Fedora-Cloud-Base-36 --keep-going
+    command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd -e DISTRO=Fedora-Cloud-Base-37 --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -55,7 +55,7 @@ steps:
             - CONNECT_RPM_TOKEN
   - label: aws fedora tiered
     key: aws-up-fedora-tiered
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd -e DISTRO=Fedora-Cloud-Base-36 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd -e DISTRO=Fedora-Cloud-Base-37 --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -65,7 +65,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: aws fedora tiered connect
     key: aws-up-fed-cts
-    command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd -e DISTRO=Fedora-Cloud-Base-36 --keep-going
+    command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd -e DISTRO=Fedora-Cloud-Base-37 --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -76,7 +76,7 @@ steps:
             - CONNECT_RPM_TOKEN
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-lg -e DISTRO=Fedora-Cloud-Base-36 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-lg -e DISTRO=Fedora-Cloud-Base-37 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -119,7 +119,7 @@ steps:
             - DEVEX_GCP_CREDS_BASE64
   - label: unstable aws fedora tiered
     key: aws-us-fedora-tiered
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us -e DISTRO=Fedora-Cloud-Base-36 -e IS_USING_UNSTABLE=true --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us -e DISTRO=Fedora-Cloud-Base-37 -e IS_USING_UNSTABLE=true --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -129,7 +129,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: unstable aws fedora tiered large
     key: aws-us-fedora-ts-large
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-lg -e DISTRO=Fedora-Cloud-Base-36 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-lg -e DISTRO=Fedora-Cloud-Base-37 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
