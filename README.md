@@ -6,6 +6,7 @@ Terraform and Ansible configuration to easily provision a [Redpanda](https://www
 Azure, or IBM.
 
 ## Installation Prerequisites
+#
 
 Here are some prerequisites you'll need to install to run the content in this repo. You can also choose to use our
 Dockerfile_FEDORA or Dockerfile_UBUNTU dockerfiles to build a local client if you'd rather not install terraform and
