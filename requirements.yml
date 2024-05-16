@@ -2,7 +2,7 @@ collections:
   - name: community.general
   - name: https://github.com/redpanda-data/redpanda-ansible-collection.git
     type: git
-    version: kafka-connect
+    version: main
   - name: ansible.posix
   - name: grafana.grafana
   - name: prometheus.prometheus
