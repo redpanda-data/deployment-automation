@@ -1,8 +1,7 @@
 collections:
   - name: community.general
-  - name: https://github.com/redpanda-data/redpanda-ansible-collection.git
-    type: git
-    version: main
+  - name: redpanda.cluster
+    type: galaxy
   - name: ansible.posix
   - name: grafana.grafana
   - name: prometheus.prometheus
