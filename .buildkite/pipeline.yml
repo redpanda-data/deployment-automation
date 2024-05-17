@@ -66,7 +66,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test tiered-storage-up cluster standup fedora
     key: tiered-up-fedora
-    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-fd --distro=Fedora-Cloud-Base-36 --tiered=true --unstable=false --taskname=tiered-storage-cluster
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-fd --distro=Fedora-Cloud-Base-37 --tiered=true --unstable=false --taskname=tiered-storage-cluster
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -76,7 +76,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test unstable tiered-storage-up cluster standup fedora
     key: tiered-up-unstable-fedora
-    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-fd --distro=Fedora-Cloud-Base-36 --tiered=true --unstable=true --taskname=tiered-storage-cluster
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-fd --distro=Fedora-Cloud-Base-37 --tiered=true --unstable=true --taskname=tiered-storage-cluster
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -106,7 +106,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test tiered-storage-up cluster standup fedora with is4gen.4xlarge
     key: tiered-up-fedora-is4
-    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-fd-is --distro=Fedora-Cloud-Base-36 --tiered=true --unstable=false --taskname=tiered-storage-cluster --machinearch=arm64 --instancetype=is4gen.4xlarge
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-tier-fd-is --distro=Fedora-Cloud-Base-37 --tiered=true --unstable=false --taskname=tiered-storage-cluster --machinearch=arm64 --instancetype=is4gen.4xlarge
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
@@ -116,7 +116,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: test unstable tiered-storage-up cluster standup fedora with is4gen.4xlarge
     key: tiered-up-unstable-fedora-is4
-    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-fd-is --distro=Fedora-Cloud-Base-36 --tiered=true --unstable=true --taskname=tiered-storage-cluster --machinearch=arm64 --instancetype=is4gen.4xlarge
+    command: .buildkite/scripts/standup-cluster.sh --prefix=rp-un-tier-fd-is --distro=Fedora-Cloud-Base-37 --tiered=true --unstable=true --taskname=tiered-storage-cluster --machinearch=arm64 --instancetype=is4gen.4xlarge
     plugins:
       - docker#v5.8.0:
           image: glrp/atgt:latest
