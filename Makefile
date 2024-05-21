@@ -8,7 +8,7 @@ VPC_ID ?=
 BUCKET_NAME := $(subst _,-,$(DEPLOYMENT_ID))-bucket
 DISTRO ?= ubuntu-focal
 IS_USING_UNSTABLE ?= false
-CA_CRT ?= ansible/tls/ca/ca.crt
+CA_CRT ?= $(PWD)/ansible/tls/ca/ca.crt
 
 # RPK
 RPK_PATH ?= $(ARTIFACT_DIR)/bin/rpk
@@ -258,25 +258,26 @@ test-cluster:
 	echo $(RPK_PATH)
 	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
 
-	@echo $(REDPANDA_REGISTRY)
 	@echo $(REDPANDA_BROKERS)
 	@echo "checking cluster status"
-	@$(RPK_PATH) cluster status --brokers $(REDPANDA_BROKERS) -v || exit 1
+	@$(RPK_PATH) cluster status -X brokers=$(REDPANDA_BROKERS) -v || exit 1
 
 	@echo "creating topic"
-	@$(RPK_PATH) topic create testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1
+	@$(RPK_PATH) topic create testtopic -X brokers=$(REDPANDA_BROKERS) -v || exit 1
 
 	@echo "producing to topic"
-	@echo squirrel | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1
+	@echo squirrel | $(RPK_PATH) topic produce testtopic -X brokers=$(REDPANDA_BROKERS) -v || exit 1
 
 	@echo "consuming from topic"
-	@$(RPK_PATH) topic consume testtopic --brokers $(REDPANDA_BROKERS) -v -o :end | grep squirrel || exit 1
+	@$(RPK_PATH) topic consume testtopic -X brokers=$(REDPANDA_BROKERS) -v -o :end | grep squirrel || exit 1
 
 .PHONY: test-schema
 test-schema:
 	$(eval REDPANDA_REGISTRY := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":8081,"); sub(/,$$/,":8081")}1'))
 
 	@echo "testing schema registry"
+	@echo $(REDPANDA_REGISTRY)
+
 	@for ip_port in $$(echo $(REDPANDA_REGISTRY) | tr ',' ' '); do curl $$ip_port/subjects ; done
 
 .PHONY: cluster-tls
@@ -293,17 +294,20 @@ test-cluster-tls:
 		tr '\n' ',' | \
 		sed 's/,$$/\n/'))
 
-	@echo "checking cluster status"
-	@$(ARTIFACT_DIR)/bin/rpk cluster status --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(CA_CRT)" -v || exit 1
+	@echo "Redpanda Brokers: $(REDPANDA_BROKERS)"
+	@echo "TLS Truststore: $(CA_CRT)"
+
+	@echo "checking TLS cluster status"
+	@$(ARTIFACT_DIR)/bin/rpk cluster status -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v || exit 1
 
 	@echo "creating topic"
-	@$(ARTIFACT_DIR)/bin/rpk topic create testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(CA_CRT)" -v || exit 1
+	@$(ARTIFACT_DIR)/bin/rpk topic create testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v || exit 1
 
 	@echo "producing to topic"
-	@echo squirrels | $(ARTIFACT_DIR)/bin/rpk topic produce testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(CA_CRT)" -v || exit 1
+	@echo squirrels | $(ARTIFACT_DIR)/bin/rpk topic produce testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v || exit 1
 
 	@echo "consuming from topic"
-	@$(ARTIFACT_DIR)/bin/rpk topic consume testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(CA_CRT)" -v -o :end | grep squirrels || exit 1
+	@$(ARTIFACT_DIR)/bin/rpk topic consume testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v -o :end | grep squirrels || exit 1
 
 .PHONY: test-schema-tls
 test-schema-tls:
@@ -365,19 +369,19 @@ test-cluster-proxy:
 		grep 'private_ip=' | \
 		cut -f1 -d' '))
 
-	@echo "checking cluster status"
-	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk cluster status --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v' || exit 1
+	@echo "checking proxy cluster status"
+	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk cluster status -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v' || exit 1
 
 	@echo "creating topic"
-	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic create testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v' || exit 1
+	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic create testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v' || exit 1
 
 	@echo "producing to topic"
-	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'echo squirrels | rpk topic produce testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v' || exit 1
+	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'echo squirrels | rpk topic produce testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v' || exit 1
 
 	@sleep 30
 
 	@echo "consuming from topic"
-	$(eval testoutput := $(shell ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic consume testtopic --brokers "$(REDPANDA_BROKERS)" --tls-truststore "$(PATH_TO_CA_CRT)" -v -o :end'))
+	$(eval testoutput := $(shell ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic consume testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v -o :end'))
 	@echo "$(testoutput)" | grep squirrels || exit 1
 
 CLIENT_NAME ?= client
@@ -527,7 +531,7 @@ test-cluster-spam-messages:
 
 	@echo "producing to topic"
 	$(foreach i,$(shell seq 1 10), \
-		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) -v || exit 1; \
+		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic -X brokers=$(REDPANDA_BROKERS) -v || exit 1; \
 	)
 
 # spam messages at an existing topic
@@ -540,7 +544,7 @@ test-cluster-spam-messages-tls:
 
 	@echo "producing to topic"
 	$(foreach i,$(shell seq 1 10), \
-		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic --brokers $(REDPANDA_BROKERS) --tls-truststore "$(CA_CRT)" -v || exit 1; \
+		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic -X brokers=$(REDPANDA_BROKERS) -X tls.ca="$(CA_CRT)" -v || exit 1; \
 	)
 
 
