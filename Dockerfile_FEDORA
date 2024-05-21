@@ -7,7 +7,7 @@ ENV GCP_CREDS="default"
 
 # Install required packages
 RUN dnf -y update \
-    && dnf install -y unzip wget glibc curl vim git ansible jq openssl \
+    && dnf install -y unzip wget glibc curl vim git ansible jq openssl make \
     && dnf clean all \
     && rm -rf /var/cache/dnf/*
 

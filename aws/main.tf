@@ -1,8 +1,9 @@
 ## we assume a default vpc. if you have one you want to use you will need to provide a vpc and subnet ID
 
+
 module "redpanda-cluster" {
   source                   = "redpanda-data/redpanda-cluster/aws"
-  version                  = "~> 1.0.2"
+  version                  = "~> 1.1.5"
   public_key_path          = var.public_key_path
   broker_count             = var.broker_count
   deployment_prefix        = var.deployment_prefix
@@ -21,6 +22,9 @@ module "redpanda-cluster" {
   client_instance_type     = var.instance_type
   prometheus_instance_type = var.instance_type
   machine_architecture     = var.machine_architecture
+  connect_count = var.connect_count
+  connect_instance_type = var.instance_type
+  enable_connect = var.enable_connect
 }
 
 variable "availability_zone" {
@@ -122,4 +126,13 @@ variable "instance_type" {
 variable "machine_architecture" {
   type    = string
   default = "x86_64"
+}
+
+variable "connect_count" {
+  type    = number
+  default = 3
+}
+variable "enable_connect" {
+  default = false
+  type   = bool
 }

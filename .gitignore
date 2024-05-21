@@ -16,3 +16,7 @@ azure/_override.tf
 *.tfvars
 ibm/_override.tf
 *.gz
+ansible/tls/clients/client.key
+ansible/tls/clients/client.csr
+ansible/tls/clients/client.crt
+/aws-extra/

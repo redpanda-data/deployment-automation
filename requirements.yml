@@ -4,9 +4,9 @@ collections:
     type: galaxy
   - name: ansible.posix
   - name: grafana.grafana
+  - name: prometheus.prometheus
 
 roles:
   - src: mrlesmithjr.mdadm
   - src: mrlesmithjr.squid
-  - src: cloudalchemy.prometheus
   - src: geerlingguy.node_exporter

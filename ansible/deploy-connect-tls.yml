@@ -1,0 +1,29 @@
+# This is a limited access Alpha playbook. Please contact Redpanda for more information.
+
+---
+- name: Provision tls cluster
+  hosts: connect
+  vars:
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
+    enable_tls: true
+    advertise_public_ips: true
+    connect_tls_enabled: true
+    connect_trusted_certs: true
+    redpanda_version: latest
+    create_truststore: true
+    truststore_file_name: truststore.p12
+    redpanda_truststores_dir: /etc/redpanda/truststores
+    copy_truststore: true
+    copy_keystore: true
+    create_keystore: true
+    jmx_ssl: true
+    jmx_auth_enabled: false
+    ca_cert_file: "tls/ca/ca.crt"
+    node_cert_file: "tls/certs/{{ansible_hostname}}/node.crt"
+  tasks:
+    - name: Install and configure CA certs for running tls
+      ansible.builtin.include_role:
+        name: redpanda.cluster.demo_certs
+    - name: install connect
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_connect

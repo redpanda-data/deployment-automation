@@ -1,8 +1,14 @@
+# jmespath is a required dependency for this playbook. Install it with `pip install jmespath`.
 - hosts: redpanda
   tasks:
-    - name: Node dependencies - include geerlingguy nodeexporter
+    - name: Set node_exporter_arch based on host architecture
+      ansible.builtin.set_fact:
+        rp_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+    - name: Include geerlingguy nodeexporter
       ansible.builtin.include_role:
         name: geerlingguy.node_exporter
+      vars:
+        node_exporter_arch: "{{ rp_arch }}"
 
 - hosts: monitor
   tasks:
@@ -15,7 +21,7 @@
   hosts: monitor
   vars:
     handle_cert_install: true
-    install_certs_only: true
+    create_demo_certs: true
     root_ca_dir: "{{ playbook_dir }}/tls/ca"
     ca_cert_file: "tls/ca/ca.crt"
     redpanda_truststore_file: "/etc/redpanda/certs/ca.crt"
@@ -23,33 +29,41 @@
   tasks:
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
-        name: redpanda.cluster.redpanda_broker
+        name: redpanda.cluster.demo_certs
       tags:
         - install_certs
 
 - hosts: monitor
   roles:
-    - cloudalchemy.prometheus
+    - prometheus.prometheus.prometheus
   vars:
     tls: true
     prometheus_scrape_configs:
       - job_name: "redpanda"
-        scheme: "{{ 'https' if tls else 'http' }}"
+        scheme: "https"
         metrics_path: "/public_metrics"
         static_configs:
-          - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9644') | list  }}"
+          - targets: "{{ groups['redpanda'] | default([]) | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9644') | list  }}"
         tls_config:
           ca_file: "/etc/redpanda/certs/ca.crt"
       - job_name: "node"
+        scheme: "https"
         metrics_path: "/metrics"
         static_configs:
-          - targets: "{{ groups['redpanda'] | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
+          - targets: "{{ groups['redpanda'] | default([]) | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9100') | list  }}"
+      - job_name: "connect"
+        metrics_path: "/metrics"
+        scheme: "https"
+        static_configs:
+          - targets: "{{ groups['connect'] | default([]) | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9404') | list  }}"
+        tls_config:
+          ca_file: "/etc/redpanda/certs/ca.crt"
 
 - hosts: monitor
   roles:
     - grafana.grafana.grafana
   vars:
-    grafana_version: 9.5.7
+    grafana_version: 10.4.1
     grafana_security:
       admin_user: admin
       admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"

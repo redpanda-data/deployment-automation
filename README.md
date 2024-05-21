@@ -49,9 +49,15 @@ cd ..
 ansible-galaxy install -r ./requirements.yml
 
 # Run a Playbook
-# You need to pick the correct playbook for you, in this case we picked provision-basic-cluster
-ansible-playbook ansible/provision-basic-cluster.yml --private-key ~/.ssh/id_rsa
+# You need to pick the correct playbook for you, in this case we picked provision-cluster
+ansible-playbook ansible/provision-cluster.yml --private-key ~/.ssh/id_rsa
+
+# If you want Redpanda Console and our implementation of Prometheus and Grafana you will need to run the following
+ansible-playbook ansible/deploy-monitor.yml --private-key ~/.ssh/id_rsa
+ansible-playbook ansible/deploy-client.yml --private-key ~/.ssh/id_rsa
 ```
+
+The playbooks can all be run in any order. However they are designed with the assumption that you will run only either the TLS or non TLS playbooks, not both. Currently we do not support converting a cluster from non-TLS to TLS or vice versa.
 
 ## Additional Documentation
 
