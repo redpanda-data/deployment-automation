@@ -175,7 +175,9 @@ destroy-aws:
 		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
 		-var='enable_connect=$(ENABLE_CONNECT)' \
-		-var='instance_type=$(INSTANCE_TYPE)'
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
 
 .PHONY: build-aws-proxy
 build-aws-proxy:
