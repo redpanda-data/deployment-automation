@@ -110,10 +110,35 @@ resource "aws_vpc_endpoint" "s3_endpoint" {
 POLICY
 }
 
+variable "broker_instance_type" {
+    type    = string
+    default = "i3.2xlarge"
+}
+
+variable "client_instance_type" {
+    type    = string
+    default = "m5n.2xlarge"
+}
+
+variable "prometheus_instance_type" {
+    type    = string
+    default = "c5.2xlarge"
+}
+
+variable "connect_count" {
+    type    = number
+    default = 1
+}
+
+variable "connect_instance_type" {
+    type    = string
+    default = "m5n.2xlarge"
+}
+
 
 module "redpanda-cluster" {
   source                          = "redpanda-data/redpanda-cluster/aws"
-  version                         = "~> 1.0.0"
+  version                         = "~> 1.1.5"
   public_key_path                 = var.public_key_path
   broker_count                    = var.broker_count
   deployment_prefix               = var.deployment_prefix
@@ -124,6 +149,13 @@ module "redpanda-cluster" {
   distro                          = var.distro
   hosts_file                      = var.hosts_file
   tags                            = var.tags
+  connect_count = var.connect_count
+  connect_instance_type = var.connect_instance_type
+  enable_connect = var.enable_connect
+  machine_architecture = var.machine_architecture
+  broker_instance_type = var.broker_instance_type
+    client_instance_type = var.client_instance_type
+  prometheus_instance_type = var.prometheus_instance_type
   create_r53_records              = true
   associate_public_ip_addr_client = true
   security_groups_client          = [aws_security_group.client_sec_group.id]
@@ -385,4 +417,14 @@ provider "aws" {
 variable "vpc_id" {
   default = ""
   type    = string
+}
+
+variable "machine_architecture" {
+    type    = string
+    default = "x86_64"
+}
+
+variable "enable_connect" {
+    type    = bool
+    default = false
 }

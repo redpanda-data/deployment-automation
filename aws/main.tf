@@ -18,13 +18,28 @@ module "redpanda-cluster" {
   associate_public_ip_addr = var.associate_public_ip_addr
   availability_zone        = var.availability_zone
   client_count             = 1
-  broker_instance_type     = var.instance_type
-  client_instance_type     = var.instance_type
-  prometheus_instance_type = var.instance_type
+  broker_instance_type     = var.broker_instance_type
+  client_instance_type     = var.client_instance_type
+  prometheus_instance_type = var.prometheus_instance_type
   machine_architecture     = var.machine_architecture
   connect_count = var.connect_count
-  connect_instance_type = var.instance_type
+  connect_instance_type = var.broker_instance_type
   enable_connect = var.enable_connect
+}
+
+variable "broker_instance_type" {
+  type    = string
+  default = "i3.2xlarge"
+}
+
+variable "client_instance_type" {
+    type    = string
+  default = "i3.2xlarge"
+}
+
+variable "prometheus_instance_type" {
+    type    = string
+  default = "i3.2xlarge"
 }
 
 variable "availability_zone" {
@@ -119,10 +134,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-variable "instance_type" {
-  type    = string
-  default = "i3.2xlarge"
-}
 variable "machine_architecture" {
   type    = string
   default = "x86_64"

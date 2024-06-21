@@ -27,3 +27,10 @@ When building an airgapped or proxied cluster there are a number of consideratio
 * You will need a way to provide ssh access to the ansible host if using ansible
 * You will need to support HTTP and HTTPS traffic
 * You will need to support cert based communication
+
+### To SSH into the machine using forwarding
+```shell
+eval "$(ssh-agent -s)"
+ssh-add /path/to/your/private_key
+ssh -vvv -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i private/key -A -J ubuntu@jumphost ubuntu@private-ip
+```
