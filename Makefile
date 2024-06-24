@@ -507,7 +507,9 @@ extra-aws:
 		-var='hosts_file=$(EXTRA_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
 		-var='enable_connect=false' \
-		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
 
 .PHONY: extra-aws-destroy
 extra-aws-destroy:
@@ -525,7 +527,9 @@ extra-aws-destroy:
 		-var='hosts_file=$(EXTRA_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
 		-var='enable_connect=false' \
-		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
 
 
 .PHONY: extra-cluster
