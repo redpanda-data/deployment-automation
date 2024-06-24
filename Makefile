@@ -54,7 +54,10 @@ ansible-prereqs: collection role
 	@echo "Ansible prereqs installed"
 
 .PHONY: ci-aws-rp
-ci-aws-rp: keygen build-aws cluster monitor console install-rpk test-cluster destroy-aws
+ci-aws-rp: aws-rp install-rpk test-cluster destroy-aws
+
+.PHONY: aws-rp
+aws-rp: keygen build-aws cluster monitor console
 
 .PHONY: ci-aws-rp-connect
 ci-aws-rp-connect: ENABLE_CONNECT := true
@@ -134,7 +137,9 @@ build-aws:
 		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
 		-var='enable_connect=$(ENABLE_CONNECT)' \
-		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
 
 GCP_IMAGE ?= ubuntu-os-cloud/ubuntu-2204-lts
 GCP_INSTANCE_TYPE ?= n2-standard-2
@@ -170,7 +175,51 @@ destroy-aws:
 		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
 		-var='enable_connect=$(ENABLE_CONNECT)' \
-		-var='instance_type=$(INSTANCE_TYPE)'
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
+
+.PHONY: build-aws-proxy
+build-aws-proxy:
+	@echo $(TIERED_STORAGE_ENABLED)
+	@cd aws/private-test && \
+	terraform init && \
+	terraform apply -auto-approve \
+		-var='deployment_prefix=$(DEPLOYMENT_ID)' \
+		-var='public_key_path=$(PUBLIC_KEY)' \
+		-var='broker_count=$(NUM_NODES)' \
+		-var='enable_monitoring=$(ENABLE_MONITORING)' \
+		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
+		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
+		-var='vpc_id=$(VPC_ID)' \
+		-var='distro=$(DISTRO)' \
+		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
+		-var='machine_architecture=$(MACHINE_ARCH)' \
+		-var='enable_connect=$(ENABLE_CONNECT)' \
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
+
+destroy-aws-proxy:
+	@echo $(TIERED_STORAGE_ENABLED)
+	@cd aws/private-test && \
+	terraform init && \
+	terraform destroy -auto-approve \
+		-var='deployment_prefix=$(DEPLOYMENT_ID)' \
+		-var='public_key_path=$(PUBLIC_KEY)' \
+		-var='broker_count=$(NUM_NODES)' \
+		-var='enable_monitoring=$(ENABLE_MONITORING)' \
+		-var='tiered_storage_enabled=$(TIERED_STORAGE_ENABLED)' \
+		-var='allow_force_destroy=$(ALLOW_FORCE_DESTROY)' \
+		-var='vpc_id=$(VPC_ID)' \
+		-var='distro=$(DISTRO)' \
+		-var='hosts_file=$(ANSIBLE_INVENTORY)' \
+		-var='machine_architecture=$(MACHINE_ARCH)' \
+		-var='enable_connect=$(ENABLE_CONNECT)' \
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
+
 
 .PHONY: destroy-gcp
 destroy-gcp:
@@ -458,7 +507,9 @@ extra-aws:
 		-var='hosts_file=$(EXTRA_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
 		-var='enable_connect=false' \
-		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
 
 .PHONY: extra-aws-destroy
 extra-aws-destroy:
@@ -476,7 +527,9 @@ extra-aws-destroy:
 		-var='hosts_file=$(EXTRA_INVENTORY)' \
 		-var='machine_architecture=$(MACHINE_ARCH)' \
 		-var='enable_connect=false' \
-		-var='instance_type=$(INSTANCE_TYPE_AWS)'
+		-var='broker_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='client_instance_type=$(INSTANCE_TYPE_AWS)' \
+		-var='prometheus_instance_type=$(INSTANCE_TYPE_AWS)'
 
 
 .PHONY: extra-cluster
