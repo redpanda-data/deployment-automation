@@ -24,6 +24,6 @@
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
         name: redpanda.cluster.demo_certs
-    - name: install connect
+    - name: Install connect
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_connect

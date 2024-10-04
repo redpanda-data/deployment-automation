@@ -1,5 +1,6 @@
 # jmespath is a required dependency for this playbook. Install it with `pip install jmespath`.
-- hosts: redpanda
+- name: Set node_exporter_arch based on host architecture
+  hosts: redpanda
   tasks:
     - name: Set node_exporter_arch based on host architecture
       ansible.builtin.set_fact:
@@ -10,14 +11,16 @@
       vars:
         node_exporter_arch: "{{ rp_arch }}"
 
-- hosts: monitor
+- name: Install jmespath
+  hosts: monitor
   tasks:
-    - name: install deps
+    - name: Install deps
       ansible.builtin.package:
         name: python3-jmespath
         state: present
 
-- hosts: monitor
+- name: Install prometheus
+  hosts: monitor
   roles:
     - prometheus.prometheus.prometheus
   vars:
@@ -35,7 +38,8 @@
         static_configs:
           - targets: "{{ groups['connect'] | default([]) | map('extract', hostvars, 'inventory_hostname') | map('regex_replace', '^(.*)$','\\1:9404') | list  }}"
 
-- hosts: monitor
+- name: Install grafana
+  hosts: monitor
   roles:
     - grafana.grafana.grafana
   vars:

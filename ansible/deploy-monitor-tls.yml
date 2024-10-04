@@ -1,5 +1,6 @@
 # jmespath is a required dependency for this playbook. Install it with `pip install jmespath`.
-- hosts: redpanda
+- name: Set node_exporter_arch based on host architecture
+  hosts: redpanda
   tasks:
     - name: Set node_exporter_arch based on host architecture
       ansible.builtin.set_fact:
@@ -10,9 +11,10 @@
       vars:
         node_exporter_arch: "{{ rp_arch }}"
 
-- hosts: monitor
+- name: Install jmespath
+  hosts: monitor
   tasks:
-    - name: install deps
+    - name: Install deps
       ansible.builtin.package:
         name: python3-jmespath
         state: present
@@ -33,7 +35,8 @@
       tags:
         - install_certs
 
-- hosts: monitor
+- name: Install prometheus
+  hosts: monitor
   roles:
     - prometheus.prometheus.prometheus
   vars:
@@ -59,7 +62,8 @@
         tls_config:
           ca_file: "/etc/redpanda/certs/ca.crt"
 
-- hosts: monitor
+- name: Install grafana
+  hosts: monitor
   roles:
     - grafana.grafana.grafana
   vars:
