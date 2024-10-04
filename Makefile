@@ -616,3 +616,8 @@ create-connector-tls:
 	$(eval CONNECT_IP := $(shell awk '/^\[connect\]/{f=1; next} f{print $$1; exit}' $(HOSTS_FILE)))
 
 	curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' --key $(CLIENT_KEY) --cacert $(CLIENT_CERT) https://$(CONNECT_IP):8083/connectors -d '{"name": "mirror-source-connector", "config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", "topics": "testtopic", "replication.factor": "1", "source.cluster.bootstrap.servers": "$(REDPANDA_BROKERS)", "source.cluster.security.protocol": "SSL", "source.cluster.ssl.truststore.type": "PKCS12", "source.cluster.ssl.keystore.type": "PKCS12", "target.cluster.bootstrap.servers": "$(EXTRA_BROKERS)", "target.cluster.security.protocol": "SSL", "source.cluster.alias": "source", "target.cluster.ssl.truststore.type": "PKCS12", "target.cluster.ssl.keystore.type": "PKCS12"}}'
+
+.PHONY: lint
+lint:
+	@echo "Running ansible-lint"
+	@ansible-lint -c .ansible-lint
