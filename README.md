@@ -45,8 +45,12 @@ terraform init
 terraform apply --auto-approve -var='public_key_path=~/.ssh/id_rsa.pub' -var='deployment_prefix=go-rp'
 cd ..
 
+
 # Install collections and roles
-ansible-galaxy install -r ./requirements.yml
+export $ANSIBLE_COLLECTIONS_PATH=$PWD/artifacts/collections
+export $ANSIBLE_ROLES_PATH=$PWD/artifacts/roles
+ansible-galaxy collection install -r $PWD/requirements.yml --force -p $ANSIBLE_COLLECTIONS_PATH
+ansible-galaxy role install -r $PWD/requirements.yml --force -p $ANSIBLE_ROLES_PATH
 
 # Run a Playbook
 # You need to pick the correct playbook for you, in this case we picked provision-cluster

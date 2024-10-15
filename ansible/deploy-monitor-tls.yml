@@ -1,4 +1,6 @@
-# jmespath is a required dependency for this playbook. Install it with `pip install jmespath`.
+# jmespath is a required deendency for this playbook. Install it with `pip install jmespath`.
+# create_demo_certs: when false, disables all activity related to our demo CA
+# handle_cert_install: when false, disables all activity related to installing certificates with our role
 - name: Set node_exporter_arch based on host architecture
   hosts: redpanda
   tasks:
@@ -40,7 +42,6 @@
   roles:
     - prometheus.prometheus.prometheus
   vars:
-    tls: true
     prometheus_scrape_configs:
       - job_name: "redpanda"
         scheme: "https"

@@ -5,7 +5,8 @@
 # Redpanda encourages you to integrate with your corporate certificate management setup.
 # variables
 # root_ca_dir: location of our demo cert authority
-# handle_certs: when false, disables all activity related to our demo CA
+# create_demo_certs: when false, disables all activity related to our demo CA
+# handle_cert_install: when false, disables all activity related to installing certificates with our role
 # enable_tls: when true, adds the tls template to the /etc/redpanda/redpanda.yml file
 # advertise_public_ips : causes the cluster to set a public ip on advertised_kafka_api, allowing access to the cluster from the public internet
 ---
@@ -24,9 +25,6 @@
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
         name: redpanda.cluster.demo_certs
-    - name: Install system prereqs
-      ansible.builtin.include_role:
-        name: redpanda.cluster.sysctl_setup
     - name: Install system prereqs
       ansible.builtin.include_role:
         name: redpanda.cluster.system_setup
