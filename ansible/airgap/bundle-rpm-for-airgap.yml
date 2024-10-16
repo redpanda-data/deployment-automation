@@ -1,5 +1,5 @@
 ---
-- name: bundle rpms
+- name: Bundle rpms
   hosts: client
   vars:
     basearch: "x86_64" # must match the output of `uname -m`

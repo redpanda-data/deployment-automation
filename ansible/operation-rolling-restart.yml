@@ -1,0 +1,84 @@
+---
+- name: Redpanda Rolling Restart
+  hosts: redpanda
+  become: true
+  serial: 1
+  vars:
+    rpk_bin: rpk
+
+  tasks:
+    - name: Check cluster health
+      ansible.builtin.shell: |
+        {{ rpk_bin }} cluster health | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      register: health_check
+      failed_when: "health_check.stdout != 'true'"
+      changed_when: false
+
+    - name: Get node ID
+      ansible.builtin.shell: |
+        {{ rpk_bin }} cluster info | awk '$2 == "{{ ansible_host }}" {gsub("\\*", "", $1); print $1}'
+      register: node_id
+      changed_when: false
+
+    - name: Enable maintenance mode
+      ansible.builtin.command: "{{ rpk_bin }} cluster maintenance enable {{ node_id.stdout }} --wait"
+      register: maintenance_result
+      failed_when:
+        - "'Successfully enabled maintenance mode' not in maintenance_result.stdout"
+        - "'Maintenance mode is already enabled for node' not in maintenance_result.stdout"
+      changed_when: "'Successfully enabled maintenance mode' in maintenance_result.stdout"
+
+    - name: Verify maintenance mode status
+      ansible.builtin.shell: |
+        {{ rpk_bin }} cluster maintenance status | grep -q '{{ node_id.stdout }}'
+      register: maintenance_status
+      failed_when: maintenance_status.rc != 0
+      changed_when: false
+
+    - name: Check cluster health after enabling maintenance mode
+      ansible.builtin.shell: |
+        {{ rpk_bin }} cluster health --watch --exit-when-healthy | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      register: health_check_maintenance
+      failed_when: "health_check_maintenance.stdout != 'true'"
+      retries: 10
+      delay: 30
+      changed_when: false
+
+    - name: Stop Redpanda service
+      ansible.builtin.systemd:
+        name: redpanda
+        state: stopped
+
+    - name: Start Redpanda service
+      ansible.builtin.systemd:
+        name: redpanda
+        state: started
+
+    - name: Disable maintenance mode
+      ansible.builtin.command: "{{ rpk_bin }} cluster maintenance disable {{ node_id.stdout }}"
+      register: disable_maintenance_result
+      changed_when: "'Successfully disabled maintenance mode' in disable_maintenance_result.stdout"
+      failed_when: "'Successfully disabled maintenance mode' not in disable_maintenance_result.stdout"
+
+    - name: Verify maintenance mode is disabled
+      ansible.builtin.shell: |
+        {{ rpk_bin }} cluster maintenance status | grep -qv '{{ node_id.stdout }}'
+      register: maintenance_status_after
+      failed_when: maintenance_status_after.rc != 0
+      changed_when: false
+
+    - name: Check cluster health after disabling maintenance mode
+      ansible.builtin.shell: |
+        {{ rpk_bin }} cluster health --watch --exit-when-healthy | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      register: health_check_maintenance
+      failed_when: "health_check_maintenance.stdout != 'true'"
+      retries: 10
+      delay: 30
+      changed_when: false
+
+    - name: Check broker status
+      ansible.builtin.shell: |
+        {{ rpk_bin }} redpanda admin brokers list | grep -q 'active.*true'
+      register: broker_status
+      changed_when: false
+      failed_when: broker_status.rc != 0

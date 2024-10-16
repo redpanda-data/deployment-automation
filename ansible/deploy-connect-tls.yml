@@ -1,5 +1,6 @@
 # This is a limited access Alpha playbook. Please contact Redpanda for more information.
-
+# create_demo_certs: when false, disables all activity related to our demo CA
+# handle_cert_install: when false, disables all activity related to installing certificates with our role
 ---
 - name: Provision tls cluster
   hosts: connect
@@ -24,6 +25,6 @@
     - name: Install and configure CA certs for running tls
       ansible.builtin.include_role:
         name: redpanda.cluster.demo_certs
-    - name: install connect
+    - name: Install connect
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_connect

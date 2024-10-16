@@ -1,5 +1,8 @@
-# jmespath is a required dependency for this playbook. Install it with `pip install jmespath`.
-- hosts: redpanda
+# jmespath is a required deendency for this playbook. Install it with `pip install jmespath`.
+# create_demo_certs: when false, disables all activity related to our demo CA
+# handle_cert_install: when false, disables all activity related to installing certificates with our role
+- name: Set node_exporter_arch based on host architecture
+  hosts: redpanda
   tasks:
     - name: Set node_exporter_arch based on host architecture
       ansible.builtin.set_fact:
@@ -10,9 +13,10 @@
       vars:
         node_exporter_arch: "{{ rp_arch }}"
 
-- hosts: monitor
+- name: Install jmespath
+  hosts: monitor
   tasks:
-    - name: install deps
+    - name: Install deps
       ansible.builtin.package:
         name: python3-jmespath
         state: present
@@ -33,11 +37,11 @@
       tags:
         - install_certs
 
-- hosts: monitor
+- name: Install prometheus
+  hosts: monitor
   roles:
     - prometheus.prometheus.prometheus
   vars:
-    tls: true
     prometheus_scrape_configs:
       - job_name: "redpanda"
         scheme: "https"
@@ -59,7 +63,8 @@
         tls_config:
           ca_file: "/etc/redpanda/certs/ca.crt"
 
-- hosts: monitor
+- name: Install grafana
+  hosts: monitor
   roles:
     - grafana.grafana.grafana
   vars:

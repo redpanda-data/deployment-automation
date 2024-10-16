@@ -249,6 +249,7 @@ role:
 .PHONY: monitor
 monitor: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
+	export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 	@ansible-playbook ansible/deploy-monitor.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
 .PHONY: monitor-tls
@@ -300,6 +301,8 @@ cluster: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/provision-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+TEST_TOPIC_NAME ?= testtopic
+PARTITION_COUNT ?= 3
 .PHONY: test-cluster
 test-cluster:
 	@# Assemble the redpanda brokers by chopping up the hosts file
@@ -309,16 +312,17 @@ test-cluster:
 
 	@echo $(REDPANDA_BROKERS)
 	@echo "checking cluster status"
+	@echo rpk cluster status -X brokers=$(REDPANDA_BROKERS) -v || exit 1
 	@$(RPK_PATH) cluster status -X brokers=$(REDPANDA_BROKERS) -v || exit 1
 
 	@echo "creating topic"
-	@$(RPK_PATH) topic create testtopic -X brokers=$(REDPANDA_BROKERS) -v || exit 1
+	@$(RPK_PATH) topic create $(TEST_TOPIC_NAME) -p $(PARTITION_COUNT) -X brokers=$(REDPANDA_BROKERS) -v || exit 1
 
 	@echo "producing to topic"
-	@echo squirrel | $(RPK_PATH) topic produce testtopic -X brokers=$(REDPANDA_BROKERS) -v || exit 1
+	@echo squirrel | $(RPK_PATH) topic produce $(TEST_TOPIC_NAME) -X brokers=$(REDPANDA_BROKERS) -v || exit 1
 
 	@echo "consuming from topic"
-	@$(RPK_PATH) topic consume testtopic -X brokers=$(REDPANDA_BROKERS) -v -o :end | grep squirrel || exit 1
+	@$(RPK_PATH) topic consume $(TEST_TOPIC_NAME) -X brokers=$(REDPANDA_BROKERS) -v -o :end | grep squirrel || exit 1
 
 .PHONY: test-schema
 test-schema:
@@ -350,13 +354,13 @@ test-cluster-tls:
 	@$(ARTIFACT_DIR)/bin/rpk cluster status -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v || exit 1
 
 	@echo "creating topic"
-	@$(ARTIFACT_DIR)/bin/rpk topic create testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v || exit 1
+	@$(ARTIFACT_DIR)/bin/rpk topic create $(TEST_TOPIC_NAME) -p $(PARTITION_COUNT) -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v || exit 1
 
 	@echo "producing to topic"
-	@echo squirrels | $(ARTIFACT_DIR)/bin/rpk topic produce testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v || exit 1
+	@echo squirrels | $(ARTIFACT_DIR)/bin/rpk topic produce $(TEST_TOPIC_NAME) -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v || exit 1
 
 	@echo "consuming from topic"
-	@$(ARTIFACT_DIR)/bin/rpk topic consume testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v -o :end | grep squirrels || exit 1
+	@$(ARTIFACT_DIR)/bin/rpk topic consume $(TEST_TOPIC_NAME) -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(CA_CRT)" -v -o :end | grep squirrels || exit 1
 
 .PHONY: test-schema-tls
 test-schema-tls:
@@ -422,15 +426,15 @@ test-cluster-proxy:
 	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk cluster status -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v' || exit 1
 
 	@echo "creating topic"
-	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic create testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v' || exit 1
+	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic create $(TEST_TOPIC_NAME) -p $(PARTITION_COUNT) -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v' || exit 1
 
 	@echo "producing to topic"
-	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'echo squirrels | rpk topic produce testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v' || exit 1
+	@ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'echo squirrels | rpk topic produce $(TEST_TOPIC_NAME) -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v' || exit 1
 
 	@sleep 30
 
 	@echo "consuming from topic"
-	$(eval testoutput := $(shell ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic consume testtopic -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v -o :end'))
+	$(eval testoutput := $(shell ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "$(SSHKEY)" "$(CLIENT_SSH_USER)@$(CLIENT_PUBLIC_IP)" 'rpk topic consume $(TEST_TOPIC_NAME) -X brokers="$(REDPANDA_BROKERS)" -X tls.ca="$(PATH_TO_CA_CRT)" -v -o :end'))
 	@echo "$(testoutput)" | grep squirrels || exit 1
 
 CLIENT_NAME ?= client
@@ -575,6 +579,7 @@ extra-copy-rpm:
 	done
 
 # spam messages at an existing topic
+SPAM_MESSAGE_COUNT ?= 10
 .PHONY: test-cluster-spam-messages
 test-cluster-spam-messages:
 	@# Assemble the redpanda brokers by chopping up the hosts file
@@ -583,8 +588,8 @@ test-cluster-spam-messages:
 	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
 
 	@echo "producing to topic"
-	$(foreach i,$(shell seq 1 10), \
-		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic -X brokers=$(REDPANDA_BROKERS) -v || exit 1; \
+	$(foreach i,$(shell seq 1 $(SPAM_MESSAGE_COUNT)), \
+		echo "squirrel$i" | $(RPK_PATH) topic produce $(TEST_TOPIC_NAME) -X brokers=$(REDPANDA_BROKERS) -v || exit 1; \
 	)
 
 # spam messages at an existing topic
@@ -596,8 +601,8 @@ test-cluster-spam-messages-tls:
 	$(eval REDPANDA_BROKERS := $(shell awk '/^\[redpanda\]/{f=1; next} /^$$/{f=0} f{print $$1}' "$(HOSTS_FILE)" | paste -sd ',' - | awk '{gsub(/,/,":9092,"); sub(/,$$/,":9092")}1'))
 
 	@echo "producing to topic"
-	$(foreach i,$(shell seq 1 10), \
-		echo "squirrel$i" | $(RPK_PATH) topic produce testtopic -X brokers=$(REDPANDA_BROKERS) -X tls.ca="$(CA_CRT)" -v || exit 1; \
+	$(foreach i,$(shell seq 1 $(SPAM_MESSAGE_COUNT)), \
+		echo "squirrel$i" | $(RPK_PATH) topic produce $(TEST_TOPIC_NAME) -X brokers=$(REDPANDA_BROKERS) -X tls.ca="$(CA_CRT)" -v || exit 1; \
 	)
 
 
@@ -616,3 +621,13 @@ create-connector-tls:
 	$(eval CONNECT_IP := $(shell awk '/^\[connect\]/{f=1; next} f{print $$1; exit}' $(HOSTS_FILE)))
 
 	curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' --key $(CLIENT_KEY) --cacert $(CLIENT_CERT) https://$(CONNECT_IP):8083/connectors -d '{"name": "mirror-source-connector", "config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", "topics": "testtopic", "replication.factor": "1", "source.cluster.bootstrap.servers": "$(REDPANDA_BROKERS)", "source.cluster.security.protocol": "SSL", "source.cluster.ssl.truststore.type": "PKCS12", "source.cluster.ssl.keystore.type": "PKCS12", "target.cluster.bootstrap.servers": "$(EXTRA_BROKERS)", "target.cluster.security.protocol": "SSL", "source.cluster.alias": "source", "target.cluster.ssl.truststore.type": "PKCS12", "target.cluster.ssl.keystore.type": "PKCS12"}}'
+
+.PHONY: lint
+lint:
+	@echo "Running ansible-lint"
+	@ansible-lint -c .ansible-lint
+
+.PHONY: dev-tiered-storage
+dev-tiered-storage: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	 ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key $(PRIVATE_KEY) --extra-vars redpanda_broker_no_log=false --extra-vars development_build=true --extra-vars segment_upload_interval=$(SEGMENT_UPLOAD_INTERVAL) --extra-vars cloud_storage_credentials_source=$(CLOUD_STORAGE_CREDENTIALS_SOURCE)

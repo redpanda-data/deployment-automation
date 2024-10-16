@@ -1,8 +1,9 @@
 # This is a limited access Alpha playbook. Please contact Redpanda for more information.
 
 ---
-- hosts: connect
+- name: Provision Redpanda Connect
+  hosts: connect
   tasks:
-    - name: install connect
+    - name: Install connect
       ansible.builtin.include_role:
         name: redpanda.cluster.redpanda_connect

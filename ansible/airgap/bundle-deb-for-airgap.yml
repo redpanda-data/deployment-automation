@@ -1,5 +1,5 @@
 ---
-- name: bundle debs
+- name: Bundle debs
   hosts: client
   vars:
     basearch: "amd64" # must match the output of `uname -m`. however on ubuntu you need to use the debian version of the output. So for example x86_64 is amd64
