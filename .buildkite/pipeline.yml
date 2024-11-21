@@ -165,7 +165,7 @@ steps:
     key: gcp-up-fedora
     concurrency_group: gcp-fd
     concurrency: 1
-    command: make ci-gcp-rp -e GCP_IMAGE="fedora-cloud/fedora-cloud-41" -e DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
+    command: make ci-gcp-rp -e GCP_IMAGE="fedora-cloud/fedora-cloud-39" -e DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -179,7 +179,7 @@ steps:
     key: gcp-up-fedora-tiered
     concurrency_group: gcp-fd
     concurrency: 1
-    command: make ci-gcp-rp-tiered -e GCP_IMAGE="fedora-cloud/fedora-cloud-41" -e DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
+    command: make ci-gcp-rp-tiered -e GCP_IMAGE="fedora-cloud/fedora-cloud-39" -e DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
