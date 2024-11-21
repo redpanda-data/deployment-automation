@@ -70,7 +70,7 @@ steps:
     key: aws-up-fed-con
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-41 --keep-going
+    command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -87,7 +87,7 @@ steps:
     key: aws-up-fedora-tiered
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-41 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -103,7 +103,7 @@ steps:
     key: aws-up-fed-cts
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-41 --keep-going
+    command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -120,7 +120,7 @@ steps:
     key: aws-up-fedora-ts-large
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-41 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -193,7 +193,7 @@ steps:
     key: aws-us-fedora-tiered
     concurrency_group: unstable
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-41 -e IS_USING_UNSTABLE=true --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e IS_USING_UNSTABLE=true --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -209,7 +209,7 @@ steps:
     key: aws-us-fedora-ts-large
     concurrency_group: unstable
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-41 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
