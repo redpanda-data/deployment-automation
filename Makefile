@@ -9,6 +9,7 @@ BUCKET_NAME := $(subst _,-,$(DEPLOYMENT_ID))-bucket
 DISTRO ?= ubuntu-focal
 IS_USING_UNSTABLE ?= false
 CA_CRT ?= $(PWD)/ansible/tls/ca/ca.crt
+REDPANDA_LICENSE ?= empty
 
 # RPK
 RPK_PATH ?= $(ARTIFACT_DIR)/bin/rpk
@@ -380,7 +381,7 @@ CLOUD_STORAGE_CREDENTIALS_SOURCE ?= "aws_instance_metadata"
 .PHONY: cluster-tiered-storage
 cluster-tiered-storage: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
-	 ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key $(PRIVATE_KEY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars segment_upload_interval=$(SEGMENT_UPLOAD_INTERVAL) --extra-vars cloud_storage_credentials_source=$(CLOUD_STORAGE_CREDENTIALS_SOURCE)
+	 ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key $(PRIVATE_KEY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars segment_upload_interval=$(SEGMENT_UPLOAD_INTERVAL) --extra-vars cloud_storage_credentials_source=$(CLOUD_STORAGE_CREDENTIALS_SOURCE) --extra-vars redpanda_license=$(REDPANDA_LICENSE)
 
 GOOGLE_APPLICATION_CREDENTIALS ?= "/tmp/gcp_creds.json"
 SIMPLE_BUCKET_NAME=$(shell echo $(BUCKET_NAME) | sed 's/-bucket$$//')
