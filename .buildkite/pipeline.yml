@@ -136,7 +136,7 @@ steps:
     key: gcp-up-ubuntu
     concurrency_group: gcp-ub
     concurrency: 1
-    command: make ci-gcp-rp -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    command: make ci-gcp-rp -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -150,7 +150,7 @@ steps:
     key: gcp-up-ubuntu-tiered
     concurrency_group: gcp-ub
     concurrency: 1
-    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -165,7 +165,7 @@ steps:
     key: gcp-up-fedora
     concurrency_group: gcp-fd
     concurrency: 1
-    command: make ci-gcp-rp -e GCP_IMAGE="fedora-cloud/fedora-cloud-41" -e DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    command: make ci-gcp-rp -e GCP_IMAGE="fedora-cloud/fedora-cloud-41" -e DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -179,7 +179,7 @@ steps:
     key: gcp-up-fedora-tiered
     concurrency_group: gcp-fd
     concurrency: 1
-    command: make ci-gcp-rp-tiered -e GCP_IMAGE="fedora-cloud/fedora-cloud-41" -e DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    command: make ci-gcp-rp-tiered -e GCP_IMAGE="fedora-cloud/fedora-cloud-41" -e DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
