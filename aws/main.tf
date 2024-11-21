@@ -2,8 +2,7 @@
 
 
 module "redpanda-cluster" {
-  source                   = "redpanda-data/redpanda-cluster/aws"
-  version                  = "~> 1.1.6"
+  source = "git::https://github.com/redpanda-data/terraform-aws-redpanda-cluster.git?ref=filter-change-for-distro-lookup"
   public_key_path          = var.public_key_path
   broker_count             = var.broker_count
   deployment_prefix        = var.deployment_prefix
