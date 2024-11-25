@@ -17,11 +17,13 @@
     - name: Set Redpanda license (string)
       ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
       run_once: true
+      changed_when: false
       when:
         - redpanda_license is defined
 
     - name: Set Redpanda license (path)
       ansible.builtin.command: rpk cluster license set --path {{ redpanda_license_path }}
+      changed_when: false
       run_once: true
       when:
         - redpanda_license_path is defined
