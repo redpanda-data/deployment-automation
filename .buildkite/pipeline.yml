@@ -11,12 +11,12 @@ steps:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: aws ubuntu tiered
     key: aws-up-ubuntu-tiered
@@ -27,12 +27,12 @@ steps:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: aws ubuntu tiered large
     key: aws-up-ubuntu-ts-large
@@ -43,185 +43,183 @@ steps:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: aws fedora
     key: aws-up-fedora
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp -e DEPLOYMENT_ID=ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-37 --keep-going
+    command: make ci-aws-rp -e DEPLOYMENT_ID=ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: aws fedora connect
     key: aws-up-fed-con
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-37 --keep-going
+    command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
             - CONNECT_RPM_TOKEN
   - label: aws fedora tiered
     key: aws-up-fedora-tiered
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-37 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: aws fedora tiered connect
     key: aws-up-fed-cts
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-37 --keep-going
+    command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/connect_rpm_token
-            - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
             - CONNECT_RPM_TOKEN
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-37 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: gcp ubuntu basic
     key: gcp-up-ubuntu
     concurrency_group: gcp-ub
     concurrency: 1
-    command: make ci-gcp-rp -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    command: make ci-gcp-rp -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/devex_gcp_creds_base64
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DEVEX_GCP_CREDS_BASE64
+            - GCP_CREDS
   - label: gcp ubuntu tiered
     key: gcp-up-ubuntu-tiered
     concurrency_group: gcp-ub
     concurrency: 1
-    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/devex_gcp_creds_base64
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           pre-exit: make destroy-gcp
           environment:
-            - DEVEX_GCP_CREDS_BASE64
+            - GCP_CREDS
   - label: gcp fedora basic
     key: gcp-up-fedora
     concurrency_group: gcp-fd
     concurrency: 1
-    command: make ci-gcp-rp -e GCP_IMAGE="fedora-cloud/fedora-cloud-37" -e DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    command: make ci-gcp-rp -e GCP_IMAGE="fedora-cloud/fedora-cloud-39" -e DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/devex_gcp_creds_base64
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DEVEX_GCP_CREDS_BASE64
+            - GCP_CREDS
   - label: gcp fedora tiered
     key: gcp-up-fedora-tiered
     concurrency_group: gcp-fd
     concurrency: 1
-    command: make ci-gcp-rp-tiered -e GCP_IMAGE="fedora-cloud/fedora-cloud-37" -e DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" -e GCP_CREDS="$DEVEX_GCP_CREDS_BASE64" --keep-going
+    command: make ci-gcp-rp-tiered -e GCP_IMAGE="fedora-cloud/fedora-cloud-39" -e DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/devex_gcp_creds_base64
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DEVEX_GCP_CREDS_BASE64
+            - GCP_CREDS
   - label: unstable aws fedora tiered
     key: aws-us-fedora-tiered
     concurrency_group: unstable
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-37 -e IS_USING_UNSTABLE=true --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e IS_USING_UNSTABLE=true --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: unstable aws fedora tiered large
     key: aws-us-fedora-ts-large
     concurrency_group: unstable
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-37 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: unstable aws ubuntu tiered
     key: aws-us-ubuntu-tiered
@@ -232,12 +230,12 @@ steps:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
   - label: unstable aws ubuntu tiered large
     key: aws-us-ubuntu-ts-large
@@ -248,10 +246,10 @@ steps:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
-              secret-id: sdlc/prod/buildkite/da_aws
+              secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - DA_AWS_ACCESS_KEY_ID
-            - DA_AWS_SECRET_ACCESS_KEY
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
