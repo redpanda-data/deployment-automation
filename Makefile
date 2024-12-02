@@ -61,7 +61,6 @@ aws-rp: keygen build-aws cluster monitor console
 
 .PHONY: ci-aws-rp-connect
 ci-aws-rp-connect: ENABLE_CONNECT := true
-ci-aws-rp-connect: DISTRO := Fedora-Cloud-Base-37
 ci-aws-rp-connect: keygen build-aws extra-aws-copy deploy-extra-rp cluster deploy-connect monitor console install-rpk test-cluster create-connector test-cluster-spam-messages extra-aws-destroy destroy-aws
 
 .PHONY: ci-aws-rp-tls
@@ -73,7 +72,6 @@ ci-aws-rp-tiered: keygen build-aws cluster-tiered-storage monitor-tls console-tl
 
 .PHONY: ci-aws-rp-ts-connect
 ci-aws-rp-ts-connect: ENABLE_CONNECT := true
-ci-aws-rp-ts-connect: DISTRO := Fedora-Cloud-Base-37
 ci-aws-rp-ts-connect: TIERED_STORAGE_ENABLED := true
 ci-aws-rp-ts-connect: keygen build-aws cluster-tiered-storage deploy-connect-tls monitor-tls console-tls extra-aws-copy deploy-extra-rp install-rpk test-cluster-tls test-aws-storage test-connect-tls-client create-connector-tls test-cluster-spam-messages-tls  destroy-aws extra-aws-destroy
 
@@ -388,7 +386,7 @@ GOOGLE_APPLICATION_CREDENTIALS ?= "/tmp/gcp_creds.json"
 SIMPLE_BUCKET_NAME=$(shell echo $(BUCKET_NAME) | sed 's/-bucket$$//')
 .PHONY: test-gcp-storage
 test-gcp-storage:
-	@echo "$(DEVEX_GCP_CREDS_BASE64)" | base64 -d > /tmp/gcp_creds.json
+	@echo "$(GCP_CREDS)" | base64 -d > /tmp/gcp_creds.json
 	export CLOUDSDK_CORE_PROJECT=$(GOOGLE_PROJECT_ID)
 	@gcloud auth activate-service-account --key-file=$(GOOGLE_APPLICATION_CREDENTIALS) --project=$(GOOGLE_PROJECT_ID)
 	@gcloud storage --project $(GOOGLE_PROJECT_ID) ls | grep $(SIMPLE_BUCKET_NAME)
