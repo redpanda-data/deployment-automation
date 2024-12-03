@@ -1,0 +1,36 @@
+---
+- name: Apply Redpanda License
+  hosts: redpanda
+  become: true
+  vars:
+    rpk_bin: rpk
+
+  tasks:
+    - name: Check cluster health
+      ansible.builtin.shell: |
+        {{ rpk_bin }} cluster health | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      register: health_check
+      run_once: true
+      failed_when: "health_check.stdout != 'true'"
+      changed_when: false
+
+    - name: Set Redpanda license (string)
+      ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+      run_once: true
+      changed_when: false
+      when:
+        - redpanda_license is defined
+
+    - name: Set Redpanda license (path)
+      ansible.builtin.command: rpk cluster license set --path {{ redpanda_license_path }}
+      changed_when: false
+      run_once: true
+      when:
+        - redpanda_license_path is defined
+
+    - name: Check broker status
+      ansible.builtin.shell: |
+        {{ rpk_bin }} redpanda admin brokers list | grep -q 'active.*true'
+      register: broker_status
+      changed_when: false
+      failed_when: broker_status.rc != 0

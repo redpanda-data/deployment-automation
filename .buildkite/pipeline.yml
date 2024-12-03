@@ -33,6 +33,7 @@ steps:
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
   - label: aws ubuntu tiered large
     key: aws-up-ubuntu-ts-large
@@ -49,6 +50,7 @@ steps:
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
   - label: aws fedora
     key: aws-up-fedora
@@ -68,7 +70,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: aws fedora connect
     key: aws-up-fed-con
-    concurrency_group: aws-fd
+    concurrency_group: aws-fd-cn
     concurrency: 1
     command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
@@ -98,10 +100,11 @@ steps:
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
   - label: aws fedora tiered connect
     key: aws-up-fed-cts
-    concurrency_group: aws-fd
+    concurrency_group: aws-fd-cn
     concurrency: 1
     command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
@@ -115,6 +118,7 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
+            - REDPANDA_LICENSE
             - CONNECT_RPM_TOKEN
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
@@ -131,6 +135,7 @@ steps:
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
   - label: gcp ubuntu basic
     key: gcp-up-ubuntu
@@ -161,6 +166,7 @@ steps:
           pre-exit: make destroy-gcp
           environment:
             - GCP_CREDS
+            - REDPANDA_LICENSE
   - label: gcp fedora basic
     key: gcp-up-fedora
     concurrency_group: gcp-fd
@@ -189,6 +195,7 @@ steps:
           image: glrp/atgt:latest
           environment:
             - GCP_CREDS
+            - REDPANDA_LICENSE
   - label: unstable aws fedora tiered
     key: aws-us-fedora-tiered
     concurrency_group: unstable
@@ -204,6 +211,7 @@ steps:
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
   - label: unstable aws fedora tiered large
     key: aws-us-fedora-ts-large
@@ -220,6 +228,7 @@ steps:
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
   - label: unstable aws ubuntu tiered
     key: aws-us-ubuntu-tiered
@@ -236,6 +245,7 @@ steps:
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
   - label: unstable aws ubuntu tiered large
     key: aws-us-ubuntu-ts-large
@@ -252,4 +262,5 @@ steps:
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
