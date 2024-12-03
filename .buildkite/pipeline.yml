@@ -70,7 +70,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: aws fedora connect
     key: aws-up-fed-con
-    concurrency_group: aws-fd
+    concurrency_group: aws-fd-cn
     concurrency: 1
     command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
@@ -104,7 +104,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: aws fedora tiered connect
     key: aws-up-fed-cts
-    concurrency_group: aws-fd
+    concurrency_group: aws-fd-cn
     concurrency: 1
     command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
     plugins:
