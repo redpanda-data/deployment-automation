@@ -118,6 +118,7 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
+            - REDPANDA_LICENSE
             - CONNECT_RPM_TOKEN
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
