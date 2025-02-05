@@ -1,9 +1,11 @@
 collections:
   - name: community.general
-  - name: redpanda.cluster
-    type: galaxy
+  - name: https://github.com/hcoyote/redpanda-ansible-collection.git
+    type: git
+    version: tcampbell/features/fips-design2-electric-boogaloo
   - name: ansible.posix
   - name: grafana.grafana
+    version: 5.6.0
   - name: prometheus.prometheus
 
 roles:
