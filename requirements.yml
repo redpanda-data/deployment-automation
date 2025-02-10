@@ -4,6 +4,7 @@ collections:
     type: galaxy
   - name: ansible.posix
   - name: grafana.grafana
+    version: 5.6.0
   - name: prometheus.prometheus
 
 roles:
