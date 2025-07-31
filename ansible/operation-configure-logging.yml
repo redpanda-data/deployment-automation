@@ -1,0 +1,74 @@
+---
+- name: Configure Redpanda Logging
+  hosts: redpanda
+  become: true
+  vars:
+    rpk_bin: rpk
+
+  tasks:
+    - name: Check cluster health
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ rpk_bin }} cluster health | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      register: health_check
+      run_once: true
+      failed_when: "health_check.stdout != 'true'"
+      changed_when: false
+
+    - name: Apply logging role
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_logging
+      vars:
+        redpanda_logging_log_file: "{{ redpanda_logging_log_file | default('/var/log/redpanda.log') }}"
+
+    - name: Verify logging directory exists
+      ansible.builtin.stat:
+        path: "{{ redpanda_logging_log_file | default('/var/log/redpanda.log') | dirname }}"
+      register: log_dir_check
+      failed_when: not log_dir_check.stat.exists or not log_dir_check.stat.isdir
+
+    - name: Verify rsyslog configuration
+      ansible.builtin.stat:
+        path: "/etc/rsyslog.d/{{ redpanda_logging_rsyslog_priority | default('40') }}-redpanda.conf"
+      register: rsyslog_config_check
+      when: redpanda_logging_rsyslog_enabled | default(true)
+      failed_when: not rsyslog_config_check.stat.exists
+
+    - name: Verify logrotate configuration
+      ansible.builtin.stat:
+        path: /etc/logrotate.d/redpanda
+      register: logrotate_config_check
+      when: redpanda_logging_logrotate_enabled | default(true)
+      failed_when: not logrotate_config_check.stat.exists
+
+    - name: Test log rotation (dry run)
+      ansible.builtin.command: logrotate -d /etc/logrotate.d/redpanda
+      register: logrotate_test
+      when: redpanda_logging_logrotate_enabled | default(true)
+      changed_when: false
+
+    - name: Verify log file exists with correct permissions
+      ansible.builtin.stat:
+        path: "{{ redpanda_logging_log_file | default('/var/log/redpanda.log') }}"
+      register: log_file_check
+      failed_when: >-
+        not log_file_check.stat.exists or
+        log_file_check.stat.pw_name != (redpanda_logging_owner | default('syslog')) or
+        log_file_check.stat.gr_name != (redpanda_logging_group | default('adm'))
+
+    - name: Check broker status
+      ansible.builtin.shell: |
+        set -o pipefail
+        {{ rpk_bin }} redpanda admin brokers list | grep -q 'active.*true'
+      register: broker_status
+      changed_when: false
+      failed_when: broker_status.rc != 0
+
+    - name: Display logging configuration summary
+      ansible.builtin.debug:
+        msg:
+          - "Redpanda logging configuration completed"
+          - "Log file: {{ redpanda_logging_log_file | default('/var/log/redpanda.log') }}"
+          - "Rsyslog: {{ 'enabled' if (redpanda_logging_rsyslog_enabled | default(true)) else 'disabled' }}"
+          - "Logrotate: {{ 'enabled' if (redpanda_logging_logrotate_enabled | default(true)) else 'disabled' }}"
+      run_once: true

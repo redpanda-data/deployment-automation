@@ -43,7 +43,7 @@ variable "prometheus_instance_type" {
 }
 
 variable "availability_zone" {
-  default = ["us-west-2a"]
+  default = ["us-east-2a"]
   type    = list(string)
 }
 
@@ -127,7 +127,7 @@ terraform {
 
 variable "aws_region" {
   type    = string
-  default = "us-west-2"
+  default = "us-east-2"
 }
 
 provider "aws" {
