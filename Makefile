@@ -300,6 +300,14 @@ cluster: ansible-prereqs
 	@mkdir -p $(ARTIFACT_DIR)/logs
 	@ansible-playbook ansible/provision-cluster.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE)
 
+# Logging configuration
+REDPANDA_LOGGING_LOG_FILE ?= /var/log/redpanda2/redpanda.log
+
+.PHONY: operation-configure-logging
+operation-configure-logging: ansible-prereqs
+	@mkdir -p $(ARTIFACT_DIR)/logs
+	@ansible-playbook ansible/operation-configure-logging.yml --private-key $(PRIVATE_KEY) --inventory $(ANSIBLE_INVENTORY) --extra-vars is_using_unstable=$(IS_USING_UNSTABLE) --extra-vars redpanda_logging_log_file=$(REDPANDA_LOGGING_LOG_FILE)
+
 TEST_TOPIC_NAME ?= testtopic
 PARTITION_COUNT ?= 3
 .PHONY: test-cluster
