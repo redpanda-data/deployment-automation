@@ -10,6 +10,8 @@
       ansible.builtin.shell: |
         set -o pipefail
         {{ rpk_bin }} cluster health | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      args:
+        executable: /bin/bash
       register: health_check
       run_once: true
       failed_when: "health_check.stdout != 'true'"
@@ -31,8 +33,15 @@
       ansible.builtin.stat:
         path: "/etc/rsyslog.d/{{ redpanda_logging_rsyslog_priority | default('40') }}-redpanda.conf"
       register: rsyslog_config_check
-      when: redpanda_logging_rsyslog_enabled | default(true)
+      when: redpanda_logging_backend | default('rsyslog') == 'rsyslog'
       failed_when: not rsyslog_config_check.stat.exists
+
+    - name: Verify syslog-ng configuration
+      ansible.builtin.stat:
+        path: "/etc/syslog-ng/conf.d/{{ redpanda_logging_syslog_ng_priority | default('40') }}-redpanda.conf"
+      register: syslog_ng_config_check
+      when: redpanda_logging_backend | default('rsyslog') == 'syslog-ng'
+      failed_when: not syslog_ng_config_check.stat.exists
 
     - name: Verify logrotate configuration
       ansible.builtin.stat:
@@ -60,6 +69,8 @@
       ansible.builtin.shell: |
         set -o pipefail
         {{ rpk_bin }} redpanda admin brokers list | grep -q 'active.*true'
+      args:
+        executable: /bin/bash
       register: broker_status
       changed_when: false
       failed_when: broker_status.rc != 0
@@ -69,6 +80,6 @@
         msg:
           - "Redpanda logging configuration completed"
           - "Log file: {{ redpanda_logging_log_file | default('/var/log/redpanda.log') }}"
-          - "Rsyslog: {{ 'enabled' if (redpanda_logging_rsyslog_enabled | default(true)) else 'disabled' }}"
+          - "Backend: {{ redpanda_logging_backend | default('rsyslog') }}"
           - "Logrotate: {{ 'enabled' if (redpanda_logging_logrotate_enabled | default(true)) else 'disabled' }}"
       run_once: true

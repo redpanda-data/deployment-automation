@@ -87,6 +87,73 @@ You might try resolving by setting an environment variable:
 
 See: https://stackoverflow.com/questions/50168647/multiprocessing-causes-python-to-crash-and-gives-an-error-may-have-been-in-progr
 
+### Ansible Collection Caching Issues
+
+If you're experiencing issues where Ansible is using outdated versions of collections (e.g., local changes to the `redpanda-ansible-collection` are not being picked up), this is likely due to multiple cached versions of collections in different locations.
+
+**Symptoms:**
+- Local changes to collection roles/tasks are not reflected in playbook execution
+- Debug tasks or modifications don't appear in ansible-playbook output
+- Role behavior doesn't match your local code changes
+
+**Root Cause:**
+Ansible searches for collections in this priority order:
+1. Playbook-adjacent `collections/` directory
+2. `ANSIBLE_COLLECTIONS_PATH` (your local artifacts)
+3. `~/.ansible/collections/` (user cache) ⚠️ **Common problem source**
+4. System paths (`/usr/share/ansible/collections`)
+
+**Solutions:**
+
+**Option 1: Clear Caches and Set Environment Variables (Recommended)**
+```bash
+# Clear old cached versions
+rm -rf ~/.ansible/collections/ansible_collections/redpanda
+rm -rf ./gcp/artifacts/collections
+rm -rf ./*/artifacts/collections  # Clear any cloud-specific caches
+
+# Set environment variables (add to ~/.bashrc for persistence)
+export ANSIBLE_COLLECTIONS_PATH=${PWD}/artifacts/collections
+export ANSIBLE_ROLES_PATH=${PWD}/artifacts/roles
+
+# Reinstall collections
+ansible-galaxy collection install -r requirements.yml --force -p ./artifacts/collections
+
+# Run playbooks
+ansible-playbook ansible/operation-configure-logging.yml
+```
+
+**Option 2: Use Inline Environment Variables**
+```bash
+ANSIBLE_COLLECTIONS_PATH=${PWD}/artifacts/collections ANSIBLE_ROLES_PATH=${PWD}/artifacts/roles ansible-playbook ansible/operation-configure-logging.yml
+```
+
+**Option 3: Create a Cleanup Script**
+```bash
+#!/bin/bash
+# cleanup-ansible-cache.sh
+echo "Cleaning ansible caches..."
+rm -rf ~/.ansible/collections/ansible_collections/redpanda
+rm -rf ./gcp/artifacts/collections
+rm -rf ./aws/artifacts/collections
+rm -rf ./azure/artifacts/collections
+rm -rf ./ibm/artifacts/collections
+echo "Caches cleared!"
+```
+
+**Option 4: Use ansible.cfg Configuration**
+Modify your `ansible.cfg` to prioritize local collections:
+```ini
+[defaults]
+collections_paths = ./artifacts/collections:~/.ansible/collections:/usr/share/ansible/collections
+roles_path = ./artifacts/roles:~/.ansible/roles:/usr/share/ansible/roles
+```
+
+**Prevention:**
+- Always set `ANSIBLE_COLLECTIONS_PATH` and `ANSIBLE_ROLES_PATH` environment variables before development
+- Use `--force` flag when installing collections during development
+- Clear caches when switching between different versions of collections
+
 ## Contribution Guide
 
 ### testing with a specific branch of redpanda-ansible-collection
