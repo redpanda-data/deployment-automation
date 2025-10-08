@@ -1,0 +1,31 @@
+---
+extends: default
+
+rules:
+  document-start: disable
+  line-length:
+    max: 200
+    level: warning
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  comments:
+    min-spaces-from-content: 1
+  braces:
+    max-spaces-inside: 1
+  brackets:
+    max-spaces-inside: 1
+  truthy:
+    allowed-values: ['true', 'false']
+
+ignore: |
+  artifacts/**
+  .github/**
+  aws/**
+  azure/**
+  gcp/**
+  ibm/**
+  templates/**
+  node_modules/**
+  .task/**
+  ssh-bootstrap.yml
