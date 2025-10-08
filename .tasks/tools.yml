@@ -1,0 +1,129 @@
+version: '3'
+
+vars:
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+  MAC_RPK: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-darwin-amd64.zip"
+  LINUX_RPK: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip"
+  SSH_EMAIL: '{{.SSH_EMAIL | default "test@test.com"}}'
+  CLIENT_NAME: '{{.CLIENT_NAME | default "client"}}'
+  CLIENT_DIR: "{{.PWD}}/ansible/tls/clients"
+  CA_DIR: "{{.PWD}}/ansible/tls/ca"
+  CERT_DIR: "{{.PWD}}/ansible/tls/certs"
+
+tasks:
+  default:
+    desc: "Install all tools"
+    cmds:
+      - task: ansible
+      - task: rpk
+      - task: ssh-keys
+
+  ansible:
+    desc: "Install Ansible collections and roles"
+    cmds:
+      - task: _ansible-collections
+      - task: _ansible-roles
+      - echo "Ansible dependencies installed"
+
+  _ansible-collections:
+    internal: true
+    desc: "Install Ansible collections from requirements.yml"
+    cmds:
+      - mkdir -p {{.ANSIBLE_COLLECTIONS_PATH}}
+      - ansible-galaxy collection install -r {{.PWD}}/requirements.yml --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
+    status:
+      - test -d {{.ANSIBLE_COLLECTIONS_PATH}}/ansible_collections
+
+  _ansible-roles:
+    internal: true
+    desc: "Install Ansible roles from requirements.yml"
+    cmds:
+      - mkdir -p {{.ANSIBLE_ROLES_PATH}}
+      - ansible-galaxy role install -r {{.PWD}}/requirements.yml --force -p {{.ANSIBLE_ROLES_PATH}}
+    status:
+      - test -d {{.ANSIBLE_ROLES_PATH}}
+
+  rpk:
+    desc: "Install rpk CLI tool"
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/tmp
+      - mkdir -p {{.ARTIFACT_DIR}}/bin
+      - |
+        OS=$(uname)
+        if [ "$OS" = "Darwin" ]; then
+          curl -L {{.MAC_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip
+        else
+          curl -L {{.LINUX_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip
+        fi
+      - unzip -o {{.ARTIFACT_DIR}}/tmp/rpk.zip -d {{.ARTIFACT_DIR}}/bin/
+      - chmod 755 {{.ARTIFACT_DIR}}/bin/rpk
+      - rm {{.ARTIFACT_DIR}}/tmp/rpk.zip
+      - echo "rpk installed to {{.ARTIFACT_DIR}}/bin/rpk"
+    status:
+      - test -f {{.ARTIFACT_DIR}}/bin/rpk
+
+  ssh-keys:
+    desc: "Generate SSH keypair for deployment"
+    cmds:
+      - |
+        if [ ! -f artifacts/testkey ]; then
+          printf 'y\n' | ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey && chmod 0700 artifacts/testkey
+          echo "SSH keypair generated"
+        else
+          echo "SSH keypair already exists"
+        fi
+    status:
+      - test -f artifacts/testkey
+
+  tls-certs:
+    desc: "Generate client TLS certificates"
+    cmds:
+      - task: _cert-client-dir
+      - task: _cert-client-key
+      - task: _cert-client-csr
+      - task: _cert-client-crt
+      - echo "Client TLS certificates generated"
+
+  _cert-client-dir:
+    internal: true
+    cmds:
+      - mkdir -p {{.CLIENT_DIR}}
+    status:
+      - test -d {{.CLIENT_DIR}}
+
+  _cert-client-key:
+    internal: true
+    cmds:
+      - openssl genrsa -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key 2048
+    status:
+      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key
+
+  _cert-client-csr:
+    internal: true
+    cmds:
+      - openssl req -new -key {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr -subj "/CN={{.CLIENT_NAME}}"
+    status:
+      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr
+
+  _cert-client-crt:
+    internal: true
+    cmds:
+      - openssl x509 -req -in {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr -CA {{.CA_DIR}}/ca.crt -CAkey {{.CA_DIR}}/ca.key -CAcreateserial -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.crt -days 365 -sha256
+    status:
+      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.crt
+
+  clean-certs:
+    desc: "Remove all TLS certificates"
+    cmds:
+      - rm -rf {{.CA_DIR}}
+      - rm -rf {{.CERT_DIR}}
+      - rm -rf {{.CLIENT_DIR}}
+      - echo "All certificates removed"
+
+  clean-client-certs:
+    desc: "Remove client TLS certificates only"
+    cmds:
+      - rm -rf {{.CLIENT_DIR}}
+      - echo "Client certificates removed"

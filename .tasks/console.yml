@@ -1,0 +1,39 @@
+version: '3'
+
+vars:
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+  PRIVATE_KEY: "{{.ARTIFACT_DIR}}/testkey"
+  ANSIBLE_INVENTORY: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
+  IS_USING_UNSTABLE: '{{.IS_USING_UNSTABLE | default "false"}}'
+
+env:
+  OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+  ANSIBLE_LOG_PATH: "{{.ARTIFACT_DIR}}/logs/{{.DEPLOYMENT_ID}}.log"
+  ANSIBLE_INVENTORY: "{{.ANSIBLE_INVENTORY}}"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+
+tasks:
+  default:
+    desc: "Deploy Redpanda Console"
+    cmds:
+      - task: deploy
+
+  deploy:
+    desc: "Deploy Redpanda Console"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying Redpanda Console..."
+      - ansible-playbook ansible/deploy-console.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - echo "Console deployed"
+
+  deploy:tls:
+    desc: "Deploy Redpanda Console with TLS"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying Redpanda Console with TLS..."
+      - ansible-playbook ansible/deploy-console-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - echo "Console with TLS deployed"

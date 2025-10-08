@@ -1,0 +1,172 @@
+version: '3'
+
+vars:
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+  NUM_NODES: '{{.NUM_NODES | default "3"}}'
+  ENABLE_MONITORING: '{{.ENABLE_MONITORING | default "true"}}'
+  TIERED_STORAGE_ENABLED: '{{.TIERED_STORAGE_ENABLED | default "false"}}'
+  ALLOW_FORCE_DESTROY: '{{.ALLOW_FORCE_DESTROY | default "true"}}'
+  VPC_ID: '{{.VPC_ID | default ""}}'
+  DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  PUBLIC_KEY: "{{.ARTIFACT_DIR}}/testkey.pub"
+  ANSIBLE_INVENTORY: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
+  MACHINE_ARCH: '{{.MACHINE_ARCH | default "x86_64"}}'
+  ENABLE_CONNECT: '{{.ENABLE_CONNECT | default "false"}}'
+  INSTANCE_TYPE_AWS: '{{.INSTANCE_TYPE_AWS | default "i3.2xlarge"}}'
+  GCP_IMAGE: '{{.GCP_IMAGE | default "ubuntu-os-cloud/ubuntu-2204-lts"}}'
+  GCP_INSTANCE_TYPE: '{{.GCP_INSTANCE_TYPE | default "n2-standard-2"}}'
+  GCP_CREDS: "{{.GCP_CREDS}}"
+  TF_DIR: '{{.TF_DIR | default ""}}'
+
+tasks:
+  default:
+    desc: "Show cloud infrastructure commands"
+    cmds:
+      - task --list
+    silent: true
+
+  aws:up:
+    desc: "Provision AWS infrastructure"
+    deps: [":tools:ssh-keys"]
+    dir: aws
+    cmds:
+      - echo "Provisioning AWS infrastructure..."
+      - echo "   Deployment {{.DEPLOYMENT_ID}}"
+      - echo "   Nodes {{.NUM_NODES}}"
+      - echo "   Tiered Storage {{.TIERED_STORAGE_ENABLED}}"
+      - terraform init
+      - |
+        terraform apply -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect={{.ENABLE_CONNECT}}' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+      - echo "AWS infrastructure ready"
+
+  aws:down:
+    desc: "Destroy AWS infrastructure"
+    deps: [":tools:ssh-keys"]
+    dir: aws
+    cmds:
+      - echo "Destroying AWS infrastructure..."
+      - terraform init
+      - |
+        terraform destroy -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect={{.ENABLE_CONNECT}}' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+      - echo "AWS infrastructure destroyed"
+
+  aws:proxy-up:
+    desc: "Provision AWS infrastructure with proxy (for private network testing)"
+    deps: [":tools:ssh-keys"]
+    dir: aws/private-test
+    cmds:
+      - echo "Provisioning AWS infrastructure with proxy..."
+      - terraform init
+      - |
+        terraform apply -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect={{.ENABLE_CONNECT}}' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+      - echo "AWS proxy infrastructure ready"
+
+  aws:proxy-down:
+    desc: "Destroy AWS proxy infrastructure"
+    deps: [":tools:ssh-keys"]
+    dir: aws/private-test
+    cmds:
+      - echo "Destroying AWS proxy infrastructure..."
+      - terraform init
+      - |
+        terraform destroy -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect={{.ENABLE_CONNECT}}' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+      - echo "AWS proxy infrastructure destroyed"
+
+  gcp:up:
+    desc: "Provision GCP infrastructure"
+    deps: [":tools:ssh-keys"]
+    dir: gcp
+    cmds:
+      - echo "Provisioning GCP infrastructure..."
+      - echo "   Deployment {{.DEPLOYMENT_ID}}"
+      - echo "   Nodes {{.NUM_NODES}}"
+      - terraform init
+      - |
+        terraform apply -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='image={{.GCP_IMAGE}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_type={{.GCP_INSTANCE_TYPE}}' \
+          -var='gcp_creds={{.GCP_CREDS}}'
+      - echo "GCP infrastructure ready"
+
+  gcp:down:
+    desc: "Destroy GCP infrastructure"
+    deps: [":tools:ssh-keys"]
+    dir: gcp
+    cmds:
+      - echo "Destroying GCP infrastructure..."
+      - terraform init
+      - |
+        terraform destroy -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='image={{.GCP_IMAGE}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_type={{.GCP_INSTANCE_TYPE}}' \
+          -var='gcp_creds={{.GCP_CREDS}}'
+      - echo "GCP infrastructure destroyed"

@@ -1,0 +1,109 @@
+version: '3'
+
+vars:
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+  PRIVATE_KEY: "{{.ARTIFACT_DIR}}/testkey"
+  ANSIBLE_INVENTORY: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
+  IS_USING_UNSTABLE: '{{.IS_USING_UNSTABLE | default "false"}}'
+  SEGMENT_UPLOAD_INTERVAL: '{{.SEGMENT_UPLOAD_INTERVAL | default "1"}}'
+  CLOUD_STORAGE_CREDENTIALS_SOURCE: '{{.CLOUD_STORAGE_CREDENTIALS_SOURCE | default "aws_instance_metadata"}}'
+  SQUID_ACL_LOCALNET: '{{.SQUID_ACL_LOCALNET | default ""}}'
+  SKIP_TAGS: '{{.SKIP_TAGS | default ""}}'
+  CLI_ARGS: '{{.CLI_ARGS | default ""}}'
+
+env:
+  OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+  ANSIBLE_LOG_PATH: "{{.ARTIFACT_DIR}}/logs/{{.DEPLOYMENT_ID}}.log"
+  ANSIBLE_INVENTORY: "{{.ANSIBLE_INVENTORY}}"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+
+tasks:
+  default:
+    desc: "Show Redpanda installation commands"
+    cmds:
+      - task --list
+    silent: true
+
+  install:basic:
+    desc: "Install Redpanda cluster (standard configuration)"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Installing Redpanda cluster..."
+      - ansible-playbook ansible/provision-cluster.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - echo "Redpanda cluster installed"
+
+  install:tls:
+    desc: "Install Redpanda cluster with TLS enabled"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Installing Redpanda cluster with TLS..."
+      - ansible-playbook ansible/provision-cluster-tls.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - echo "Redpanda cluster with TLS installed"
+
+  install:tiered:
+    desc: "Install Redpanda cluster with tiered storage"
+    deps: [":tools:ansible"]
+    requires:
+      vars: [REDPANDA_LICENSE]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Installing Redpanda cluster with tiered storage..."
+      - |
+        ansible-playbook ansible/provision-cluster-tiered-storage.yml \
+          --private-key {{.PRIVATE_KEY}} \
+          --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} \
+          --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} \
+          --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}} \
+          --extra-vars redpanda_license="${REDPANDA_LICENSE}"
+      - echo "Redpanda cluster with tiered storage installed"
+
+  install:proxy:
+    desc: "Install Redpanda cluster behind proxy (for private network testing)"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Installing Redpanda cluster with proxy..."
+      - |
+        ansible-playbook ansible/proxy/provision-private-proxied-cluster.yml \
+          --private-key {{.PRIVATE_KEY}} \
+          --inventory {{.ANSIBLE_INVENTORY}} \
+          --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} \
+          --extra-vars '{"squid_acl_localnet": ["{{.SQUID_ACL_LOCALNET}}"]}' \
+          --extra-vars redpanda='{"cluster":{"cloud_storage_segment_max_upload_interval_sec":"{{.SEGMENT_UPLOAD_INTERVAL}}"}}' \
+          {{.SKIP_TAGS}} {{.CLI_ARGS}}
+      - echo "Redpanda proxy cluster installed"
+
+  install:dev-tiered:
+    desc: "Install development build with tiered storage (verbose logging)"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Installing Redpanda dev build with tiered storage..."
+      - |
+        ansible-playbook ansible/provision-cluster-tiered-storage.yml \
+          --private-key {{.PRIVATE_KEY}} \
+          --extra-vars redpanda_broker_no_log=false \
+          --extra-vars development_build=true \
+          --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} \
+          --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}}
+      - echo "Development cluster with tiered storage installed"
+
+  configure:logging:
+    desc: "Configure logging settings on Redpanda cluster"
+    deps: [":tools:ansible"]
+    vars:
+      REDPANDA_LOGGING_LOG_FILE: '{{.REDPANDA_LOGGING_LOG_FILE | default "/var/log/redpanda2/redpanda.log"}}'
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Configuring Redpanda logging..."
+      - |
+        ansible-playbook ansible/operation-configure-logging.yml \
+          --private-key {{.PRIVATE_KEY}} \
+          --inventory {{.ANSIBLE_INVENTORY}} \
+          --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} \
+          --extra-vars redpanda_logging_log_file={{.REDPANDA_LOGGING_LOG_FILE}}
+      - echo "Logging configured"

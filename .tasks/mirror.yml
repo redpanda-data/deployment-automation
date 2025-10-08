@@ -1,0 +1,185 @@
+version: '3'
+
+vars:
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+  NUM_NODES: '{{.NUM_NODES | default "3"}}'
+  ENABLE_MONITORING: '{{.ENABLE_MONITORING | default "true"}}'
+  TIERED_STORAGE_ENABLED: '{{.TIERED_STORAGE_ENABLED | default "false"}}'
+  ALLOW_FORCE_DESTROY: '{{.ALLOW_FORCE_DESTROY | default "true"}}'
+  VPC_ID: '{{.VPC_ID | default ""}}'
+  DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
+  PUBLIC_KEY: "{{.ARTIFACT_DIR}}/testkey.pub"
+  PRIVATE_KEY: "{{.ARTIFACT_DIR}}/testkey"
+  EXTRA_INVENTORY: "{{.ARTIFACT_DIR}}/hosts2_{{.DEPLOYMENT_ID}}.ini"
+  MACHINE_ARCH: '{{.MACHINE_ARCH | default "x86_64"}}'
+  INSTANCE_TYPE_AWS: '{{.INSTANCE_TYPE_AWS | default "i3.2xlarge"}}'
+  IS_USING_UNSTABLE: '{{.IS_USING_UNSTABLE | default "false"}}'
+  TF_DIR: '{{.TF_DIR | default ""}}'
+  LOCAL_FILE: "{{.ARTIFACT_DIR}}/redpanda-connect.x86_64.rpm"
+  SERVER_DIR: '{{.SERVER_DIR | default "/tmp"}}'
+
+env:
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+
+tasks:
+  default:
+    desc: "Show mirror cluster commands (for multi-cluster testing)"
+    cmds:
+      - task --list
+    silent: true
+
+  prepare:terraform:
+    desc: "Copy AWS Terraform for secondary deployment"
+    cmds:
+      - echo "Preparing Terraform for secondary cluster..."
+      - |
+        cp -r aws aws-extra && \
+        rm -rf aws-extra/terraform.tfstate && \
+        rm -rf aws-extra/terraform.tfstate.backup && \
+        rm -rf aws-extra/.terraform && \
+        rm -rf aws-extra/.terraform.lock.hcl
+      - echo "Terraform prepared"
+
+  cleanup:terraform:
+    desc: "Remove copied Terraform directory"
+    cmds:
+      - rm -rf aws-extra
+      - echo "Terraform cleanup complete"
+
+  provision:
+    desc: "Provision complete secondary cluster (infra + Redpanda)"
+    cmds:
+      - task: infra:up
+      - task: install
+
+  provision:tls:
+    desc: "Provision complete secondary cluster with TLS"
+    cmds:
+      - task: infra:up
+      - task: install:tls
+      - task: deploy:observability:tls
+
+  infra:up:
+    desc: "Create secondary cluster infrastructure on AWS"
+    deps: [":tools:ssh-keys"]
+    dir: aws-extra/{{.TF_DIR}}
+    cmds:
+      - echo "Provisioning secondary cluster infrastructure..."
+      - echo "   Deployment {{.DEPLOYMENT_ID}}2"
+      - terraform init
+      - |
+        terraform apply -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}2' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.EXTRA_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect=false' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+      - echo "Secondary infrastructure ready"
+
+  infra:down:
+    desc: "Destroy secondary cluster infrastructure"
+    deps: [":tools:ssh-keys"]
+    dir: aws-extra/{{.TF_DIR}}
+    cmds:
+      - echo "Destroying secondary cluster infrastructure..."
+      - terraform init
+      - |
+        terraform destroy -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}2' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.EXTRA_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect=false' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+      - echo "Secondary infrastructure destroyed"
+
+  install:
+    desc: "Install Redpanda on secondary cluster"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Installing Redpanda on secondary cluster..."
+      - ansible-playbook ansible/provision-cluster.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - echo "Secondary cluster Redpanda installed"
+
+  install:tls:
+    desc: "Install Redpanda with TLS on secondary cluster"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "🚀Installing Redpanda with TLS on secondary cluster..."
+      - ansible-playbook ansible/provision-cluster-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - echo "Secondary cluster Redpanda with TLS installed"
+
+  deploy:observability:
+    desc: "Deploy monitoring and console on secondary cluster"
+    cmds:
+      - task: _monitoring
+      - task: _console
+
+  deploy:observability:tls:
+    desc: "Deploy monitoring and console with TLS on secondary cluster"
+    cmds:
+      - task: _monitoring-tls
+      - task: _console-tls
+
+  _monitoring:
+    internal: true
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying monitoring on secondary cluster..."
+      - ansible-playbook ansible/deploy-monitor.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+
+  _monitoring-tls:
+    internal: true
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying monitoring with TLS on secondary cluster..."
+      - ansible-playbook ansible/deploy-monitor-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+
+  _console:
+    internal: true
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying console on secondary cluster..."
+      - ansible-playbook ansible/deploy-console.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+
+  _console-tls:
+    internal: true
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying console with TLS on secondary cluster..."
+      - ansible-playbook ansible/deploy-console-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+
+  copy:connect-rpm:
+    desc: "Copy Redpanda Connect RPM to secondary cluster"
+    deps: [":tools:ssh-keys"]
+    cmds:
+      - echo "Copying Connect RPM to secondary cluster..."
+      - |
+        IPS_USERS=$(awk '/^\[connect\]/{f=1; next} /^\[/{f=0} f && /^[0-9]/{split($2,a,"="); print a[2] "@" $1}' {{.EXTRA_INVENTORY}})
+        for IP_USER in $IPS_USERS; do
+          scp -o StrictHostKeyChecking=no -i "{{.PRIVATE_KEY}}" "{{.LOCAL_FILE}}" "$IP_USER:{{.SERVER_DIR}}"
+        done
+      - echo "RPM copied to secondary cluster"

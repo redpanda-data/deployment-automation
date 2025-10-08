@@ -1,0 +1,182 @@
+version: '3'
+
+vars:
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+
+env:
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+
+tasks:
+  default:
+    desc: "Show available CI pipelines"
+    cmds:
+      - task --list
+    silent: true
+  aws:basic:
+    desc: "AWS: Basic cluster (provision → test → cleanup)"
+    cmds:
+      - task: :cloud:aws:up
+      - defer: { task: ':cloud:aws:down' }
+      - task: :redpanda:install:basic
+      - task: :monitor:deploy
+      - task: :console:deploy
+      - task: :test:smoke
+
+  aws:tls:
+    desc: "AWS: TLS-enabled cluster"
+    cmds:
+      - echo "Running AWS TLS pipeline..."
+      - task: :cloud:aws:up
+      - defer: { task: ':cloud:aws:down' }
+      - task: :redpanda:install:tls
+      - task: :monitor:deploy:tls
+      - task: :console:deploy:tls
+      - task: :test:tls
+      - echo "AWS TLS pipeline complete"
+
+  aws:tiered:
+    desc: "AWS: Tiered storage cluster"
+    requires:
+      vars: [REDPANDA_LICENSE]
+    cmds:
+      - echo "Running AWS tiered storage pipeline..."
+      - task: :cloud:aws:up
+        vars:
+          TIERED_STORAGE_ENABLED: true
+      - defer: { task: ':cloud:aws:down' }
+      - task: :redpanda:install:tiered
+      - task: :monitor:deploy:tls
+      - task: :console:deploy:tls
+      - task: :test:tls
+      - task: :test:storage:aws
+      - echo "AWS tiered storage pipeline complete"
+
+  aws:connect:
+    desc: "AWS: Cluster with Redpanda Connect and multi-cluster mirroring"
+    requires:
+      vars: [CONNECT_RPM_TOKEN]
+    cmds:
+      - echo "Running AWS Connect pipeline..."
+      - task: :cloud:aws:up
+        vars:
+          ENABLE_CONNECT: true
+      - defer: { task: ':cloud:aws:down' }
+      - task: :mirror:prepare:terraform
+      - task: :mirror:provision
+      - defer: { task: ':mirror:infra:down' }
+      - task: :redpanda:install:basic
+      - task: :connect:setup
+      - task: :monitor:deploy
+      - task: :console:deploy
+      - task: :test:smoke
+      - task: :connect:mirror-connector
+      - task: :test:load
+      - echo "AWS Connect pipeline complete"
+
+  aws:mirror:
+    desc: "AWS: Full setup (tiered storage + Connect + TLS + mirroring)"
+    requires:
+      vars: [REDPANDA_LICENSE, CONNECT_RPM_TOKEN]
+    cmds:
+      - echo "Running AWS pipeline..."
+      - task: :cloud:aws:up
+        vars:
+          ENABLE_CONNECT: true
+          TIERED_STORAGE_ENABLED: true
+      - defer: { task: ':cloud:aws:down' }
+      - task: :redpanda:install:tiered
+      - task: :connect:setup:tls
+      - task: :monitor:deploy:tls
+      - task: :console:deploy:tls
+      - task: :mirror:prepare:terraform
+      - task: :mirror:provision
+      - defer: { task: ':mirror:infra:down' }
+      - task: :test:tls
+      - task: :test:storage:aws
+      - task: :connect:test-endpoints
+      - task: :connect:mirror-connector-tls
+      - task: :test:load:tls
+      - echo "AWS pipeline complete"
+
+
+  gcp:basic:
+    desc: "GCP: Basic cluster (provision → test → cleanup)"
+    requires:
+      vars: [GCP_CREDS]
+    cmds:
+      - echo "Running GCP basic pipeline..."
+      - task: :cloud:gcp:up
+      - defer: { task: ':cloud:gcp:down' }
+      - task: :redpanda:install:basic
+      - task: :monitor:deploy
+      - task: :console:deploy
+      - task: :test:smoke
+      - echo "GCP basic pipeline complete"
+
+  gcp:tls:
+    desc: "GCP: TLS-enabled cluster"
+    requires:
+      vars: [GCP_CREDS]
+    cmds:
+      - echo "Running GCP TLS pipeline..."
+      - task: :cloud:gcp:up
+      - defer: { task: ':cloud:gcp:down' }
+      - task: :redpanda:install:tls
+      - task: :monitor:deploy:tls
+      - task: :console:deploy:tls
+      - task: :test:tls
+      - echo "GCP TLS pipeline complete"
+
+  gcp:tiered:
+    desc: "GCP: Tiered storage cluster"
+    requires:
+      vars: [REDPANDA_LICENSE, GCP_CREDS]
+    cmds:
+      - echo "Running GCP tiered storage pipeline..."
+      - task: :cloud:gcp:up
+        vars:
+          TIERED_STORAGE_ENABLED: true
+      - defer: { task: ':cloud:gcp:down' }
+      - task: :redpanda:install:tiered
+      - task: :monitor:deploy:tls
+      - task: :console:deploy:tls
+      - task: :test:tls
+      - task: :test:storage:gcp
+      - echo "GCP tiered storage pipeline complete"
+
+  aws:quick:
+    desc: "AWS: Quick setup (no testing or cleanup)"
+    cmds:
+      - echo "Running AWS quick setup..."
+      - task: :cloud:aws:up
+      - task: :redpanda:install:basic
+      - task: :monitor:deploy
+      - task: :console:deploy
+      - echo "AWS quick setup complete (cluster running)"
+
+  gcp:quick:
+    desc: "GCP: Quick setup (no testing or cleanup)"
+    cmds:
+      - echo "Running GCP quick setup..."
+      - task: :cloud:gcp:up
+      - task: :redpanda:install:basic
+      - task: :monitor:deploy
+      - task: :console:deploy
+      - echo "GCP quick setup complete (cluster running)"
+
+
+  lint:
+    desc: "Run ansible-lint on all playbooks"
+    cmds:
+      - echo "Running ansible-lint..."
+      - ansible-lint -c .ansible-lint
+      - echo "Linting complete"
+
+  yamllint:
+    desc: "Run yamllint on all YAML files"
+    cmds:
+      - echo "Running yamllint..."
+      - yamllint -c .yamllint ansible/ .tasks/ *.yml
+      - echo "YAML linting complete"

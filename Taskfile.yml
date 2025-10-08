@@ -1,0 +1,22 @@
+---
+version: '3'
+
+dotenv: ['.env']
+
+includes:
+  tools: .tasks/tools.yml
+  cloud: .tasks/cloud.yml
+  redpanda: .tasks/redpanda.yml
+  monitor: .tasks/monitor.yml
+  console: .tasks/console.yml
+  connect: .tasks/connect.yml
+  test: .tasks/test.yml
+  mirror: .tasks/mirror.yml
+  ci: .tasks/ci.yml
+
+tasks:
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list-all
+    silent: true

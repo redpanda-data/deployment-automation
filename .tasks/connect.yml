@@ -1,0 +1,150 @@
+version: '3'
+
+vars:
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+  RPM_VERSION: '{{.RPM_VERSION | default "v1.0.0-7ae9d19"}}'
+  SERVER_DIR: '{{.SERVER_DIR | default "/tmp"}}'
+  LOCAL_FILE: "{{.ARTIFACT_DIR}}/redpanda-connect.x86_64.rpm"
+  TOKEN:
+    sh: echo "${CONNECT_RPM_TOKEN}"
+  DL_LINK: "https://dl.redpanda.com/{{.TOKEN}}/connectors-artifacts/raw/names/redpanda-connectors/versions/{{.RPM_VERSION}}/redpanda-connectors-{{.RPM_VERSION}}.x86_64.rpm"
+  HOSTS_FILE: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
+  PRIVATE_KEY: "{{.ARTIFACT_DIR}}/testkey"
+  ANSIBLE_INVENTORY: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
+  CLIENT_KEY:
+    sh: echo "${CLIENT_KEY:-{{.PWD}}/ansible/tls/clients/client.key}"
+  CLIENT_CERT:
+    sh: echo "${CLIENT_CERT:-{{.PWD}}/ansible/tls/ca/ca.crt}"
+  EXTRA_INVENTORY: "{{.ARTIFACT_DIR}}/hosts2_{{.DEPLOYMENT_ID}}.ini"
+  IS_USING_UNSTABLE: '{{.IS_USING_UNSTABLE | default "false"}}'
+
+env:
+  OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+  ANSIBLE_LOG_PATH: "{{.ARTIFACT_DIR}}/logs/{{.DEPLOYMENT_ID}}.log"
+  ANSIBLE_INVENTORY: "{{.ANSIBLE_INVENTORY}}"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+
+tasks:
+  default:
+    desc: "Show Redpanda Connect commands"
+    cmds:
+      - task --list
+    silent: true
+
+  setup:
+    desc: "Download, copy, and deploy Redpanda Connect"
+    cmds:
+      - task: _download-rpm
+      - task: _copy-rpm
+      - task: _deploy-ansible
+
+  setup:tls:
+    desc: "Download, copy, and deploy Redpanda Connect with TLS"
+    cmds:
+      - task: _download-rpm
+      - task: _copy-rpm
+      - task: _deploy-ansible-tls
+
+  _download-rpm:
+    internal: true
+    desc: "Download Redpanda Connect RPM"
+    cmds:
+      - |
+        if [ -f {{.LOCAL_FILE}} ]; then
+          echo "RPM already exists at {{.LOCAL_FILE}}"
+          exit 0
+        fi
+
+        echo "Downloading Redpanda Connect RPM..."
+        echo "URL: {{.DL_LINK}}"
+        echo "Target: {{.LOCAL_FILE}}"
+        echo "Token length: ${#CONNECT_RPM_TOKEN}"
+
+        mkdir -p "$(dirname {{.LOCAL_FILE}})"
+
+        if curl -f -L --progress-bar -o {{.LOCAL_FILE}} "{{.DL_LINK}}"; then
+          echo "RPM downloaded successfully"
+          ls -lh {{.LOCAL_FILE}}
+        else
+          echo "ERROR: Failed to download RPM"
+          echo "URL was: {{.DL_LINK}}"
+          echo "Curl exit code: $?"
+          exit 1
+        fi
+
+  _copy-rpm:
+    internal: true
+    desc: "Copy Redpanda Connect RPM to connect hosts"
+    deps: [":tools:ssh-keys"]
+    cmds:
+      - echo "Copying RPM to connect hosts..."
+      - |
+        IPS_USERS=$(awk '/^\[connect\]/{f=1; next} /^\[/{f=0} f && /^[0-9]/{split($2,a,"="); print a[2] "@" $1}' {{.HOSTS_FILE}})
+        for IP_USER in $IPS_USERS; do
+          scp -o StrictHostKeyChecking=no -i "{{.PRIVATE_KEY}}" "{{.LOCAL_FILE}}" "$IP_USER:{{.SERVER_DIR}}"
+        done
+      - echo "RPM copied"
+
+  _deploy-ansible:
+    internal: true
+    deps: [":tools:ansible"]
+    env:
+      ENABLE_CONNECT: "true"
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying Redpanda Connect..."
+      - ansible-playbook ansible/deploy-connect.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - echo "Connect deployed"
+
+  _deploy-ansible-tls:
+    internal: true
+    deps: [":tools:ansible"]
+    env:
+      ENABLE_CONNECT: "true"
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying Redpanda Connect with TLS..."
+      - ansible-playbook ansible/deploy-connect-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - echo "Connect with TLS deployed"
+
+  test-endpoints:
+    desc: "Test Connect REST API endpoints with TLS"
+    deps: [":tools:tls-certs"]
+    cmds:
+      - |
+        CONNECT_TARGET=$(awk '/^\[connect\]/{f=1; next} /^$/{f=0} f{print $1}' "{{.HOSTS_FILE}}" | head -n1)
+        echo "Testing Connect API at https://$CONNECT_TARGET:8083..."
+        curl -vvvvv -k --cert {{.PWD}}/ansible/tls/clients/client.crt --key {{.CLIENT_KEY}} --cacert {{.CLIENT_CERT}} -X GET https://$CONNECT_TARGET:8083/connectors
+
+  test-prometheus-exporter:
+    desc: "Test Prometheus metrics endpoint"
+    deps: [":tools:tls-certs"]
+    cmds:
+      - |
+        PROMETHEUS_EXPORTER_TARGET=$(awk '/^\[connect\]/{f=1; next} /^$/{f=0} f{print $1}' "{{.HOSTS_FILE}}" | head -n1)
+        echo "Testing Prometheus exporter at https://$PROMETHEUS_EXPORTER_TARGET:9404..."
+        curl -vvvvv -k --cert {{.PWD}}/ansible/tls/clients/client.crt --key {{.PWD}}/ansible/tls/clients/client.key --cacert {{.PWD}}/ansible/tls/ca/ca.crt -X GET https://$PROMETHEUS_EXPORTER_TARGET:9404/metrics
+
+  mirror-connector:
+    desc: "Create mirror source connector (plaintext)"
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1":9092"}' "{{.HOSTS_FILE}}" | paste -sd ',' -)
+        EXTRA_BROKERS=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1":9092"}' "{{.EXTRA_INVENTORY}}" | paste -sd ',' -)
+        CONNECT_IP=$(awk '/^\[connect\]/{f=1; next} f{print $1; exit}' {{.HOSTS_FILE}})
+        echo "Creating mirror source connector..."
+        curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$CONNECT_IP:8083/connectors -d '{"name": "mirror-source-connector","config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector","topics": "testtopic","replication.factor": "1","source.cluster.bootstrap.servers": "'"$REDPANDA_BROKERS"'","source.cluster.security.protocol": "PLAINTEXT","target.cluster.bootstrap.servers": "'"$EXTRA_BROKERS"'","target.cluster.security.protocol": "PLAINTEXT","source.cluster.alias": "source" }}'
+        echo "Connector created"
+
+  mirror-connector-tls:
+    desc: "Create mirror source connector with TLS"
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1":9092"}' "{{.HOSTS_FILE}}" | paste -sd ',' -)
+        EXTRA_BROKERS=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1":9092"}' "{{.EXTRA_INVENTORY}}" | paste -sd ',' -)
+        CONNECT_IP=$(awk '/^\[connect\]/{f=1; next} f{print $1; exit}' {{.HOSTS_FILE}})
+        echo "Creating mirror source connector with TLS..."
+        curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' --key {{.CLIENT_KEY}} --cacert {{.CLIENT_CERT}} https://$CONNECT_IP:8083/connectors -d '{"name": "mirror-source-connector", "config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", "topics": "testtopic", "replication.factor": "1", "source.cluster.bootstrap.servers": "'"$REDPANDA_BROKERS"'", "source.cluster.security.protocol": "SSL", "source.cluster.ssl.truststore.type": "PKCS12", "source.cluster.ssl.keystore.type": "PKCS12", "target.cluster.bootstrap.servers": "'"$EXTRA_BROKERS"'", "target.cluster.security.protocol": "SSL", "source.cluster.alias": "source", "target.cluster.ssl.truststore.type": "PKCS12", "target.cluster.ssl.keystore.type": "PKCS12"}}'
+        echo "Connector with TLS created"

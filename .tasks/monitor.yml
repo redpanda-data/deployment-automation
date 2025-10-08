@@ -1,0 +1,42 @@
+version: '3'
+
+vars:
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+  PRIVATE_KEY: "{{.ARTIFACT_DIR}}/testkey"
+  ANSIBLE_INVENTORY: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
+  IS_USING_UNSTABLE: '{{.IS_USING_UNSTABLE | default "false"}}'
+  DISABLE_GRAFANA_GPG_CHECK: '{{.DISABLE_GRAFANA_GPG_CHECK | default "false"}}'
+
+env:
+  OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+  ANSIBLE_LOG_PATH: "{{.ARTIFACT_DIR}}/logs/{{.DEPLOYMENT_ID}}.log"
+  ANSIBLE_INVENTORY: "{{.ANSIBLE_INVENTORY}}"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+
+tasks:
+  default:
+    desc: "Deploy monitoring stack (Prometheus, Grafana)"
+    cmds:
+      - task: deploy
+
+  deploy:
+    desc: "Deploy monitoring stack (Prometheus, Grafana)"
+    deps: [":tools:ansible"]
+    env:
+      OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying monitoring stack..."
+      - ansible-playbook ansible/deploy-monitor.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars "is_using_unstable={{.IS_USING_UNSTABLE}} disable_grafana_gpg_check={{.DISABLE_GRAFANA_GPG_CHECK}}"
+      - echo "Monitoring deployed"
+
+  deploy:tls:
+    desc: "Deploy monitoring stack with TLS"
+    deps: [":tools:ansible"]
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - echo "Deploying monitoring stack with TLS..."
+      - ansible-playbook ansible/deploy-monitor-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars "is_using_unstable={{.IS_USING_UNSTABLE}} disable_grafana_gpg_check={{.DISABLE_GRAFANA_GPG_CHECK}}"
+      - echo "Monitoring with TLS deployed"

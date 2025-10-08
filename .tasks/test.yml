@@ -1,0 +1,207 @@
+version: '3'
+
+vars:
+  ARTIFACT_DIR: "{{.PWD}}/artifacts"
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+  RPK_PATH: "{{.ARTIFACT_DIR}}/bin/rpk"
+  HOSTS_FILE: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
+  TEST_TOPIC_NAME: '{{.TEST_TOPIC_NAME | default "testtopic"}}'
+  PARTITION_COUNT: '{{.PARTITION_COUNT | default "3"}}'
+  CA_CRT:
+    sh: echo "${CA_CRT:-{{.PWD}}/ansible/tls/ca/ca.crt}"
+  AWS_DEFAULT_REGION: '{{.AWS_DEFAULT_REGION | default "us-west-2"}}'
+  BUCKET_NAME:
+    sh: echo "$(echo {{.DEPLOYMENT_ID}} | sed 's/_/-/g')-bucket"
+  GOOGLE_PROJECT_ID: '{{.GOOGLE_PROJECT_ID | default "hallowed-ray-376320"}}'
+  GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcp_creds.json"
+  GCP_CREDS: "{{.GCP_CREDS}}"
+  SPAM_MESSAGE_COUNT: '{{.SPAM_MESSAGE_COUNT | default "10"}}'
+  PRIVATE_KEY: "{{.ARTIFACT_DIR}}/testkey"
+  SSHKEY:
+    sh: echo "${SSHKEY:-{{.ARTIFACT_DIR}}/testkey}"
+  PATH_TO_CA_CRT: '{{.PATH_TO_CA_CRT | default ""}}'
+
+env:
+  OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+  ANSIBLE_LOG_PATH: "{{.ARTIFACT_DIR}}/logs/{{.DEPLOYMENT_ID}}.log"
+  ANSIBLE_INVENTORY: "{{.ANSIBLE_INVENTORY}}"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+
+tasks:
+  default:
+    desc: "Show test commands"
+    cmds:
+      - task --list
+    silent: true
+
+  smoke:
+    desc: "Basic cluster health test (status, produce, consume)"
+    deps: [":tools:rpk"]
+    cmds:
+      - echo "Running smoke test..."
+      - |
+        REDPANDA_BROKERS=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1":9092"}' "{{.HOSTS_FILE}}" | paste -sd ',' -)
+        echo "   Brokers: $REDPANDA_BROKERS"
+
+        echo "   Checking cluster status..."
+        {{.RPK_PATH}} cluster status -X brokers=$REDPANDA_BROKERS -v || exit 1
+
+        echo "   Creating test topic..."
+        {{.RPK_PATH}} topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers=$REDPANDA_BROKERS -v || exit 1
+
+        echo "   Producing test message..."
+        echo squirrel | {{.RPK_PATH}} topic produce {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v || exit 1
+
+        echo "   Consuming test message..."
+        {{.RPK_PATH}} topic consume {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v -o :end | grep squirrel || exit 1
+      - echo "Smoke test passed"
+
+  tls:
+    desc: "Test cluster with TLS encryption"
+    deps: [":tools:rpk"]
+    cmds:
+      - echo "Running TLS test..."
+      - |
+        REDPANDA_BROKERS=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1":9092"}' "{{.HOSTS_FILE}}" | paste -sd ',' -)
+
+        echo "Redpanda Brokers: $REDPANDA_BROKERS"
+        echo "TLS Truststore: {{.CA_CRT}}"
+
+        echo "checking TLS cluster status"
+        {{.ARTIFACT_DIR}}/bin/rpk cluster status -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
+
+        echo "creating topic"
+        {{.ARTIFACT_DIR}}/bin/rpk topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
+
+        echo "producing to topic"
+        echo squirrels | {{.ARTIFACT_DIR}}/bin/rpk topic produce {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
+
+        echo "consuming from topic"
+        {{.ARTIFACT_DIR}}/bin/rpk topic consume {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v -o :end | grep squirrels || exit 1
+      - echo "TLS test passed"
+
+  schema:
+    desc: "Test schema registry (plaintext)"
+    cmds:
+      - echo "Testing schema registry..."
+      - |
+        REDPANDA_REGISTRY=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1}' "{{.HOSTS_FILE}}" | paste -sd ',' - | awk '{gsub(/,/,":8081,"); sub(/,$/,":8081")}1')
+        echo "   Registry endpoints: $REDPANDA_REGISTRY"
+        for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do
+          echo "   Testing $ip_port..."
+          curl $ip_port/subjects
+        done
+      - echo "Schema registry test passed"
+
+  schema:tls:
+    desc: "Test schema registry with TLS"
+    cmds:
+      - echo "Testing schema registry with TLS..."
+      - |
+        REDPANDA_REGISTRY=$(sed -n '/^\[redpanda\]/,/^$$/p' "{{.HOSTS_FILE}}" | \
+          grep 'private_ip=' | \
+          cut -d' ' -f1 | \
+          sed 's/$/:8081/' | \
+          tr '\n' ',' | \
+          sed 's/,$/\n/')
+        echo "   Registry endpoints: $REDPANDA_REGISTRY"
+        for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do \
+          echo "   Testing $ip_port..."
+          curl $ip_port/subjects -k --cacert "{{.CA_CRT}}"; \
+        done
+      - echo "Schema registry TLS test passed"
+
+  storage:aws:
+    desc: "Verify data uploaded to AWS S3 tiered storage"
+    cmds:
+      - echo "Testing AWS S3 tiered storage..."
+      - |
+        echo "   Bucket: {{.BUCKET_NAME}}"
+        echo "   Region: {{.AWS_DEFAULT_REGION}}"
+        count=$(aws s3api list-objects-v2 --bucket "{{.BUCKET_NAME}}" --region {{.AWS_DEFAULT_REGION}} --query "Contents[?contains(Key, 'testtopic/')]" --output text | wc -l | xargs)
+        if [ "$count" -ge 1 ]; then
+          echo "   Found $count objects in tiered storage"
+          exit 0
+        else
+          echo "   No testtopic data found in tiered storage"
+          exit 1
+        fi
+      - echo "AWS tiered storage test passed"
+
+  storage:gcp:
+    desc: "Verify data uploaded to GCP Storage tiered storage"
+    cmds:
+      - echo "Testing GCP Storage tiered storage..."
+      - |
+        echo "{{.GCP_CREDS}}" | base64 -d > /tmp/gcp_creds.json
+        export CLOUDSDK_CORE_PROJECT={{.GOOGLE_PROJECT_ID}}
+        gcloud auth activate-service-account --key-file={{.GOOGLE_APPLICATION_CREDENTIALS}} --project={{.GOOGLE_PROJECT_ID}}
+        SIMPLE_BUCKET_NAME=$(echo {{.BUCKET_NAME}} | sed 's/-bucket$//')
+        echo "   Bucket pattern: $SIMPLE_BUCKET_NAME"
+        gcloud storage --project {{.GOOGLE_PROJECT_ID}} ls | grep $SIMPLE_BUCKET_NAME
+      - echo "GCP tiered storage test passed"
+
+  proxy:
+    desc: "Test cluster connectivity through proxy"
+    deps: [":tools:ssh-keys"]
+    cmds:
+      - echo "Testing cluster through proxy..."
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^$$/p' "{{.HOSTS_FILE}}" | \
+          grep 'private_ip=' | \
+          cut -d' ' -f1 | \
+          sed 's/$/:9092/' | \
+          tr '\n' ',' | \
+          sed 's/,$/\n/')
+        CLIENT_SSH_USER=$(sed -n '/\[redpanda\]/,/\[/p' "{{.HOSTS_FILE}}" | \
+          grep ansible_user | \
+          head -n1 | \
+          tr ' ' '\n' | \
+          grep ansible_user | \
+          cut -d'=' -f2)
+        CLIENT_PUBLIC_IP=$(sed -n '/^\[client\]/,/^$$/p' "{{.HOSTS_FILE}}" | \
+          grep 'private_ip=' | \
+          cut -f1 -d' ')
+
+        echo "   Checking cluster status..."
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "{{.SSHKEY}}" "$CLIENT_SSH_USER@$CLIENT_PUBLIC_IP" "rpk cluster status -X brokers=\"$REDPANDA_BROKERS\" -X tls.ca=\"{{.PATH_TO_CA_CRT}}\" -v" || exit 1
+
+        echo "   Creating topic..."
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "{{.SSHKEY}}" "$CLIENT_SSH_USER@$CLIENT_PUBLIC_IP" "rpk topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers=\"$REDPANDA_BROKERS\" -X tls.ca=\"{{.PATH_TO_CA_CRT}}\" -v" || exit 1
+
+        echo "   Producing to topic..."
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "{{.SSHKEY}}" "$CLIENT_SSH_USER@$CLIENT_PUBLIC_IP" "echo squirrels | rpk topic produce {{.TEST_TOPIC_NAME}} -X brokers=\"$REDPANDA_BROKERS\" -X tls.ca=\"{{.PATH_TO_CA_CRT}}\" -v" || exit 1
+
+        sleep 30
+
+        echo "   Consuming from topic..."
+        testoutput=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "{{.SSHKEY}}" "$CLIENT_SSH_USER@$CLIENT_PUBLIC_IP" "rpk topic consume {{.TEST_TOPIC_NAME}} -X brokers=\"$REDPANDA_BROKERS\" -X tls.ca=\"{{.PATH_TO_CA_CRT}}\" -v -o :end")
+        echo "$testoutput" | grep squirrels || exit 1
+      - echo "Proxy test passed"
+
+  load:
+    desc: "Produce multiple messages to test topic (load testing)"
+    deps: [":tools:rpk"]
+    cmds:
+      - echo "Running load test ({{.SPAM_MESSAGE_COUNT}} messages)..."
+      - |
+        REDPANDA_BROKERS=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1":9092"}' "{{.HOSTS_FILE}}" | paste -sd ',' -)
+        echo "   Producing {{.SPAM_MESSAGE_COUNT}} messages..."
+        for i in $(seq 1 {{.SPAM_MESSAGE_COUNT}}); do
+          echo "squirrel$i" | {{.RPK_PATH}} topic produce {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v || exit 1
+        done
+      - echo "Load test completed"
+
+  load:tls:
+    desc: "Produce multiple messages with TLS (load testing)"
+    deps: [":tools:rpk"]
+    cmds:
+      - echo "Running TLS load test ({{.SPAM_MESSAGE_COUNT}} messages)..."
+      - |
+        REDPANDA_BROKERS=$(awk '/^\[redpanda\]/{f=1; next} /^$/{f=0} f{print $1":9092"}' "{{.HOSTS_FILE}}" | paste -sd ',' -)
+        echo "   Producing {{.SPAM_MESSAGE_COUNT}} messages..."
+        for i in $(seq 1 {{.SPAM_MESSAGE_COUNT}}); do
+          echo "squirrel$i" | {{.RPK_PATH}} topic produce {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -X tls.ca="{{.CA_CRT}}" -v || exit 1
+        done
+      - echo "TLS load test completed"
