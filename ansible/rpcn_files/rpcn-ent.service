@@ -1,0 +1,14 @@
+[Unit]
+Description=Redpanda Connect Pipeline
+After=network.target
+
+[Service]
+ExecStart=/opt/rpcn/rpk connect run /opt/rpcn/pipeline.yaml
+Restart=on-failure
+User=ubuntu
+#Group=redpanda-connect
+Environment="REDPANDA_PIPELINE_ID=%H"
+Environment="REDPANDA_LICENSE_FILEPATH=/opt/rpcn/redpanda.license"
+
+[Install]
+WantedBy=multi-user.target
