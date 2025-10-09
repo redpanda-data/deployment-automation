@@ -253,7 +253,7 @@ steps:
             - AWS_DEFAULT_REGION
   - label: unstable aws ubuntu tiered large
     key: aws-us-ubuntu-ts-large
-    concurrency_group: unstable
+    concurrency_group: aws-ub
     concurrency: 1
     command: DEPLOYMENT_ID=ci-ts-ub-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal IS_USING_UNSTABLE=true INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:tiered
     plugins:
