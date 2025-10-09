@@ -1,0 +1,117 @@
+- name: Install rpk and set up rpcn service
+  hosts: connect
+  become: true
+
+  vars:
+    rpcn_dir: /opt/rpcn
+    local_files_dir: "./rpcn_files"   # directory on your control machine to upload
+    rpk_zip_tmp: /tmp/rpk.zip
+    arch_map:
+      x86_64: amd64
+      amd64: amd64
+      aarch64: arm64
+      arm64: arm64
+
+  pre_tasks:
+    - name: Ensure unzip is present (Debian/Ubuntu)
+      apt:
+        name: unzip
+        state: present
+        update_cache: true
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Ensure unzip is present (RHEL-family)
+      yum:
+        name: unzip
+        state: present
+      when: ansible_facts['os_family'] == "RedHat"
+
+    - name: Resolve architecture to Redpanda asset suffix
+      set_fact:
+        rpk_arch: "{{ arch_map.get(ansible_architecture, 'amd64') }}"
+
+    - name: Build download URL for rpk zip
+      set_fact:
+        rpk_zip_url: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-{{ rpk_arch }}.zip"
+
+  tasks:
+    # --- Ensure target directory exists before unarchive ---
+    - name: Ensure /opt exists
+      file:
+        path: /opt
+        state: directory
+        mode: "0755"
+
+    - name: Ensure target directory exists
+      file:
+        path: "{{ rpcn_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Verify target directory exists
+      stat:
+        path: "{{ rpcn_dir }}"
+      register: rpcn_dir_stat
+
+    - name: Fail if target directory is missing
+      fail:
+        msg: "Target directory {{ rpcn_dir }} was not created"
+      when: not rpcn_dir_stat.stat.exists
+
+    # --- Download & unzip rpk for detected arch ---
+    - name: Download rpk zip for detected arch
+      get_url:
+        url: "{{ rpk_zip_url }}"
+        dest: "{{ rpk_zip_tmp }}"
+        mode: "0644"
+
+    - name: Unarchive rpk into /opt/rpcn
+      unarchive:
+        src: "{{ rpk_zip_tmp }}"
+        dest: "{{ rpcn_dir }}"
+        remote_src: true
+        creates: "{{ rpcn_dir }}/rpk"   # idempotent if rpk already present
+
+    - name: Ensure rpk is executable
+      file:
+        path: "{{ rpcn_dir }}/rpk"
+        mode: "0755"
+
+    # --- Copy your local files to the REMOTE host(s) ---
+    - name: Copy your local files into /opt/rpcn (recursive)
+      copy:
+        src: "{{ local_files_dir }}/"
+        dest: "{{ rpcn_dir }}/"
+        owner: root
+        group: root
+        mode: "0644"
+
+    # --- Install systemd unit ---
+    - name: Copy service file from /opt/rpcn to systemd unit dir
+      copy:
+        src: "{{ rpcn_dir }}/rpcn-ent.service"
+        dest: /etc/systemd/system/rpcn-ent.service
+        owner: root
+        group: root
+        mode: "0644"
+        remote_src: true
+      notify: daemon-reload
+
+    - name: Enable and start rpcn service
+      systemd:
+        name: rpcn-ent.service
+        enabled: true
+        state: started
+
+    # --- Cleanup ---
+    - name: Clean up downloaded archive
+      file:
+        path: "{{ rpk_zip_tmp }}"
+        state: absent
+
+  handlers:
+    - name: daemon-reload
+      systemd:
+        daemon_reload: true
