@@ -75,6 +75,9 @@ tasks:
     cmds:
       - printf 'y\n' | ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f {{.ARTIFACT_DIR}}/testkey && chmod 0700 {{.ARTIFACT_DIR}}/testkey
       - echo "SSH keypair generated"
+    status:
+      - test -f {{.ARTIFACT_DIR}}/testkey
+      - test -f {{.ARTIFACT_DIR}}/testkey.pub
 
   tls-certs:
     desc: "Generate client TLS certificates"
