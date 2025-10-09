@@ -1,0 +1,14 @@
+- name: Stop rpcn service (skip if unit missing)
+  hosts: connect
+  become: true
+  tasks:
+    - name: Check if rpcn unit file exists
+      stat:
+        path: /etc/systemd/system/rpcn.service
+      register: rpcn_unit
+
+    - name: Stop rpcn.service when present
+      systemd:
+        name: rpcn.service
+        state: stopped
+      when: rpcn_unit.stat.exists
