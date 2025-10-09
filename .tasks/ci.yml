@@ -1,12 +1,11 @@
 version: '3'
 
 vars:
-  ARTIFACT_DIR: "{{.PWD}}/artifacts"
   DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
 
 env:
-  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
-  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ANSIBLE_COLLECTIONS_PATH}}"
+  ANSIBLE_ROLES_PATH: "{{.ANSIBLE_ROLES_PATH}}"
 
 tasks:
   default:

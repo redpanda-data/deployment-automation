@@ -1,14 +1,13 @@
 version: '3'
 
 vars:
-  ARTIFACT_DIR: "{{.PWD}}/artifacts"
   DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
   RPK_PATH: "{{.ARTIFACT_DIR}}/bin/rpk"
   HOSTS_FILE: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
   TEST_TOPIC_NAME: '{{.TEST_TOPIC_NAME | default "testtopic"}}'
   PARTITION_COUNT: '{{.PARTITION_COUNT | default "3"}}'
   CA_CRT:
-    sh: echo "${CA_CRT:-{{.PWD}}/ansible/tls/ca/ca.crt}"
+    sh: echo "${CA_CRT:-{{.ROOT_DIR}}/ansible/tls/ca/ca.crt}"
   AWS_DEFAULT_REGION: '{{.AWS_DEFAULT_REGION | default "us-west-2"}}'
   BUCKET_NAME:
     sh: echo "$(echo {{.DEPLOYMENT_ID}} | sed 's/_/-/g')-bucket"

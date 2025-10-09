@@ -1,16 +1,10 @@
 version: '3'
 
 vars:
-  ARTIFACT_DIR: "{{.PWD}}/artifacts"
-  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
-  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
-  MAC_RPK: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-darwin-amd64.zip"
-  LINUX_RPK: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip"
-  SSH_EMAIL: '{{.SSH_EMAIL | default "test@test.com"}}'
   CLIENT_NAME: '{{.CLIENT_NAME | default "client"}}'
-  CLIENT_DIR: "{{.PWD}}/ansible/tls/clients"
-  CA_DIR: "{{.PWD}}/ansible/tls/ca"
-  CERT_DIR: "{{.PWD}}/ansible/tls/certs"
+  CLIENT_DIR: "{{.ROOT_DIR}}/ansible/tls/clients"
+  CA_DIR: "{{.ROOT_DIR}}/ansible/tls/ca"
+  CERT_DIR: "{{.ROOT_DIR}}/ansible/tls/certs"
 
 tasks:
   default:
@@ -30,23 +24,32 @@ tasks:
   _ansible-collections:
     internal: true
     desc: "Install Ansible collections from requirements.yml"
+    sources:
+      - "{{.ROOT_DIR}}/requirements.yml"
+    generates:
+      - "{{.ANSIBLE_COLLECTIONS_PATH}}/ansible_collections"
     cmds:
       - mkdir -p {{.ANSIBLE_COLLECTIONS_PATH}}
-      - ansible-galaxy collection install -r {{.PWD}}/requirements.yml --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
-    status:
-      - test -d {{.ANSIBLE_COLLECTIONS_PATH}}/ansible_collections
+      - ansible-galaxy collection install -r {{.ROOT_DIR}}/requirements.yml --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
 
   _ansible-roles:
     internal: true
     desc: "Install Ansible roles from requirements.yml"
+    sources:
+      - "{{.ROOT_DIR}}/requirements.yml"
+    generates:
+      - "{{.ANSIBLE_ROLES_PATH}}"
     cmds:
       - mkdir -p {{.ANSIBLE_ROLES_PATH}}
-      - ansible-galaxy role install -r {{.PWD}}/requirements.yml --force -p {{.ANSIBLE_ROLES_PATH}}
-    status:
-      - test -d {{.ANSIBLE_ROLES_PATH}}
+      - ansible-galaxy role install -r {{.ROOT_DIR}}/requirements.yml --force -p {{.ANSIBLE_ROLES_PATH}}
 
   rpk:
     desc: "Install rpk CLI tool"
+    vars:
+      MAC_RPK: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-darwin-amd64.zip"
+      LINUX_RPK: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip"
+    generates:
+      - "{{.ARTIFACT_DIR}}/bin/rpk"
     cmds:
       - mkdir -p {{.ARTIFACT_DIR}}/tmp
       - mkdir -p {{.ARTIFACT_DIR}}/bin
@@ -61,21 +64,17 @@ tasks:
       - chmod 755 {{.ARTIFACT_DIR}}/bin/rpk
       - rm {{.ARTIFACT_DIR}}/tmp/rpk.zip
       - echo "rpk installed to {{.ARTIFACT_DIR}}/bin/rpk"
-    status:
-      - test -f {{.ARTIFACT_DIR}}/bin/rpk
 
   ssh-keys:
     desc: "Generate SSH keypair for deployment"
+    vars:
+      SSH_EMAIL: '{{.SSH_EMAIL | default "test@test.com"}}'
+    generates:
+      - "{{.ARTIFACT_DIR}}/testkey"
+      - "{{.ARTIFACT_DIR}}/testkey.pub"
     cmds:
-      - |
-        if [ ! -f artifacts/testkey ]; then
-          printf 'y\n' | ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey && chmod 0700 artifacts/testkey
-          echo "SSH keypair generated"
-        else
-          echo "SSH keypair already exists"
-        fi
-    status:
-      - test -f artifacts/testkey
+      - printf 'y\n' | ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f {{.ARTIFACT_DIR}}/testkey && chmod 0700 {{.ARTIFACT_DIR}}/testkey
+      - echo "SSH keypair generated"
 
   tls-certs:
     desc: "Generate client TLS certificates"
@@ -88,31 +87,37 @@ tasks:
 
   _cert-client-dir:
     internal: true
+    generates:
+      - "{{.CLIENT_DIR}}"
     cmds:
       - mkdir -p {{.CLIENT_DIR}}
-    status:
-      - test -d {{.CLIENT_DIR}}
 
   _cert-client-key:
     internal: true
+    generates:
+      - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key"
     cmds:
       - openssl genrsa -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key 2048
-    status:
-      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key
 
   _cert-client-csr:
     internal: true
+    sources:
+      - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key"
+    generates:
+      - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr"
     cmds:
       - openssl req -new -key {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr -subj "/CN={{.CLIENT_NAME}}"
-    status:
-      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr
 
   _cert-client-crt:
     internal: true
+    sources:
+      - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr"
+      - "{{.CA_DIR}}/ca.crt"
+      - "{{.CA_DIR}}/ca.key"
+    generates:
+      - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.crt"
     cmds:
       - openssl x509 -req -in {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr -CA {{.CA_DIR}}/ca.crt -CAkey {{.CA_DIR}}/ca.key -CAcreateserial -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.crt -days 365 -sha256
-    status:
-      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.crt
 
   clean-certs:
     desc: "Remove all TLS certificates"

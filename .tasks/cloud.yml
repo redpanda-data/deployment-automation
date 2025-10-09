@@ -8,7 +8,6 @@ vars:
   ALLOW_FORCE_DESTROY: '{{.ALLOW_FORCE_DESTROY | default "true"}}'
   VPC_ID: '{{.VPC_ID | default ""}}'
   DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
-  ARTIFACT_DIR: "{{.PWD}}/artifacts"
   PUBLIC_KEY: "{{.ARTIFACT_DIR}}/testkey.pub"
   ANSIBLE_INVENTORY: "{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini"
   MACHINE_ARCH: '{{.MACHINE_ARCH | default "x86_64"}}'

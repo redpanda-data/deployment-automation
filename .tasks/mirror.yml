@@ -1,7 +1,6 @@
 version: '3'
 
 vars:
-  ARTIFACT_DIR: "{{.PWD}}/artifacts"
   DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
   NUM_NODES: '{{.NUM_NODES | default "3"}}'
   ENABLE_MONITORING: '{{.ENABLE_MONITORING | default "true"}}'

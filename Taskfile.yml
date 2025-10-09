@@ -3,6 +3,11 @@ version: '3'
 
 dotenv: ['.env']
 
+vars:
+  ARTIFACT_DIR: "{{.ROOT_DIR}}/artifacts"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ARTIFACT_DIR}}/collections"
+  ANSIBLE_ROLES_PATH: "{{.ARTIFACT_DIR}}/roles"
+
 includes:
   tools: .tasks/tools.yml
   cloud: .tasks/cloud.yml
