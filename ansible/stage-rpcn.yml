@@ -1,40 +1,22 @@
-# stage-rpcn.yml
-# ansible-playbook --private-key ~/.ssh/ansible_test -i hosts.ini stage-rpcn.yml -K
-- name: Install rpk and set up rpcn service
+- name: Install redpanda-connect and set up systemd service
   hosts: connect
   become: true
 
   vars:
     rpcn_dir: /etc/redpanda
     local_files_dir: "./rpcn_files"   # directory on your control machine to upload
-    rpk_zip_tmp: /tmp/rpk.zip
-    arch_map:
-      x86_64: amd64
-      amd64: amd64
-      aarch64: arm64
-      arm64: arm64
 
   pre_tasks:
-    - name: Ensure unzip is present (Debian/Ubuntu)
-      apt:
-        name: unzip
-        state: present
-        update_cache: true
+    - name: Set package script location for Debian/Ubuntu
+      set_fact:
+        download_url: "https://dl.redpanda.com/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash.deb.sh"
       when: ansible_facts['os_family'] == "Debian"
 
-    - name: Ensure unzip is present (RHEL-family)
-      yum:
-        name: unzip
-        state: present
+    - name: Set package script location for RHEL-family
+      set_fact:
+        download_url: "https://dl.redpanda.com/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash.rpm.sh"
       when: ansible_facts['os_family'] == "RedHat"
 
-    - name: Resolve architecture to Redpanda asset suffix
-      set_fact:
-        rpk_arch: "{{ arch_map.get(ansible_architecture, 'amd64') }}"
-
-    - name: Build download URL for rpk zip
-      set_fact:
-        rpk_zip_url: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-{{ rpk_arch }}.zip"
 
   tasks:
     # --- Ensure target directory exists before unarchive ---
@@ -62,24 +44,19 @@
         msg: "Target directory {{ rpcn_dir }} was not created"
       when: not rpcn_dir_stat.stat.exists
 
-    # --- Download & unzip rpk for detected arch ---
-    - name: Download rpk zip for detected arch
-      get_url:
-        url: "{{ rpk_zip_url }}"
-        dest: "{{ rpk_zip_tmp }}"
-        mode: "0644"
-
-    - name: Unarchive rpk into /etc/redpanda
-      unarchive:
-        src: "{{ rpk_zip_tmp }}"
-        dest: "{{ rpcn_dir }}"
-        remote_src: true
-        creates: "{{ rpcn_dir }}/rpk"   # idempotent if rpk already present
-
-    - name: Ensure rpk is executable
-      file:
-        path: "{{ rpcn_dir }}/rpk"
-        mode: "0755"
+    # --- Install redpanda-connect package ---
+    - name: dnf install redpanda-connect
+      ansible.builtin.dnf:
+        name: redpanda-connect
+        state: present
+      when: ansible_facts['os_family'] == "RedHat"
+    
+    - name: apt install redpanda-connect
+      ansible.builtin.apt:
+        name: redpanda-connect
+        state: present
+        update_cache: yes
+      when: ansible_facts['os_family'] == "Debian"   
 
     # --- Copy your local files to the REMOTE host(s) ---
     - name: Copy your local files into /etc/redpanda (recursive)
@@ -106,12 +83,6 @@
         name: rpcn.service
         enabled: true
         state: started
-
-    # --- Cleanup ---
-    - name: Clean up downloaded archive
-      file:
-        path: "{{ rpk_zip_tmp }}"
-        state: absent
 
   handlers:
     - name: daemon-reload
