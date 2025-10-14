@@ -1,5 +1,3 @@
-# update-pipeline.yml
-# ansible-playbook --private-key ~/.ssh/ansible_test -i hosts.ini update-pipeline.yml -K
 - name: Update rpcn pipeline and restart service
   hosts: connect
   become: true
