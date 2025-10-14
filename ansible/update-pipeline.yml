@@ -1,9 +1,11 @@
+# update-pipeline.yml
+# ansible-playbook --private-key ~/.ssh/ansible_test -i hosts.ini update-pipeline.yml -K
 - name: Update rpcn pipeline and restart service
   hosts: connect
   become: true
 
   vars:
-    rpcn_dir: /opt/rpcn
+    rpcn_dir: /etc/redpanda
     local_files_dir: "./rpcn_files"   # same convention as your other playbook
 
   tasks:
@@ -15,7 +17,7 @@
         group: root
         mode: "0755"
 
-    - name: Copy pipeline.yaml to /opt/rpcn
+    - name: Copy pipeline.yaml to /etc/redpanda
       copy:
         src: "{{ local_files_dir }}/pipeline.yaml"
         dest: "{{ rpcn_dir }}/pipeline.yaml"
