@@ -38,9 +38,9 @@
 
   tasks:
     # --- Ensure target directory exists before unarchive ---
-    - name: Ensure /opt exists
+    - name: Ensure /etc exists
       file:
-        path: /opt
+        path: /etc
         state: directory
         mode: "0755"
 
