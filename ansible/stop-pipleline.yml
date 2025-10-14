@@ -1,3 +1,5 @@
+# stop-pipeline.yml
+# ansible-playbook --private-key ~/.ssh/ansible_test -i hosts.ini stop-pipeline.yml -K
 - name: Stop rpcn service (skip if unit missing)
   hosts: connect
   become: true
