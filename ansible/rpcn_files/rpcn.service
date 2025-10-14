@@ -3,7 +3,7 @@ Description=Redpanda Connect Pipeline
 After=network.target
 
 [Service]
-ExecStart=/opt/rpcn/rpk connect run /opt/rpcn/pipeline.yaml
+ExecStart=/etc/redpanda/rpk connect run /etc/redpanda/pipeline.yaml
 Restart=on-failure
 User=ubuntu
 #Group=redpanda-connect
