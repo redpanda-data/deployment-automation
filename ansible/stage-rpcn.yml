@@ -1,9 +1,11 @@
+# stage-rpcn.yml
+# ansible-playbook --private-key ~/.ssh/ansible_test -i hosts.ini stage-rpcn.yml -K
 - name: Install rpk and set up rpcn service
   hosts: connect
   become: true
 
   vars:
-    rpcn_dir: /opt/rpcn
+    rpcn_dir: /etc/redpanda
     local_files_dir: "./rpcn_files"   # directory on your control machine to upload
     rpk_zip_tmp: /tmp/rpk.zip
     arch_map:
@@ -67,7 +69,7 @@
         dest: "{{ rpk_zip_tmp }}"
         mode: "0644"
 
-    - name: Unarchive rpk into /opt/rpcn
+    - name: Unarchive rpk into /etc/redpanda
       unarchive:
         src: "{{ rpk_zip_tmp }}"
         dest: "{{ rpcn_dir }}"
@@ -80,7 +82,7 @@
         mode: "0755"
 
     # --- Copy your local files to the REMOTE host(s) ---
-    - name: Copy your local files into /opt/rpcn (recursive)
+    - name: Copy your local files into /etc/redpanda (recursive)
       copy:
         src: "{{ local_files_dir }}/"
         dest: "{{ rpcn_dir }}/"
@@ -89,7 +91,7 @@
         mode: "0644"
 
     # --- Install systemd unit ---
-    - name: Copy service file from /opt/rpcn to systemd unit dir
+    - name: Copy service file from /etc/redpanda to systemd unit dir
       copy:
         src: "{{ rpcn_dir }}/rpcn.service"
         dest: /etc/systemd/system/rpcn.service
@@ -115,3 +117,6 @@
     - name: daemon-reload
       systemd:
         daemon_reload: true
+
+
+
