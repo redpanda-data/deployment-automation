@@ -1,0 +1,182 @@
+version: '3'
+
+dotenv: ['.env']
+
+includes:
+  infra:
+    taskfile: .tasks/infrastructure.yml
+    dir: .
+  ansible:
+    taskfile: .tasks/ansible.yml
+    dir: .
+  cluster:
+    taskfile: .tasks/cluster.yml
+    dir: .
+  monitor:
+    taskfile: .tasks/monitoring.yml
+    dir: .
+  connect:
+    taskfile: .tasks/connect.yml
+    dir: .
+  test:
+    taskfile: .tasks/testing.yml
+    dir: .
+  ops:
+    taskfile: .tasks/operations.yml
+    dir: .
+  ci:
+    taskfile: .tasks/ci.yml
+    dir: .
+  cert:
+    taskfile: .tasks/certificates.yml
+    dir: .
+  tools:
+    taskfile: .tasks/tools.yml
+    dir: .
+  dev:
+    taskfile: .tasks/dev.yml
+    dir: .
+  cleanup:
+    taskfile: .tasks/cleanup.yml
+    dir: .
+
+vars:
+  # Paths
+  ARTIFACT_DIR:
+    sh: echo "${ARTIFACT_DIR:-{{.USER_WORKING_DIR}}/artifacts}"
+
+  # Deployment Configuration
+  DEPLOYMENT_ID: '{{.DEPLOYMENT_ID | default "devex-cicd"}}'
+  NUM_NODES: '{{.NUM_NODES | default "3"}}'
+
+  # Feature Flags
+  ENABLE_MONITORING: '{{.ENABLE_MONITORING | default "true"}}'
+  TIERED_STORAGE_ENABLED: '{{.TIERED_STORAGE_ENABLED | default "false"}}'
+  ALLOW_FORCE_DESTROY: '{{.ALLOW_FORCE_DESTROY | default "true"}}'
+  ENABLE_CONNECT: '{{.ENABLE_CONNECT | default "false"}}'
+  IS_USING_UNSTABLE: '{{.IS_USING_UNSTABLE | default "false"}}'
+
+  # Network
+  VPC_ID: '{{.VPC_ID | default ""}}'
+
+  # Storage
+  BUCKET_NAME:
+    sh: echo "{{.DEPLOYMENT_ID}}" | tr '_' '-' | sed 's/$/-bucket/'
+
+  # Distribution
+  DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
+
+  # Licensing
+  REDPANDA_LICENSE: '{{.REDPANDA_LICENSE | default "empty"}}'
+  CA_CRT:
+    sh: echo "${CA_CRT:-{{.USER_WORKING_DIR}}/ansible/tls/ca/ca.crt}"
+
+  # RPK
+  RPK_PATH:
+    sh: echo "${RPK_PATH:-{{.ARTIFACT_DIR}}/bin/rpk}"
+  MAC_RPK: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-darwin-amd64.zip"
+  LINUX_RPK: "https://github.com/redpanda-data/redpanda/releases/latest/download/rpk-linux-amd64.zip"
+
+  # Terraform
+  TERRAFORM_VERSION: "1.7.4"
+  TERRAFORM_INSTALL_DIR: '{{.ARTIFACT_DIR}}/terraform/{{.TERRAFORM_VERSION}}'
+
+  # Ansible paths
+  ANSIBLE_VERSION: "2.18.11"
+  ANSIBLE_INSTALL_DIR: '{{.ARTIFACT_DIR}}/ansible/{{.ANSIBLE_VERSION}}'
+  ANSIBLE_LOG_PATH: '{{.ARTIFACT_DIR}}/logs/{{.DEPLOYMENT_ID}}.log'
+  ANSIBLE_INVENTORY: '{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini'
+  ANSIBLE_COLLECTIONS_PATH: '{{.ARTIFACT_DIR}}/collections'
+  ANSIBLE_ROLES_PATH: '{{.ARTIFACT_DIR}}/roles'
+
+  # Host keys
+  HOSTS_FILE:
+    sh: echo "${HOSTS_FILE:-{{.ARTIFACT_DIR}}/hosts_{{.DEPLOYMENT_ID}}.ini}"
+  PUBLIC_KEY:
+    sh: echo "${PUBLIC_KEY:-{{.ARTIFACT_DIR}}/testkey.pub}"
+  PRIVATE_KEY:
+    sh: echo "${PRIVATE_KEY:-{{.ARTIFACT_DIR}}/testkey}"
+
+  # GCP
+  GOOGLE_PROJECT_ID: '{{.GOOGLE_PROJECT_ID | default "hallowed-ray-376320"}}'
+  GCP_IMAGE: '{{.GCP_IMAGE | default "ubuntu-os-cloud/ubuntu-2204-lts"}}'
+  GCP_INSTANCE_TYPE: '{{.GCP_INSTANCE_TYPE | default "n2-standard-2"}}'
+  GCP_CREDS: '{{.GCP_CREDS | default ""}}'
+  GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcp_creds.json"
+
+  # Connect RPM
+  RPM_VERSION: '{{.RPM_VERSION | default "v1.0.0-7ae9d19"}}'
+  SERVER_DIR: '{{.SERVER_DIR | default "/tmp"}}'
+  LOCAL_FILE: '{{.ARTIFACT_DIR}}/redpanda-connect.x86_64.rpm'
+  TOKEN: '{{.CONNECT_RPM_TOKEN | default ""}}'
+  DL_LINK: 'https://dl.redpanda.com/{{.TOKEN}}/connectors-artifacts/raw/names/redpanda-connectors/versions/{{.RPM_VERSION}}/redpanda-connectors-{{.RPM_VERSION}}.x86_64.rpm'
+
+  # AWS
+  INSTANCE_TYPE_AWS: '{{.INSTANCE_TYPE_AWS | default "i3.2xlarge"}}'
+  MACHINE_ARCH: '{{.MACHINE_ARCH | default "x86_64"}}'
+  AWS_DEFAULT_REGION: '{{.AWS_DEFAULT_REGION | default "us-west-2"}}'
+
+  # SSH
+  SSH_EMAIL: '{{.SSH_EMAIL | default "test@test.com"}}'
+
+  # Logging
+  REDPANDA_LOGGING_LOG_FILE: '{{.REDPANDA_LOGGING_LOG_FILE | default "/var/log/redpanda2/redpanda.log"}}'
+
+  # Testing
+  TEST_TOPIC_NAME: '{{.TEST_TOPIC_NAME | default "testtopic"}}'
+  PARTITION_COUNT: '{{.PARTITION_COUNT | default "3"}}'
+  SPAM_MESSAGE_COUNT: '{{.SPAM_MESSAGE_COUNT | default "10"}}'
+
+  # Tiered Storage
+  SEGMENT_UPLOAD_INTERVAL: '{{.SEGMENT_UPLOAD_INTERVAL | default "1"}}'
+  CLOUD_STORAGE_CREDENTIALS_SOURCE: '{{.CLOUD_STORAGE_CREDENTIALS_SOURCE | default "aws_instance_metadata"}}'
+  SIMPLE_BUCKET_NAME:
+    sh: echo "{{.BUCKET_NAME}}" | sed 's/-bucket$//'
+
+  # TLS Certificates
+  CLIENT_NAME: '{{.CLIENT_NAME | default "client"}}'
+  CLIENT_DIR: "ansible/tls/clients"
+  CA_DIR: "ansible/tls/ca"
+  CERT_DIR: "ansible/tls/certs"
+  CLIENT_KEY: "ansible/tls/clients/client.key"
+  CLIENT_CERT: "ansible/tls/ca/ca.crt"
+
+  # Extra cluster
+  EXTRA_INVENTORY: '{{.ARTIFACT_DIR}}/hosts2_{{.DEPLOYMENT_ID}}.ini'
+
+  # Proxy Testing Variables
+  SSHKEY: '{{.SSHKEY | default .PRIVATE_KEY}}'
+  PATH_TO_CA_CRT: '{{.PATH_TO_CA_CRT | default .CA_CRT}}'
+  SQUID_ACL_LOCALNET: '{{.SQUID_ACL_LOCALNET | default ""}}'
+  SKIP_TAGS: '{{.SKIP_TAGS | default ""}}'
+  CLI_ARGS: '{{.CLI_ARGS | default ""}}'
+
+  # Terraform directory (usually empty)
+  TF_DIR: '{{.TF_DIR | default ""}}'
+
+env:
+  # Terraform
+  TF_IN_AUTOMATION: "{{.CI}}"
+
+  # AWS Credentials
+  AWS_ACCESS_KEY_ID: '{{.AWS_ACCESS_KEY_ID | default .DA_AWS_ACCESS_KEY_ID}}'
+  AWS_SECRET_ACCESS_KEY: '{{.AWS_SECRET_ACCESS_KEY | default .DA_AWS_SECRET_ACCESS_KEY}}'
+  AWS_DEFAULT_REGION: '{{.AWS_DEFAULT_REGION}}'
+
+  # Ansible Environment
+  ANSIBLE_VERSION: "{{.ANSIBLE_VERSION}}"
+  ANSIBLE_INSTALL_DIR: "{{.ANSIBLE_INSTALL_DIR}}"
+  ANSIBLE_LOG_PATH: "{{.ANSIBLE_LOG_PATH}}"
+  ANSIBLE_INVENTORY: "{{.ANSIBLE_INVENTORY}}"
+  ANSIBLE_COLLECTIONS_PATH: "{{.ANSIBLE_COLLECTIONS_PATH}}"
+  ANSIBLE_ROLES_PATH: "{{.ANSIBLE_ROLES_PATH}}"
+
+  # macOS fork safety
+  OBJC_DISABLE_INITIALIZE_FORK_SAFETY: "YES"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+    silent: true

@@ -1,0 +1,34 @@
+version: '3'
+
+tasks:
+  logging:configure:
+    desc: Configure Redpanda logging
+    deps:
+      - :ansible:prereqs
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - ansible-playbook ansible/operation-configure-logging.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars redpanda_logging_log_file={{.REDPANDA_LOGGING_LOG_FILE}}
+
+  connect:restart:
+    desc: Perform rolling restart of Redpanda Connect cluster
+    deps:
+      - :ansible:prereqs
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - ansible-playbook ansible/operation-rolling-restart-connect.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}}
+
+  broker:restart:
+    desc: Perform rolling restart of Redpanda broker cluster
+    deps:
+      - :ansible:prereqs
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - ansible-playbook ansible/operation-rolling-restart.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}}
+
+  license:apply:
+    desc: Apply Redpanda license to the cluster
+    deps:
+      - :ansible:prereqs
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - ansible-playbook ansible/operation-apply-license.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}}

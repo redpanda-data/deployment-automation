@@ -1,0 +1,157 @@
+version: '3'
+
+tasks:
+  # Composite workflows
+  aws:rp:workflow:
+    desc: Full AWS + Redpanda deployment workflow
+    deps:
+      - :tools:keygen
+      - :infra:aws:build
+      - :cluster:provision
+      - :monitor:deploy
+      - :monitor:console:deploy
+
+  # AWS CI Workflows
+  aws:rp:
+    desc: CI workflow - AWS basic Redpanda
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:aws:build
+      - task: :cluster:provision
+      - task: :monitor:deploy
+      - task: :monitor:console:deploy
+      - task: :tools:rpk:install
+      - task: :test:cluster
+      - task: :infra:aws:destroy
+
+  aws:rp:connect:
+    desc: CI workflow - AWS Redpanda with Connect
+    vars:
+      ENABLE_CONNECT: "true"
+      DISTRO: "41"
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:aws:build
+        vars: {ENABLE_CONNECT: "true", DISTRO: "41"}
+      - task: :infra:extra:aws:copy
+      - task: :infra:extra:aws:build
+      - task: :cluster:provision
+      - task: :connect:deploy
+      - task: :monitor:deploy
+      - task: :monitor:console:deploy
+      - task: :tools:rpk:install
+      - task: :test:cluster
+      - task: :connect:connector:create
+      - task: :test:spam
+      - task: :infra:extra:aws:destroy
+      - task: :infra:aws:destroy
+
+  aws:rp:tls:
+    desc: CI workflow - AWS Redpanda with TLS
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:aws:build
+      - task: :cluster:tls
+      - task: :monitor:deploy:tls
+      - task: :monitor:console:deploy:tls
+      - task: :tools:rpk:install
+      - task: :test:cluster:tls
+      - task: :infra:aws:destroy
+
+  aws:rp:tiered:
+    desc: CI workflow - AWS Redpanda with tiered storage
+    vars:
+      TIERED_STORAGE_ENABLED: "true"
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:aws:build
+        vars: {TIERED_STORAGE_ENABLED: "true"}
+      - task: :cluster:tiered
+      - task: :monitor:deploy:tls
+      - task: :monitor:console:deploy:tls
+      - task: :tools:rpk:install
+      - task: :test:cluster:tls
+      - task: :test:storage:aws
+      - task: :infra:aws:destroy
+
+  aws:rp:ts-connect:
+    desc: CI workflow - AWS Redpanda with tiered storage and Connect
+    vars:
+      ENABLE_CONNECT: "true"
+      TIERED_STORAGE_ENABLED: "true"
+      DISTRO: "41"
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:aws:build
+        vars: {ENABLE_CONNECT: "true", TIERED_STORAGE_ENABLED: "true", DISTRO: "41"}
+      - task: :cluster:tiered
+      - task: :connect:deploy:tls
+      - task: :monitor:deploy:tls
+      - task: :monitor:console:deploy:tls
+      - task: :infra:extra:aws:copy
+      - task: :infra:extra:aws:build
+      - task: :cluster:extra:provision
+      - task: :tools:rpk:install
+      - task: :test:cluster:tls
+      - task: :test:storage:aws
+      - task: :test:connect:tls
+      - task: :connect:connector:create:tls
+      - task: :test:spam:tls
+      - task: :infra:aws:destroy
+      - task: :infra:extra:aws:destroy
+
+  # GCP CI Workflows
+  gcp:rp:
+    desc: CI workflow - GCP basic Redpanda
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:gcp:build
+      - task: :cluster:provision
+      - task: :monitor:deploy
+      - task: :monitor:console:deploy
+      - task: :tools:rpk:install
+      - task: :test:cluster
+      - task: :infra:gcp:destroy
+
+  gcp:rp:tls:
+    desc: CI workflow - GCP Redpanda with TLS
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:gcp:build
+      - task: :cluster:tls
+      - task: :monitor:deploy:tls
+      - task: :monitor:console:deploy:tls
+      - task: :tools:rpk:install
+      - task: :test:cluster:tls
+      - task: :infra:gcp:destroy
+
+  gcp:rp:tiered:
+    desc: CI workflow - GCP Redpanda with tiered storage
+    vars:
+      TIERED_STORAGE_ENABLED: "true"
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:gcp:build
+        vars: {TIERED_STORAGE_ENABLED: "true"}
+      - task: :cluster:tiered
+      - task: :monitor:deploy:tls
+      - task: :monitor:console:deploy:tls
+      - task: :tools:rpk:install
+      - task: :test:cluster:tls
+      - task: :test:storage:gcp
+      - task: :infra:gcp:destroy
+
+  # Extra deployment workflows
+  extra:rp:
+    desc: Deploy secondary Redpanda cluster
+    cmds:
+      - task: :infra:extra:aws:build
+      - task: :cluster:extra:provision
+
+  extra:rp:tls:
+    desc: Deploy secondary cluster with TLS
+    cmds:
+      - task: :infra:extra:aws:build
+      - task: :cluster:extra:tls
+      - task: :monitor:extra:deploy:tls
+      - task: :monitor:console:extra:deploy:tls

@@ -1,0 +1,33 @@
+version: '3'
+
+tasks:
+  keygen:
+    desc: Generate SSH keypair for cluster access
+    cmds:
+      - |
+        if [ ! -f artifacts/testkey ]; then
+          printf 'y\n' | ssh-keygen -t rsa -b 4096 -C "{{.SSH_EMAIL}}" -N "" -f artifacts/testkey && chmod 0700 artifacts/testkey
+        else
+          echo "artifacts/testkey already exists. Skipping key generation."
+        fi
+
+  rpk:install:
+    desc: Download and install rpk CLI tool
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/tmp
+      - mkdir -p {{.ARTIFACT_DIR}}/bin
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          curl -L {{.MAC_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip
+        else
+          curl -L {{.LINUX_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip
+        fi
+      - unzip -o {{.ARTIFACT_DIR}}/tmp/rpk.zip -d {{.ARTIFACT_DIR}}/bin/
+      - chmod 755 {{.ARTIFACT_DIR}}/bin/rpk
+      - rm {{.ARTIFACT_DIR}}/tmp/rpk.zip
+
+  lint:
+    desc: Run ansible-lint on playbooks
+    cmds:
+      - echo "Running ansible-lint"
+      - ansible-lint -c .ansible-lint

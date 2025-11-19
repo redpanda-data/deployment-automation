@@ -1,0 +1,51 @@
+version: '3'
+
+tasks:
+  client:generate:
+    desc: Generate client TLS certificates
+    cmds:
+      - task: client:key
+      - task: client:csr
+      - task: client:crt
+
+  client:key:
+    desc: Generate client private key
+    cmds:
+      - mkdir -p {{.CLIENT_DIR}}
+      - openssl genrsa -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key 2048
+    generates:
+      - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key"
+    status:
+      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key
+
+  client:csr:
+    desc: Generate client certificate signing request
+    deps: [client:key]
+    cmds:
+      - openssl req -new -key {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr -subj "/CN={{.CLIENT_NAME}}"
+    generates:
+      - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr"
+    status:
+      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr
+
+  client:crt:
+    desc: Sign client certificate
+    deps: [client:csr]
+    cmds:
+      - openssl x509 -req -in {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.csr -CA {{.CA_DIR}}/ca.crt -CAkey {{.CA_DIR}}/ca.key -CAcreateserial -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.crt -days 365 -sha256
+    generates:
+      - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.crt"
+    status:
+      - test -f {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.crt
+
+  clean:
+    desc: Remove all generated certificates
+    cmds:
+      - rm -rf {{.CA_DIR}}
+      - rm -rf {{.CERT_DIR}}
+      - rm -rf {{.CLIENT_DIR}}
+
+  client:clean:
+    desc: Remove client certificates only
+    cmds:
+      - rm -rf {{.CLIENT_DIR}}

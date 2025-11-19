@@ -1,0 +1,20 @@
+version: '3'
+
+tasks:
+  prereqs:
+    desc: Install Ansible collections and roles
+    deps: [collection, role]
+    cmds:
+      - echo "Ansible prerequisites installed"
+
+  collection:
+    desc: Install Ansible collections
+    cmds:
+      - mkdir -p {{.ANSIBLE_COLLECTIONS_PATH}}
+      - ansible-galaxy collection install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
+
+  role:
+    desc: Install Ansible roles
+    cmds:
+      - mkdir -p {{.ANSIBLE_ROLES_PATH}}
+      - ansible-galaxy role install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_ROLES_PATH}}

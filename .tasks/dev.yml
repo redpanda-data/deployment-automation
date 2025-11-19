@@ -1,0 +1,29 @@
+version: '3'
+
+tasks:
+  connect:standup:
+    desc: Stand up full Connect environment (primary + secondary clusters for replication)
+    vars:
+      ENABLE_CONNECT: "true"
+      DISTRO: "41"
+    cmds:
+      - task: :tools:keygen
+      - task: :ansible:prereqs
+      - task: :tools:rpk:install
+      - task: :infra:aws:build
+        vars: {ENABLE_CONNECT: "true", DISTRO: "41"}
+      - task: :infra:extra:aws:copy
+      - task: :infra:extra:aws:build
+      - task: :cluster:provision
+      - task: :connect:deploy
+      - task: :monitor:deploy
+      - task: :monitor:console:deploy
+      - task: :test:cluster
+      - task: :connect:connector:create
+      - task: :test:spam
+
+  connect:teardown:
+    desc: Tear down full Connect environment (both clusters)
+    cmds:
+      - task: :infra:extra:aws:destroy
+      - task: :infra:aws:destroy
