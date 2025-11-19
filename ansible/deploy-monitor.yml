@@ -1,4 +1,4 @@
-# jmespath is a required dependency for this playbook. Install it with `pip install jmespath`.
+# jmespath is required on the Ansible controller. Install it with `pip3 install --user jmespath`.
 - name: Set node_exporter_arch based on host architecture
   hosts: redpanda
   tasks:
@@ -10,14 +10,6 @@
         name: geerlingguy.node_exporter
       vars:
         node_exporter_arch: "{{ rp_arch }}"
-
-- name: Install jmespath
-  hosts: monitor
-  tasks:
-    - name: Install deps
-      ansible.builtin.package:
-        name: python3-jmespath
-        state: present
 
 - name: Install prometheus
   hosts: monitor
@@ -43,7 +35,7 @@
   roles:
     - grafana.grafana.grafana
   vars:
-    grafana_version: 10.4.1
+    grafana_version: latest
     grafana_security:
       admin_user: admin
       admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
