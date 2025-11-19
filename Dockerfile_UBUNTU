@@ -18,13 +18,26 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 
+# Install Go
+RUN ARCH=$(dpkg --print-architecture) \
+    && GO_VERSION=1.23.5 \
+    && wget "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz" \
+    && tar -C /usr/local -xzf "go${GO_VERSION}.linux-${ARCH}.tar.gz" \
+    && rm "go${GO_VERSION}.linux-${ARCH}.tar.gz"
+
+ENV PATH="/usr/local/go/bin:${PATH}"
+
 # Install Terraform
-RUN wget https://releases.hashicorp.com/terraform/1.4.5/terraform_1.4.5_linux_amd64.zip \
-    && unzip terraform_1.4.5_linux_amd64.zip -d /usr/local/bin \
-    && rm terraform_1.4.5_linux_amd64.zip
+RUN ARCH=$(dpkg --print-architecture) \
+    && if [ "$ARCH" = "amd64" ]; then TF_ARCH="amd64"; else TF_ARCH="arm64"; fi \
+    && wget "https://releases.hashicorp.com/terraform/1.4.5/terraform_1.4.5_linux_${TF_ARCH}.zip" \
+    && unzip "terraform_1.4.5_linux_${TF_ARCH}.zip" -d /usr/local/bin \
+    && rm "terraform_1.4.5_linux_${TF_ARCH}.zip"
 
 # Install task
-RUN curl -sSLf "https://github.com/go-task/task/releases/download/v3.21.0/task_linux_amd64.tar.gz" | tar -xz -C /usr/local/bin
+RUN ARCH=$(dpkg --print-architecture) \
+    && if [ "$ARCH" = "amd64" ]; then TASK_ARCH="amd64"; else TASK_ARCH="arm64"; fi \
+    && curl -sSLf "https://github.com/go-task/task/releases/download/v3.21.0/task_linux_${TASK_ARCH}.tar.gz" | tar -xz -C /usr/local/bin
 
 ## uncomment for use as a local client
 #RUN mkdir -p /app
