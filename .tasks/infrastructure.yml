@@ -1,0 +1,187 @@
+version: '3'
+
+tasks:
+  # AWS Infrastructure
+  aws:build:
+    desc: Build AWS infrastructure with Terraform
+    cmds:
+      - echo "Building AWS infrastructure for deployment {{.DEPLOYMENT_ID}}"
+      - echo "Tiered storage enabled {{.TIERED_STORAGE_ENABLED}}"
+      - |
+        cd aws && \
+        terraform init && \
+        terraform apply -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect={{.ENABLE_CONNECT}}' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+
+  aws:destroy:
+    desc: Destroy AWS infrastructure
+    cmds:
+      - |
+        cd aws/{{.TF_DIR}} && \
+        terraform init && \
+        terraform destroy -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect={{.ENABLE_CONNECT}}' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+
+  aws:proxy:build:
+    desc: Build AWS infrastructure with proxy configuration
+    cmds:
+      - echo "Building AWS infrastructure with proxy for {{.DEPLOYMENT_ID}}"
+      - echo "Tiered storage enabled {{.TIERED_STORAGE_ENABLED}}"
+      - |
+        cd aws/private-test && \
+        terraform init && \
+        terraform apply -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect={{.ENABLE_CONNECT}}' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+
+  aws:proxy:destroy:
+    desc: Destroy AWS proxy infrastructure
+    cmds:
+      - echo "Destroying AWS proxy infrastructure for {{.DEPLOYMENT_ID}}"
+      - |
+        cd aws/private-test && \
+        terraform init && \
+        terraform destroy -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect={{.ENABLE_CONNECT}}' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+
+  # GCP Infrastructure
+  gcp:build:
+    desc: Build GCP infrastructure with Terraform
+    cmds:
+      - |
+        cd gcp && \
+        terraform init && \
+        terraform apply -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='image={{.GCP_IMAGE}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_type={{.GCP_INSTANCE_TYPE}}' \
+          -var='gcp_creds={{.GCP_CREDS}}'
+
+  gcp:destroy:
+    desc: Destroy GCP infrastructure
+    cmds:
+      - |
+        cd gcp/{{.TF_DIR}} && \
+        terraform init && \
+        terraform destroy -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='image={{.GCP_IMAGE}}' \
+          -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
+          -var='machine_type={{.GCP_INSTANCE_TYPE}}' \
+          -var='gcp_creds={{.GCP_CREDS}}'
+
+  # Extra AWS cluster for mirroring/testing
+  extra:aws:copy:
+    desc: Copy AWS terraform files for secondary cluster
+    cmds:
+      - mkdir -p aws-extra
+      - find aws -maxdepth 1 -name "*.tf" -exec cp {} aws-extra/ \;
+      - test -f aws/README.md && cp aws/README.md aws-extra/ || true
+
+  extra:aws:build:
+    desc: Build secondary AWS cluster
+    deps: [extra:aws:copy]
+    cmds:
+      - |
+        cd aws-extra/{{.TF_DIR}} && \
+        terraform init && \
+        terraform apply -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}2' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.EXTRA_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect=false' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+
+  extra:aws:destroy:
+    desc: Destroy secondary AWS cluster
+    cmds:
+      - |
+        cd aws-extra/{{.TF_DIR}} && \
+        terraform init && \
+        terraform destroy -auto-approve \
+          -var='deployment_prefix={{.DEPLOYMENT_ID}}2' \
+          -var='public_key_path={{.PUBLIC_KEY}}' \
+          -var='broker_count={{.NUM_NODES}}' \
+          -var='enable_monitoring={{.ENABLE_MONITORING}}' \
+          -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
+          -var='allow_force_destroy={{.ALLOW_FORCE_DESTROY}}' \
+          -var='vpc_id={{.VPC_ID}}' \
+          -var='distro={{.DISTRO}}' \
+          -var='hosts_file={{.EXTRA_INVENTORY}}' \
+          -var='machine_architecture={{.MACHINE_ARCH}}' \
+          -var='enable_connect=false' \
+          -var='broker_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='client_instance_type={{.INSTANCE_TYPE_AWS}}' \
+          -var='prometheus_instance_type={{.INSTANCE_TYPE_AWS}}'
+
+  extra:aws:cleanup:
+    desc: Clean up extra AWS directory
+    cmds:
+      - rm -rf aws-extra

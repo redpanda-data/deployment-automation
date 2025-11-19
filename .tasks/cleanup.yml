@@ -1,0 +1,104 @@
+version: '3'
+
+vars:
+  # Cleanup parameters
+  PREFIX: '{{.PREFIX | default "ci-"}}'
+  AWS_CLEANUP_REGION: '{{.AWS_CLEANUP_REGION | default "us-east-2,us-west-2"}}'
+  GCP_PROJECT_ID: '{{.GCP_PROJECT_ID | default "hallowed-ray-376320"}}'
+  MIN_AGE: '{{.MIN_AGE | default ""}}'
+
+env:
+  # AWS Credentials (inherited from parent or environment)
+  AWS_ACCESS_KEY_ID: '{{.AWS_ACCESS_KEY_ID}}'
+  AWS_SECRET_ACCESS_KEY: '{{.AWS_SECRET_ACCESS_KEY}}'
+  AWS_DEFAULT_REGION: '{{.AWS_CLEANUP_REGION}}'
+
+  # GCP Credentials (supports both variable names)
+  GCP_CREDS: '{{.GCP_CREDS}}'
+  GOOGLE_CREDENTIALS_BASE64: '{{.GOOGLE_CREDENTIALS_BASE64}}'
+
+tasks:
+  aws:
+    desc: "Delete AWS CI resources (instances, volumes, SGs, IAM, S3)"
+    dir: scripts/cleanup-aws-ci-resources
+    cmds:
+      - |
+        go run main.go \
+          --prefix "{{.PREFIX}}" \
+          --region "{{.AWS_CLEANUP_REGION}}" \
+          {{if .MIN_AGE}}--min-age "{{.MIN_AGE}}"{{end}}
+
+  aws:dry:
+    desc: "Dry run - show what AWS resources would be deleted (does not actually delete)"
+    dir: scripts/cleanup-aws-ci-resources
+    cmds:
+      - |
+        go run main.go \
+          --prefix "{{.PREFIX}}" \
+          --region "{{.AWS_CLEANUP_REGION}}" \
+          {{if .MIN_AGE}}--min-age "{{.MIN_AGE}}"{{end}} \
+          --dry-run
+
+  aws:ci:
+    desc: "Delete AWS CI resources (auto-approves without confirmation)"
+    dir: scripts/cleanup-aws-ci-resources
+    cmds:
+      - |
+        go run main.go \
+          --prefix "{{.PREFIX}}" \
+          --region "{{.AWS_CLEANUP_REGION}}" \
+          {{if .MIN_AGE}}--min-age "{{.MIN_AGE}}"{{end}} \
+          --auto-approve
+
+  gcp:
+    desc: "Delete GCP CI resources (instances, networks, firewall, storage) - all regions"
+    dir: scripts/cleanup-gcp-ci-resources
+    cmds:
+      - |
+        go run main.go \
+          --project-id "{{.GCP_PROJECT_ID}}" \
+          --prefix "{{.PREFIX}}" \
+          {{if .MIN_AGE}}--min-age "{{.MIN_AGE}}"{{end}}
+
+  gcp:dry:
+    desc: "Dry run - show what GCP resources would be deleted (does not actually delete)"
+    dir: scripts/cleanup-gcp-ci-resources
+    cmds:
+      - |
+        go run main.go \
+          --project-id "{{.GCP_PROJECT_ID}}" \
+          --prefix "{{.PREFIX}}" \
+          {{if .MIN_AGE}}--min-age "{{.MIN_AGE}}"{{end}} \
+          --dry-run
+
+  gcp:ci:
+    desc: "Delete GCP CI resources (auto-approves, uses base64 creds) - all regions"
+    dir: scripts/cleanup-gcp-ci-resources
+    cmds:
+      - |
+        go run main.go \
+          --project-id "{{.GCP_PROJECT_ID}}" \
+          --prefix "{{.PREFIX}}" \
+          {{if .MIN_AGE}}--min-age "{{.MIN_AGE}}"{{end}} \
+          --auto-approve \
+          --use-gcp-creds-base64
+
+  "all:dry":
+    desc: "Dry run cleanup for both AWS and GCP"
+    cmds:
+      - task: aws:dry
+      - task: gcp:dry
+
+  "all:ci":
+    desc: "Cleanup both AWS and GCP in CI mode (auto-approve)"
+    cmds:
+      - task: aws:ci
+      - task: gcp:ci
+
+  default:
+    desc: "Show available cleanup commands"
+    silent: true
+    cmds:
+      - echo "AWS - task cleanup:aws:dry | task cleanup:aws | task cleanup:aws:ci"
+      - echo "GCP - task cleanup:gcp:dry | task cleanup:gcp | task cleanup:gcp:ci"
+      - echo "Both - task cleanup:all:dry | task cleanup:all:ci"

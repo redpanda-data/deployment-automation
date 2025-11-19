@@ -1,0 +1,87 @@
+version: '3'
+
+tasks:
+  get-rpm:
+    desc: Download Redpanda Connect RPM
+    cmds:
+      - |
+        if [ ! -f {{.LOCAL_FILE}} ]; then
+          echo "Downloading {{.LOCAL_FILE}}..."
+          curl -o {{.LOCAL_FILE}} {{.DL_LINK}}
+        else
+          echo "{{.LOCAL_FILE}} already exists. Skipping download."
+        fi
+
+  copy-rpm:
+    desc: Copy Connect RPM to connect nodes
+    cmds:
+      - echo "Copying {{.LOCAL_FILE}} to {{.SERVER_DIR}}"
+      - |
+        IPS_USERS=$(awk '/^\[connect\]/{f=1; next} /^\[/{f=0} f && /^[0-9]/{split($2,a,"="); print a[2] "@" $1}' {{.HOSTS_FILE}})
+        echo $IPS_USERS
+        for IP_USER in $IPS_USERS; do
+          scp -o StrictHostKeyChecking=no -i "{{.PRIVATE_KEY}}" "{{.LOCAL_FILE}}" "$IP_USER:{{.SERVER_DIR}}"
+        done
+
+  deploy:
+    desc: Deploy Redpanda Connect (full workflow)
+    cmds:
+      - task: get-rpm
+      - task: copy-rpm
+      - task: provision
+
+  deploy:tls:
+    desc: Deploy Redpanda Connect with TLS (full workflow)
+    cmds:
+      - task: get-rpm
+      - task: copy-rpm
+      - task: provision:tls
+
+  provision:
+    desc: Run Connect deployment playbook
+    vars:
+      ENABLE_CONNECT: "true"
+    deps:
+      - :ansible:prereqs
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - ansible-playbook ansible/deploy-connect.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+
+  provision:tls:
+    desc: Run Connect deployment playbook with TLS
+    vars:
+      ENABLE_CONNECT: "true"
+    deps:
+      - :ansible:prereqs
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - ansible-playbook ansible/deploy-connect-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+
+  extra:copy-rpm:
+    desc: Copy RPM to secondary cluster connect nodes
+    cmds:
+      - echo "Copying {{.LOCAL_FILE}} to {{.SERVER_DIR}}"
+      - |
+        IPS_USERS=$(awk '/^\[connect\]/{f=1; next} /^\[/{f=0} f && /^[0-9]/{split($2,a,"="); print a[2] "@" $1}' {{.EXTRA_INVENTORY}})
+        echo $IPS_USERS
+        for IP_USER in $IPS_USERS; do
+          scp -o StrictHostKeyChecking=no -i "{{.PRIVATE_KEY}}" "{{.LOCAL_FILE}}" "$IP_USER:{{.SERVER_DIR}}"
+        done
+
+  connector:create:
+    desc: Create MirrorSourceConnector
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        EXTRA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.EXTRA_INVENTORY}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        CONNECT_IP=$(sed -n '/^\[connect\]/,/^\[/p' {{.HOSTS_FILE}} | grep '^[0-9]' | cut -d' ' -f1 | head -n1)
+        curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' http://$CONNECT_IP:8083/connectors -d '{"name": "mirror-source-connector","config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector","topics": "testtopic","replication.factor": "1","source.cluster.bootstrap.servers": "'"$REDPANDA_BROKERS"'","source.cluster.security.protocol": "PLAINTEXT","target.cluster.bootstrap.servers": "'"$EXTRA_BROKERS"'","target.cluster.security.protocol": "PLAINTEXT","source.cluster.alias": "source" }}'
+
+  connector:create:tls:
+    desc: Create MirrorSourceConnector with TLS
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        EXTRA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.EXTRA_INVENTORY}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        CONNECT_IP=$(sed -n '/^\[connect\]/,/^\[/p' {{.HOSTS_FILE}} | grep '^[0-9]' | cut -d' ' -f1 | head -n1)
+        curl -X POST -H 'Content-Type: application/json' -H 'accept: application/json' --key {{.CLIENT_KEY}} --cacert {{.CLIENT_CERT}} https://$CONNECT_IP:8083/connectors -d '{"name": "mirror-source-connector", "config": {"connector.class": "org.apache.kafka.connect.mirror.MirrorSourceConnector", "topics": "testtopic", "replication.factor": "1", "source.cluster.bootstrap.servers": "'"$REDPANDA_BROKERS"'", "source.cluster.security.protocol": "SSL", "source.cluster.ssl.truststore.type": "PKCS12", "source.cluster.ssl.keystore.type": "PKCS12", "target.cluster.bootstrap.servers": "'"$EXTRA_BROKERS"'", "target.cluster.security.protocol": "SSL", "source.cluster.alias": "source", "target.cluster.ssl.truststore.type": "PKCS12", "target.cluster.ssl.keystore.type": "PKCS12"}}'

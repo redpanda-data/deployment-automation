@@ -1,0 +1,135 @@
+version: '3'
+
+tasks:
+  cluster:
+    desc: Test Redpanda cluster functionality (create topic, produce, consume)
+    cmds:
+      - chmod 775 {{.RPK_PATH}}
+      - echo "Testing cluster with RPK at {{.RPK_PATH}}"
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Brokers: $REDPANDA_BROKERS"
+        echo "Checking cluster status"
+        {{.RPK_PATH}} cluster status -X brokers=$REDPANDA_BROKERS -v || exit 1
+        echo "Creating topic {{.TEST_TOPIC_NAME}}"
+        {{.RPK_PATH}} topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers=$REDPANDA_BROKERS -v || exit 1
+        echo "Producing to topic"
+        echo squirrel | {{.RPK_PATH}} topic produce {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v || exit 1
+        echo "Consuming from topic"
+        {{.RPK_PATH}} topic consume {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v -o :end | grep squirrel || exit 1
+
+  cluster:tls:
+    desc: Test Redpanda cluster with TLS
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.ANSIBLE_INVENTORY}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Redpanda Brokers: $REDPANDA_BROKERS"
+        echo "TLS Truststore: {{.CA_CRT}}"
+        echo "Checking TLS cluster status"
+        {{.ARTIFACT_DIR}}/bin/rpk cluster status -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
+        echo "Creating topic"
+        {{.ARTIFACT_DIR}}/bin/rpk topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
+        echo "Producing to topic"
+        echo squirrels | {{.ARTIFACT_DIR}}/bin/rpk topic produce {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
+        echo "Consuming from topic"
+        {{.ARTIFACT_DIR}}/bin/rpk topic consume {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v -o :end | grep squirrels || exit 1
+
+  schema:
+    desc: Test schema registry
+    cmds:
+      - |
+        REDPANDA_REGISTRY=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:8081/' | paste -sd ',' -)
+        echo "Testing schema registry: $REDPANDA_REGISTRY"
+        for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do curl $ip_port/subjects ; done
+
+  schema:tls:
+    desc: Test schema registry with TLS
+    cmds:
+      - |
+        REDPANDA_REGISTRY=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.ANSIBLE_INVENTORY}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:8081/' | paste -sd ',' -)
+        echo "Testing schema registry with TLS"
+        for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do curl $ip_port/subjects -k --cacert "{{.CA_CRT}}"; done
+
+  storage:aws:
+    desc: Verify tiered storage in AWS S3
+    cmds:
+      - aws s3api list-objects-v2 --bucket "{{.BUCKET_NAME}}" --region {{.AWS_DEFAULT_REGION}} --query "Contents[?contains(Key, 'testtopic/')]" --output text | wc -l | xargs -I {} sh -c 'if [ "{}" -ge 1 ]; then exit 0; else echo "testtopic folder not found" && exit 1; fi'
+
+  storage:gcp:
+    desc: Verify tiered storage in GCP
+    cmds:
+      - echo "{{.GCP_CREDS}}" | base64 -d > /tmp/gcp_creds.json
+      - export CLOUDSDK_CORE_PROJECT={{.GOOGLE_PROJECT_ID}}
+      - gcloud auth activate-service-account --key-file={{.GOOGLE_APPLICATION_CREDENTIALS}} --project={{.GOOGLE_PROJECT_ID}}
+      - gcloud storage --project {{.GOOGLE_PROJECT_ID}} ls | grep {{.SIMPLE_BUCKET_NAME}}
+
+  connect:tls:
+    desc: Test Connect REST API with TLS client cert
+    deps:
+      - :cert:client:generate
+    cmds:
+      - |
+        CONNECT_TARGET=$(sed -n '/^\[connect\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | head -n1)
+        curl -vvvvv -k --cert ansible/tls/clients/client.crt --key {{.CLIENT_KEY}} --cacert {{.CLIENT_CERT}} -X GET https://$CONNECT_TARGET:8083/connectors
+
+  prometheus:
+    desc: Test Prometheus exporter endpoint
+    deps:
+      - :cert:client:generate
+    cmds:
+      - |
+        PROMETHEUS_EXPORTER_TARGET=$(sed -n '/^\[connect\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | head -n1)
+        curl -vvvvv -k --cert ansible/tls/clients/client.crt --key ansible/tls/clients/client.key --cacert ansible/tls/ca/ca.crt -X GET https://$PROMETHEUS_EXPORTER_TARGET:9404/metrics
+
+  spam:
+    desc: Produce multiple messages to test topic
+    cmds:
+      - chmod 775 {{.RPK_PATH}}
+      - echo "Spamming {{.SPAM_MESSAGE_COUNT}} messages to topic"
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        for i in $(seq 1 {{.SPAM_MESSAGE_COUNT}}); do
+          echo "squirrel$i" | {{.RPK_PATH}} topic produce {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v || exit 1
+        done
+
+  spam:tls:
+    desc: Produce multiple messages to test topic with TLS
+    cmds:
+      - chmod 775 {{.RPK_PATH}}
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        for i in $(seq 1 {{.SPAM_MESSAGE_COUNT}}); do
+          echo "squirrel$i" | {{.RPK_PATH}} topic produce {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -X tls.ca="{{.CA_CRT}}" -v || exit 1
+        done
+
+  cluster:proxy:
+    desc: Test proxied cluster via SSH
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        CLIENT_SSH_USER=$(sed -n '/\[redpanda\]/,/\[/p' "{{.HOSTS_FILE}}" | grep ansible_user | head -n1 | tr ' ' '\n' | grep ansible_user | cut -d'=' -f2)
+        CLIENT_PUBLIC_IP=$(sed -n '/^\[client\]/,/^$$/p' "{{.HOSTS_FILE}}" | grep 'private_ip=' | cut -f1 -d' ')
+        echo "Checking proxy cluster status"
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "{{.SSHKEY}}" "$CLIENT_SSH_USER@$CLIENT_PUBLIC_IP" 'rpk cluster status -X brokers="'"$REDPANDA_BROKERS"'" -X tls.ca="{{.PATH_TO_CA_CRT}}" -v' || exit 1
+        echo "Creating topic"
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "{{.SSHKEY}}" "$CLIENT_SSH_USER@$CLIENT_PUBLIC_IP" 'rpk topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers="'"$REDPANDA_BROKERS"'" -X tls.ca="{{.PATH_TO_CA_CRT}}" -v' || exit 1
+        echo "Producing to topic"
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "{{.SSHKEY}}" "$CLIENT_SSH_USER@$CLIENT_PUBLIC_IP" 'echo squirrels | rpk topic produce {{.TEST_TOPIC_NAME}} -X brokers="'"$REDPANDA_BROKERS"'" -X tls.ca="{{.PATH_TO_CA_CRT}}" -v' || exit 1
+        sleep 30
+        echo "Consuming from topic"
+        testoutput=$(ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -i "{{.SSHKEY}}" "$CLIENT_SSH_USER@$CLIENT_PUBLIC_IP" 'rpk topic consume {{.TEST_TOPIC_NAME}} -X brokers="'"$REDPANDA_BROKERS"'" -X tls.ca="{{.PATH_TO_CA_CRT}}" -v -o :end')
+        echo "$testoutput" | grep squirrels || exit 1
+
+  broker:extract:
+    desc: Test broker extraction from hosts file
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Extracted brokers: $REDPANDA_BROKERS"
+        BROKER_COUNT=$(echo "$REDPANDA_BROKERS" | tr ',' '\n' | wc -l | tr -d ' ')
+        echo "Broker count: $BROKER_COUNT"
+        if echo "$REDPANDA_BROKERS" | grep -q "ansible_become" || [ -z "$REDPANDA_BROKERS" ]; then
+          echo "❌ FAILED: Invalid broker list"
+          exit 1
+        fi
+        echo "✅ SUCCESS"
