@@ -138,7 +138,6 @@ variable "connect_instance_type" {
 
 module "redpanda-cluster" {
   source                          = "redpanda-data/redpanda-cluster/aws"
-  version                         = "~> 1.1.5"
   public_key_path                 = var.public_key_path
   broker_count                    = var.broker_count
   deployment_prefix               = var.deployment_prefix
