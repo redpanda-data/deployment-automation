@@ -1,0 +1,10 @@
+---
+- name: Rolling Restart Redpanda Connect Cluster
+  hosts: connect
+  tasks:
+    - name: Perform rolling restart of Redpanda Connect
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_connect
+        public: true
+      vars:
+        restart_only: true
