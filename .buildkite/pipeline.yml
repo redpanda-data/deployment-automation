@@ -6,7 +6,7 @@ steps:
     key: aws-up-ubuntu
     concurrency_group: aws-ub
     concurrency: 1
-    command: make ci-aws-rp -e DEPLOYMENT_ID=ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=ubuntu-focal --keep-going
+    command: DEPLOYMENT_ID=ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -22,7 +22,7 @@ steps:
     key: aws-up-ubuntu-tiered
     concurrency_group: aws-ub
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=ubuntu-focal --keep-going
+    command: DEPLOYMENT_ID=ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -39,7 +39,7 @@ steps:
     key: aws-up-ubuntu-ts-large
     concurrency_group: aws-ub
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=ubuntu-focal -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: DEPLOYMENT_ID=ci-ts-ub-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -56,7 +56,7 @@ steps:
     key: aws-up-fedora
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp -e DEPLOYMENT_ID=ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
+    command: DEPLOYMENT_ID=ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 task ci:aws:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -72,7 +72,7 @@ steps:
     key: aws-up-fed-con
     concurrency_group: aws-fd-cn
     concurrency: 1
-    command: make ci-aws-rp-connect -e DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
+    command: DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 task ci:aws:rp:connect
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -89,7 +89,7 @@ steps:
     key: aws-up-fedora-tiered
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
+    command: DEPLOYMENT_ID=ci-ts-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -106,7 +106,7 @@ steps:
     key: aws-up-fed-cts
     concurrency_group: aws-fd-cn
     concurrency: 1
-    command: make ci-aws-rp-ts-connect -e DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 --keep-going
+    command: DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 task ci:aws:rp:ts-connect
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -124,7 +124,7 @@ steps:
     key: aws-up-fedora-ts-large
     concurrency_group: aws-fd
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: DEPLOYMENT_ID=ci-ts-fd-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -141,7 +141,7 @@ steps:
     key: gcp-up-ubuntu
     concurrency_group: gcp-ub
     concurrency: 1
-    command: make ci-gcp-rp -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
+    command: GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" DEPLOYMENT_ID="ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -155,7 +155,7 @@ steps:
     key: gcp-up-ubuntu-tiered
     concurrency_group: gcp-ub
     concurrency: 1
-    command: make ci-gcp-rp-tiered -e GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" -e DEPLOYMENT_ID="ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
+    command: GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" DEPLOYMENT_ID="ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -163,7 +163,7 @@ steps:
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
           image: glrp/atgt:latest
-          pre-exit: make destroy-gcp
+          pre-exit: task infra:gcp:destroy
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
@@ -171,7 +171,7 @@ steps:
     key: gcp-up-fedora
     concurrency_group: gcp-fd
     concurrency: 1
-    command: make ci-gcp-rp -e GCP_IMAGE="fedora-cloud/fedora-cloud-39" -e DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
+    command: GCP_IMAGE="fedora-cloud/fedora-cloud-39" DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -185,7 +185,7 @@ steps:
     key: gcp-up-fedora-tiered
     concurrency_group: gcp-fd
     concurrency: 1
-    command: make ci-gcp-rp-tiered -e GCP_IMAGE="fedora-cloud/fedora-cloud-39" -e DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" --keep-going
+    command: GCP_IMAGE="fedora-cloud/fedora-cloud-39" DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -200,7 +200,7 @@ steps:
     key: aws-us-fedora-tiered
     concurrency_group: unstable
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e IS_USING_UNSTABLE=true --keep-going
+    command: DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 IS_USING_UNSTABLE=true task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -217,7 +217,7 @@ steps:
     key: aws-us-fedora-ts-large
     concurrency_group: unstable
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=Fedora-Cloud-Base-39 -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 IS_USING_UNSTABLE=true INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -234,7 +234,7 @@ steps:
     key: aws-us-ubuntu-tiered
     concurrency_group: unstable
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=ubuntu-focal -e IS_USING_UNSTABLE=true --keep-going
+    command: DEPLOYMENT_ID=ci-ts-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal IS_USING_UNSTABLE=true task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -251,7 +251,7 @@ steps:
     key: aws-us-ubuntu-ts-large
     concurrency_group: unstable
     concurrency: 1
-    command: make ci-aws-rp-tiered -e DEPLOYMENT_ID=ci-ts-ub-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` -e DISTRO=ubuntu-focal -e IS_USING_UNSTABLE=true -e INSTANCE_TYPE_AWS=is4gen.4xlarge -e MACHINE_ARCH=arm64 --keep-going
+    command: DEPLOYMENT_ID=ci-ts-ub-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal IS_USING_UNSTABLE=true INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -264,3 +264,56 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+
+  - label: cleanup aws resources
+    key: cleanup-aws
+    command: task cleanup:aws:ci
+    plugins:
+      - seek-oss/aws-sm#v2.3.2:
+          json-to-env:
+            - json-key: .
+              secret-id: sdlc/prod/buildkite/deployment_automation
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+            - CI=true
+    depends_on:
+      - aws-up-ubuntu
+      - aws-up-ubuntu-tiered
+      - aws-up-ubuntu-ts-large
+      - aws-up-fedora
+      - aws-up-fed-con
+      - aws-up-fedora-tiered
+      - aws-up-fed-cts
+      - aws-up-fedora-ts-large
+      - aws-us-fedora-tiered
+      - aws-us-fedora-ts-large
+      - aws-us-ubuntu-tiered
+      - aws-us-ubuntu-ts-large
+    allow_dependency_failure: true
+    soft_fail: true
+
+  - label: cleanup gcp resources
+    key: cleanup-gcp
+    command: task cleanup:gcp:ci
+    plugins:
+      - seek-oss/aws-sm#v2.3.2:
+          json-to-env:
+            - json-key: .
+              secret-id: sdlc/prod/buildkite/deployment_automation
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - GCP_CREDS
+            - GOOGLE_CREDENTIALS_BASE64
+            - CI=true
+    depends_on:
+      - gcp-up-ubuntu
+      - gcp-up-ubuntu-tiered
+      - gcp-up-fedora
+      - gcp-up-fedora-tiered
+    allow_dependency_failure: true
+    soft_fail: true
