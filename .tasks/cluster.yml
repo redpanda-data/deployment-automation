@@ -9,14 +9,6 @@ tasks:
     cmds:
       - ansible-playbook ansible/provision-cluster.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
-  tls:
-    desc: Provision Redpanda cluster with TLS
-    deps:
-      - :ansible:prereqs
-      - :ensure-logs-dir
-    cmds:
-      - ansible-playbook ansible/provision-cluster-tls.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
-
   tiered:
     desc: Provision Redpanda cluster with tiered storage
     deps:
