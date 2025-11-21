@@ -5,54 +5,54 @@ tasks:
     desc: Provision Redpanda cluster
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/provision-cluster.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   tls:
     desc: Provision Redpanda cluster with TLS
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/provision-cluster-tls.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   tiered:
     desc: Provision Redpanda cluster with tiered storage
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}}
 
   proxy:
     desc: Provision Redpanda cluster with proxy
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/proxy/provision-private-proxied-cluster.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars '{"squid_acl_localnet":["{{.SQUID_ACL_LOCALNET}}"]}' --extra-vars redpanda='{"cluster":{"cloud_storage_segment_max_upload_interval_sec":"{{.SEGMENT_UPLOAD_INTERVAL}}"}}' {{.SKIP_TAGS}} {{.CLI_ARGS}}
 
   extra:provision:
     desc: Provision secondary Redpanda cluster
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/provision-cluster.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   extra:tls:
     desc: Provision secondary cluster with TLS
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/provision-cluster-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   dev:tiered:
     desc: Development tiered storage deployment (no log suppression)
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key {{.PRIVATE_KEY}} --extra-vars redpanda_broker_no_log=false --extra-vars development_build=true --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}}

@@ -133,8 +133,9 @@ tasks:
   # Extra AWS cluster for mirroring/testing
   extra:aws:copy:
     desc: Copy AWS terraform files for secondary cluster
+    deps:
+      - :ensure-aws-extra-dir
     cmds:
-      - mkdir -p aws-extra
       - find aws -maxdepth 1 -name "*.tf" -exec cp {} aws-extra/ \;
       - test -f aws/README.md && cp aws/README.md aws-extra/ || true
 

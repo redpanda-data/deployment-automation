@@ -180,3 +180,73 @@ tasks:
     cmds:
       - task --list-all
     silent: true
+
+  ensure-logs-dir:
+    desc: Ensure artifacts logs directory exists
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+    status:
+      - test -d {{.ARTIFACT_DIR}}/logs
+    generates:
+      - "{{.ARTIFACT_DIR}}/logs"
+    silent: true
+
+  ensure-tmp-dir:
+    desc: Ensure artifacts tmp directory exists
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/tmp
+    status:
+      - test -d {{.ARTIFACT_DIR}}/tmp
+    generates:
+      - "{{.ARTIFACT_DIR}}/tmp"
+    silent: true
+
+  ensure-bin-dir:
+    desc: Ensure artifacts bin directory exists
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/bin
+    status:
+      - test -d {{.ARTIFACT_DIR}}/bin
+    generates:
+      - "{{.ARTIFACT_DIR}}/bin"
+    silent: true
+
+  ensure-collections-dir:
+    desc: Ensure ansible collections directory exists
+    cmds:
+      - mkdir -p {{.ANSIBLE_COLLECTIONS_PATH}}
+    status:
+      - test -d {{.ANSIBLE_COLLECTIONS_PATH}}
+    generates:
+      - "{{.ANSIBLE_COLLECTIONS_PATH}}"
+    silent: true
+
+  ensure-roles-dir:
+    desc: Ensure ansible roles directory exists
+    cmds:
+      - mkdir -p {{.ANSIBLE_ROLES_PATH}}
+    status:
+      - test -d {{.ANSIBLE_ROLES_PATH}}
+    generates:
+      - "{{.ANSIBLE_ROLES_PATH}}"
+    silent: true
+
+  ensure-client-dir:
+    desc: Ensure TLS client directory exists
+    cmds:
+      - mkdir -p {{.CLIENT_DIR}}
+    status:
+      - test -d {{.CLIENT_DIR}}
+    generates:
+      - "{{.CLIENT_DIR}}"
+    silent: true
+
+  ensure-aws-extra-dir:
+    desc: Ensure aws-extra directory exists
+    cmds:
+      - mkdir -p aws-extra
+    status:
+      - test -d aws-extra
+    generates:
+      - "aws-extra"
+    silent: true

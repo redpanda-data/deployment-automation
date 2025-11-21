@@ -13,9 +13,10 @@ tasks:
 
   rpk:install:
     desc: Download and install rpk CLI tool
+    deps:
+      - :ensure-tmp-dir
+      - :ensure-bin-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/tmp
-      - mkdir -p {{.ARTIFACT_DIR}}/bin
       - |
         if [ "$(uname)" = "Darwin" ]; then
           curl -L {{.MAC_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip

@@ -9,12 +9,14 @@ tasks:
 
   collection:
     desc: Install Ansible collections
+    deps:
+      - :ensure-collections-dir
     cmds:
-      - mkdir -p {{.ANSIBLE_COLLECTIONS_PATH}}
       - ansible-galaxy collection install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
 
   role:
     desc: Install Ansible roles
+    deps:
+      - :ensure-roles-dir
     cmds:
-      - mkdir -p {{.ANSIBLE_ROLES_PATH}}
       - ansible-galaxy role install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_ROLES_PATH}}

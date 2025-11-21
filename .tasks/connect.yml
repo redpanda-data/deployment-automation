@@ -43,8 +43,8 @@ tasks:
       ENABLE_CONNECT: "true"
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-connect.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   provision:tls:
@@ -53,8 +53,8 @@ tasks:
       ENABLE_CONNECT: "true"
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-connect-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   extra:copy-rpm:

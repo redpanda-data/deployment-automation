@@ -10,8 +10,9 @@ tasks:
 
   client:key:
     desc: Generate client private key
+    deps:
+      - :ensure-client-dir
     cmds:
-      - mkdir -p {{.CLIENT_DIR}}
       - openssl genrsa -out {{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key 2048
     generates:
       - "{{.CLIENT_DIR}}/{{.CLIENT_NAME}}.key"
