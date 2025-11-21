@@ -5,8 +5,8 @@ tasks:
     desc: Deploy monitoring stack (Prometheus/Grafana)
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
       - ansible-playbook ansible/deploy-monitor.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
@@ -14,54 +14,54 @@ tasks:
     desc: Deploy monitoring stack with TLS
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-monitor-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   extra:deploy:
     desc: Deploy monitoring on secondary cluster
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-monitor.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   extra:deploy:tls:
     desc: Deploy monitoring with TLS on secondary cluster
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-monitor-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   console:deploy:
     desc: Deploy Redpanda Console
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-console.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   console:deploy:tls:
     desc: Deploy Redpanda Console with TLS
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-console-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   console:extra:deploy:
     desc: Deploy Console on secondary cluster
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-console.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   console:extra:deploy:tls:
     desc: Deploy Console with TLS on secondary cluster
     deps:
       - :ansible:prereqs
+      - :ensure-logs-dir
     cmds:
-      - mkdir -p {{.ARTIFACT_DIR}}/logs
       - ansible-playbook ansible/deploy-console-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
