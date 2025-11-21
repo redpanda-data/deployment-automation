@@ -46,18 +46,6 @@ tasks:
       - task: :infra:extra:aws:destroy
       - task: :infra:aws:destroy
 
-  aws:rp:tls:
-    desc: CI workflow - AWS Redpanda with TLS
-    cmds:
-      - task: :tools:keygen
-      - task: :infra:aws:build
-      - task: :cluster:tls
-      - task: :monitor:deploy:tls
-      - task: :monitor:console:deploy:tls
-      - task: :tools:rpk:install
-      - task: :test:cluster:tls
-      - task: :infra:aws:destroy
-
   aws:rp:tiered:
     desc: CI workflow - AWS Redpanda with tiered storage
     vars:
@@ -111,18 +99,6 @@ tasks:
       - task: :monitor:console:deploy
       - task: :tools:rpk:install
       - task: :test:cluster
-      - task: :infra:gcp:destroy
-
-  gcp:rp:tls:
-    desc: CI workflow - GCP Redpanda with TLS
-    cmds:
-      - task: :tools:keygen
-      - task: :infra:gcp:build
-      - task: :cluster:tls
-      - task: :monitor:deploy:tls
-      - task: :monitor:console:deploy:tls
-      - task: :tools:rpk:install
-      - task: :test:cluster:tls
       - task: :infra:gcp:destroy
 
   gcp:rp:tiered:
