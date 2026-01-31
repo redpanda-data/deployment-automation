@@ -63,6 +63,36 @@ ansible-playbook ansible/deploy-client.yml --private-key ~/.ssh/id_rsa
 
 The playbooks can all be run in any order. However they are designed with the assumption that you will run only either the TLS or non TLS playbooks, not both. Currently we do not support converting a cluster from non-TLS to TLS or vice versa.
 
+## SASL Authentication Deployments
+
+### TLS + SASL Cluster
+
+Deploy a cluster with both TLS encryption and SASL authentication:
+
+```bash
+export REDPANDA_SASL_PASSWORD="your-secure-password"
+export SR_SERVICE_PASSWORD="schema-registry-password"
+export PP_SERVICE_PASSWORD="pandaproxy-password"
+
+ansible-playbook ansible/provision-cluster-tls-sasl.yml \
+  --private-key ~/.ssh/id_rsa \
+  --inventory artifacts/hosts_gcp_$DEPLOYMENT_PREFIX.ini
+```
+
+### Managing Users and ACLs
+
+After deploying a SASL-enabled cluster, you can manage additional users and ACLs:
+
+```bash
+export REDPANDA_SASL_PASSWORD="your-admin-password"
+export PRODUCER_APP_PASSWORD="producer-password"
+export CONSUMER_APP_PASSWORD="consumer-password"
+
+ansible-playbook ansible/manage-sasl-users.yml \
+  --private-key ~/.ssh/id_rsa \
+  --inventory artifacts/hosts_gcp_$DEPLOYMENT_PREFIX.ini
+```
+
 ## Additional Documentation
 
 More information on consuming this collection

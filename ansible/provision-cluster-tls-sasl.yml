@@ -1,0 +1,69 @@
+---
+- name: Provision Redpanda Cluster with TLS and SASL
+  hosts: redpanda
+  vars:
+    # Redpanda version
+    redpanda_version: latest
+
+    # Disable no_log for debugging
+    redpanda_broker_no_log: false
+
+    # TLS configuration
+    root_ca_dir: "{{ playbook_dir }}/tls/ca"
+    enable_tls: true
+    advertise_public_ips: true
+    create_demo_certs: true
+    handle_cert_install: true
+    ca_cert_file: "tls/ca/ca.crt"
+    node_cert_file: "tls/certs/{{ ansible_hostname }}/node.crt"
+
+    # SASL configuration
+    kafka_enable_authorization: true
+    admin_api_require_auth: true
+    schema_registry_enable_authorization: true
+
+    # Require authentication on HTTP APIs (Schema Registry and HTTP Proxy)
+    schema_registry_authn_method: http_basic
+    pandaproxy_authn_method: http_basic
+
+    # Apply Enterprise license
+    redpanda_license_file: "{{ playbook_dir }}/../redpanda.license"
+
+    sasl_superuser_username: "admin"
+    sasl_superuser_password: "{{ lookup('env', 'REDPANDA_SASL_PASSWORD') | default('change-me-in-production', true) }}"
+
+    # Service accounts
+    schema_registry_service_user: "schema_registry_client"
+    schema_registry_service_password: "{{ lookup('env', 'SR_SERVICE_PASSWORD') | default('change-me', true) }}"
+    pandaproxy_service_user: "pandaproxy_client"
+    pandaproxy_service_password: "{{ lookup('env', 'PP_SERVICE_PASSWORD') | default('change-me', true) }}"
+
+    # Kafka listeners with SASL
+    redpanda_kafka_listeners:
+      - address: "{{ hostvars[inventory_hostname].private_ip }}"
+        port: 9092
+        name: "external"
+        authentication_method: "sasl"
+
+    # Advertised listener
+    redpanda_advertised_kafka_listeners:
+      - address: "{{ hostvars[inventory_hostname].advertised_ip }}"
+        port: 9092
+        name: "external"
+
+  tasks:
+    - name: Install and configure CA certs for running TLS
+      ansible.builtin.include_role:
+        name: redpanda.cluster.demo_certs
+
+    - name: Install system prereqs
+      ansible.builtin.include_role:
+        name: redpanda.cluster.system_setup
+
+    - name: Handle sysctl changes
+      ansible.builtin.include_role:
+        name: redpanda.cluster.sysctl_setup
+
+    - name: Install and start redpanda
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_broker
