@@ -1,7 +1,9 @@
 collections:
   - name: community.general
   - name: redpanda.cluster
-    type: galaxy
+    type: git
+    source: https://github.com/redpanda-data/redpanda-ansible-collection.git
+    version: pr/138-fixes
   - name: ansible.posix
   - name: grafana.grafana
     version: 5.6.0
