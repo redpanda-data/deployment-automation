@@ -102,7 +102,6 @@ vars:
   GCP_IMAGE: '{{.GCP_IMAGE | default "ubuntu-os-cloud/ubuntu-2204-lts"}}'
   GCP_INSTANCE_TYPE: '{{.GCP_INSTANCE_TYPE | default "n2-standard-2"}}'
   GCP_CREDS: '{{.GCP_CREDS | default ""}}'
-  GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcp_creds.json"
 
   # Connect RPM
   RPM_VERSION: '{{.RPM_VERSION | default "v1.0.0-7ae9d19"}}'
@@ -143,6 +142,9 @@ vars:
 
   # Extra cluster
   EXTRA_INVENTORY: '{{.ARTIFACT_DIR}}/hosts2_{{.DEPLOYMENT_ID}}.ini'
+
+  # SASL
+  REDPANDA_SASL_PASSWORD: '{{.REDPANDA_SASL_PASSWORD | default "cicd-sasl-password"}}'
 
   # Proxy Testing Variables
   SSHKEY: '{{.SSHKEY | default .PRIVATE_KEY}}'

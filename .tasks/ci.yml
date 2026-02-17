@@ -17,7 +17,7 @@ tasks:
     cmds:
       - task: :tools:keygen
       - task: :infra:aws:build
-      - task: :cluster:provision
+      - task: :cluster:provision:idempotent
       - task: :monitor:deploy
       - task: :monitor:console:deploy
       - task: :tools:rpk:install
@@ -35,7 +35,7 @@ tasks:
         vars: {ENABLE_CONNECT: "true", DISTRO: "41"}
       - task: :infra:extra:aws:copy
       - task: :infra:extra:aws:build
-      - task: :cluster:provision
+      - task: :cluster:provision:idempotent
       - task: :connect:deploy
       - task: :monitor:deploy
       - task: :monitor:console:deploy
@@ -54,11 +54,28 @@ tasks:
       - task: :tools:keygen
       - task: :infra:aws:build
         vars: {TIERED_STORAGE_ENABLED: "true"}
-      - task: :cluster:tiered
+      - task: :cluster:tiered:idempotent
       - task: :monitor:deploy:tls
       - task: :monitor:console:deploy:tls
       - task: :tools:rpk:install
       - task: :test:cluster:tls
+      - task: :test:storage:aws
+      - task: :infra:aws:destroy
+
+  aws:rp:sasl:
+    desc: CI workflow - AWS Redpanda with TLS + SASL + tiered storage
+    vars:
+      TIERED_STORAGE_ENABLED: "true"
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:aws:build
+        vars: {TIERED_STORAGE_ENABLED: "true"}
+      - task: :cluster:sasl:idempotent
+      - task: :monitor:deploy:tls
+      - task: :monitor:console:deploy:tls
+      - task: :tools:rpk:install
+      - task: :test:cluster:sasl
+      - task: :test:schema:sasl
       - task: :test:storage:aws
       - task: :infra:aws:destroy
 
@@ -72,7 +89,7 @@ tasks:
       - task: :tools:keygen
       - task: :infra:aws:build
         vars: {ENABLE_CONNECT: "true", TIERED_STORAGE_ENABLED: "true", DISTRO: "41"}
-      - task: :cluster:tiered
+      - task: :cluster:tiered:idempotent
       - task: :connect:deploy:tls
       - task: :monitor:deploy:tls
       - task: :monitor:console:deploy:tls
@@ -94,7 +111,7 @@ tasks:
     cmds:
       - task: :tools:keygen
       - task: :infra:gcp:build
-      - task: :cluster:provision
+      - task: :cluster:provision:idempotent
       - task: :monitor:deploy
       - task: :monitor:console:deploy
       - task: :tools:rpk:install
@@ -109,11 +126,28 @@ tasks:
       - task: :tools:keygen
       - task: :infra:gcp:build
         vars: {TIERED_STORAGE_ENABLED: "true"}
-      - task: :cluster:tiered
+      - task: :cluster:tiered:idempotent
       - task: :monitor:deploy:tls
       - task: :monitor:console:deploy:tls
       - task: :tools:rpk:install
       - task: :test:cluster:tls
+      - task: :test:storage:gcp
+      - task: :infra:gcp:destroy
+
+  gcp:rp:sasl:
+    desc: CI workflow - GCP Redpanda with TLS + SASL + tiered storage
+    vars:
+      TIERED_STORAGE_ENABLED: "true"
+    cmds:
+      - task: :tools:keygen
+      - task: :infra:gcp:build
+        vars: {TIERED_STORAGE_ENABLED: "true"}
+      - task: :cluster:sasl:idempotent
+      - task: :monitor:deploy:tls
+      - task: :monitor:console:deploy:tls
+      - task: :tools:rpk:install
+      - task: :test:cluster:sasl
+      - task: :test:schema:sasl
       - task: :test:storage:gcp
       - task: :infra:gcp:destroy
 

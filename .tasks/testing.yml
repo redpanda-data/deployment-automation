@@ -34,6 +34,56 @@ tasks:
         echo "Consuming from topic"
         {{.ARTIFACT_DIR}}/bin/rpk topic consume {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v -o :end | grep squirrels || exit 1
 
+  cluster:sasl:
+    desc: Test Redpanda cluster with TLS + SASL
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.ANSIBLE_INVENTORY}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        SASL_PASSWORD="${REDPANDA_SASL_PASSWORD:-cicd-sasl-password}"
+        echo "Redpanda Brokers: $REDPANDA_BROKERS"
+        echo "TLS Truststore: {{.CA_CRT}}"
+        echo "Checking TLS+SASL cluster status"
+        {{.ARTIFACT_DIR}}/bin/rpk cluster status -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -X user=admin -X pass="$SASL_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256 -v || exit 1
+        echo "Creating topic"
+        {{.ARTIFACT_DIR}}/bin/rpk topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -X user=admin -X pass="$SASL_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256 -v || exit 1
+        echo "Producing to topic"
+        echo squirrels | {{.ARTIFACT_DIR}}/bin/rpk topic produce {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -X user=admin -X pass="$SASL_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256 -v || exit 1
+        echo "Consuming from topic"
+        {{.ARTIFACT_DIR}}/bin/rpk topic consume {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -X user=admin -X pass="$SASL_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256 -v -o :end | grep squirrels || exit 1
+
+  schema:sasl:
+    desc: Test schema registry with TLS + SASL (http_basic auth)
+    cmds:
+      - |
+        REDPANDA_REGISTRY=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.ANSIBLE_INVENTORY}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:8081/' | paste -sd ',' -)
+        SASL_PASSWORD="${REDPANDA_SASL_PASSWORD:-cicd-sasl-password}"
+        echo "Testing schema registry with TLS + SASL"
+        for ip_port in $(echo $REDPANDA_REGISTRY | tr ',' ' '); do
+          echo "Testing https://$ip_port"
+          curl --fail -sS "https://$ip_port/subjects" \
+            --cacert "{{.CA_CRT}}" \
+            -u "admin:$SASL_PASSWORD" || exit 1
+        done
+        echo "Registering test schema"
+        FIRST_IP=$(echo $REDPANDA_REGISTRY | cut -d',' -f1)
+        REGISTER_RESPONSE=$(curl -sS -w '\n%{http_code}' "https://$FIRST_IP/subjects/test-schema-sasl/versions" \
+          --cacert "{{.CA_CRT}}" \
+          -u "admin:$SASL_PASSWORD" \
+          -H "Content-Type: application/vnd.schemaregistry.v1+json" \
+          -d '{"schema": "{\"type\": \"string\"}"}')
+        REGISTER_HTTP_CODE=$(echo "$REGISTER_RESPONSE" | tail -1)
+        REGISTER_BODY=$(echo "$REGISTER_RESPONSE" | sed '$d')
+        echo "Register response (HTTP $REGISTER_HTTP_CODE): $REGISTER_BODY"
+        if [ "$REGISTER_HTTP_CODE" -lt 200 ] || [ "$REGISTER_HTTP_CODE" -ge 300 ]; then
+          echo "Schema registration failed with HTTP $REGISTER_HTTP_CODE"
+          exit 1
+        fi
+        echo "Verifying schema was registered"
+        curl --fail -sS "https://$FIRST_IP/subjects" \
+          --cacert "{{.CA_CRT}}" \
+          -u "admin:$SASL_PASSWORD" | grep test-schema-sasl || exit 1
+        echo "Schema registry SASL test passed"
+
   schema:
     desc: Test schema registry
     cmds:
@@ -58,10 +108,10 @@ tasks:
   storage:gcp:
     desc: Verify tiered storage in GCP
     cmds:
-      - echo "{{.GCP_CREDS}}" | base64 -d > /tmp/gcp_creds.json
-      - export CLOUDSDK_CORE_PROJECT={{.GOOGLE_PROJECT_ID}}
-      - gcloud auth activate-service-account --key-file={{.GOOGLE_APPLICATION_CREDENTIALS}} --project={{.GOOGLE_PROJECT_ID}}
-      - gcloud storage --project {{.GOOGLE_PROJECT_ID}} ls | grep {{.SIMPLE_BUCKET_NAME}}
+      - |
+        export CLOUDSDK_CORE_PROJECT={{.GOOGLE_PROJECT_ID}}
+        gcloud auth activate-service-account --key-file=<(echo "{{.GCP_CREDS}}" | base64 -d) --project={{.GOOGLE_PROJECT_ID}}
+        gcloud storage --project {{.GOOGLE_PROJECT_ID}} ls | grep {{.SIMPLE_BUCKET_NAME}}
 
   connect:tls:
     desc: Test Connect REST API with TLS client cert

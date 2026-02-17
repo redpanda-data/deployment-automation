@@ -120,6 +120,40 @@ steps:
             - AWS_DEFAULT_REGION
             - REDPANDA_LICENSE
             - CONNECT_RPM_TOKEN
+  - label: aws fedora sasl
+    key: aws-up-fedora-sasl
+    concurrency_group: aws-fd-cn
+    concurrency: 1
+    command: DEPLOYMENT_ID=ci-sl-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 task ci:aws:rp:sasl
+    plugins:
+      - seek-oss/aws-sm#v2.3.2:
+          json-to-env:
+            - json-key: .
+              secret-id: sdlc/prod/buildkite/deployment_automation
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
+            - AWS_DEFAULT_REGION
+  - label: aws ubuntu sasl
+    key: aws-up-ubuntu-sasl
+    concurrency_group: aws-sl
+    concurrency: 1
+    command: DEPLOYMENT_ID=ci-sl-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp:sasl
+    plugins:
+      - seek-oss/aws-sm#v2.3.2:
+          json-to-env:
+            - json-key: .
+              secret-id: sdlc/prod/buildkite/deployment_automation
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
+            - REDPANDA_LICENSE
+            - AWS_DEFAULT_REGION
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
     concurrency_group: aws-fd
@@ -196,11 +230,41 @@ steps:
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
-  - label: unstable aws fedora tiered
-    key: aws-us-fedora-tiered
-    concurrency_group: unstable
+  - label: gcp ubuntu sasl
+    key: gcp-up-ubuntu-sasl
+    concurrency_group: gcp-ub
     concurrency: 1
-    command: DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 IS_USING_UNSTABLE=true task ci:aws:rp:tiered
+    command: GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" DEPLOYMENT_ID="ci-sl-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp:sasl
+    plugins:
+      - seek-oss/aws-sm#v2.3.2:
+          json-to-env:
+            - json-key: .
+              secret-id: sdlc/prod/buildkite/deployment_automation
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - GCP_CREDS
+            - REDPANDA_LICENSE
+  - label: gcp fedora sasl
+    key: gcp-up-fedora-sasl
+    concurrency_group: gcp-fd
+    concurrency: 1
+    command: GCP_IMAGE="fedora-cloud/fedora-cloud-39" DEPLOYMENT_ID="ci-sl-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp:sasl
+    plugins:
+      - seek-oss/aws-sm#v2.3.2:
+          json-to-env:
+            - json-key: .
+              secret-id: sdlc/prod/buildkite/deployment_automation
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - GCP_CREDS
+            - REDPANDA_LICENSE
+  - label: unstable aws fedora sasl
+    key: aws-us-fedora-sasl
+    concurrency_group: aws-sl
+    concurrency: 1
+    command: DEPLOYMENT_ID=ci-sl-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 IS_USING_UNSTABLE=true task ci:aws:rp:sasl
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -213,11 +277,11 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
-  - label: unstable aws fedora tiered large
-    key: aws-us-fedora-ts-large
-    concurrency_group: unstable
+  - label: unstable aws ubuntu sasl
+    key: aws-us-ubuntu-sasl
+    concurrency_group: aws-sl
     concurrency: 1
-    command: DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 IS_USING_UNSTABLE=true INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
+    command: DEPLOYMENT_ID=ci-sl-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal IS_USING_UNSTABLE=true task ci:aws:rp:sasl
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -230,11 +294,11 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
-  - label: unstable aws ubuntu tiered
-    key: aws-us-ubuntu-tiered
-    concurrency_group: unstable
+  - label: unstable gcp ubuntu sasl
+    key: gcp-us-ubuntu-sasl
+    concurrency_group: gcp-us
     concurrency: 1
-    command: DEPLOYMENT_ID=ci-ts-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal IS_USING_UNSTABLE=true task ci:aws:rp:tiered
+    command: GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" DEPLOYMENT_ID="ci-sl-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4`" IS_USING_UNSTABLE=true task ci:gcp:rp:sasl
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -243,15 +307,13 @@ steps:
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - AWS_ACCESS_KEY_ID
-            - AWS_SECRET_ACCESS_KEY
+            - GCP_CREDS
             - REDPANDA_LICENSE
-            - AWS_DEFAULT_REGION
-  - label: unstable aws ubuntu tiered large
-    key: aws-us-ubuntu-ts-large
-    concurrency_group: unstable
+  - label: unstable gcp fedora sasl
+    key: gcp-us-fedora-sasl
+    concurrency_group: gcp-us
     concurrency: 1
-    command: DEPLOYMENT_ID=ci-ts-ub-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal IS_USING_UNSTABLE=true INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
+    command: GCP_IMAGE="fedora-cloud/fedora-cloud-39" DEPLOYMENT_ID="ci-sl-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4`" IS_USING_UNSTABLE=true task ci:gcp:rp:sasl
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -260,10 +322,8 @@ steps:
       - docker#v5.8.0:
           image: glrp/atgt:latest
           environment:
-            - AWS_ACCESS_KEY_ID
-            - AWS_SECRET_ACCESS_KEY
+            - GCP_CREDS
             - REDPANDA_LICENSE
-            - AWS_DEFAULT_REGION
 
   - label: cleanup aws resources
     key: cleanup-aws
@@ -289,10 +349,10 @@ steps:
       - aws-up-fedora-tiered
       - aws-up-fed-cts
       - aws-up-fedora-ts-large
-      - aws-us-fedora-tiered
-      - aws-us-fedora-ts-large
-      - aws-us-ubuntu-tiered
-      - aws-us-ubuntu-ts-large
+      - aws-us-fedora-sasl
+      - aws-us-ubuntu-sasl
+      - aws-up-fedora-sasl
+      - aws-up-ubuntu-sasl
     allow_dependency_failure: true
     soft_fail: true
 
@@ -315,5 +375,9 @@ steps:
       - gcp-up-ubuntu-tiered
       - gcp-up-fedora
       - gcp-up-fedora-tiered
+      - gcp-up-ubuntu-sasl
+      - gcp-up-fedora-sasl
+      - gcp-us-ubuntu-sasl
+      - gcp-us-fedora-sasl
     allow_dependency_failure: true
     soft_fail: true
