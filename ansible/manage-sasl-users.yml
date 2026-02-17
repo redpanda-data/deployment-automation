@@ -1,0 +1,76 @@
+---
+# manages users, roles, and ACLs declaratively via user_management role
+- name: Manage SASL Users, Roles, and ACLs
+  hosts: redpanda[0]
+  become: true
+  vars:
+    enable_tls: true
+    redpanda_truststore_file: "/etc/redpanda/certs/truststore.pem"
+    sasl_admin_username: "admin"
+    sasl_admin_password: "{{ lookup('env', 'REDPANDA_SASL_PASSWORD') }}"
+
+    # users (set state: absent to delete)
+    sasl_users:
+      - username: "producer_app"
+        password: "{{ lookup('env', 'PRODUCER_APP_PASSWORD') | default('producer-secret', true) }}"
+        mechanism: "SCRAM-SHA-256"
+        state: present
+
+      - username: "consumer_app"
+        password: "{{ lookup('env', 'CONSUMER_APP_PASSWORD') | default('consumer-secret', true) }}"
+        mechanism: "SCRAM-SHA-256"
+        state: present
+
+    # roles (enterprise RBAC)
+    sasl_roles: []
+
+    # kafka ACLs
+    sasl_acls:
+      - principal: "User:producer_app"
+        resource_type: topic
+        resource_name: "events-"
+        pattern_type: prefixed
+        operation:
+          - write
+          - describe
+        permission: allow
+        state: present
+
+      - principal: "User:consumer_app"
+        resource_type: topic
+        resource_name: "events-"
+        pattern_type: prefixed
+        operation:
+          - read
+          - describe
+        permission: allow
+        state: present
+
+      - principal: "User:consumer_app"
+        resource_type: group
+        resource_name: "consumer-"
+        pattern_type: prefixed
+        operation: read
+        permission: allow
+        state: present
+
+    # schema registry ACLs (enterprise)
+    schema_registry_acls:
+      - principal: "User:producer_app"
+        resource_type: subject
+        resource_name: "events-"
+        pattern_type: prefixed
+        operation: write
+        permission: allow
+        state: present
+
+      - principal: "User:consumer_app"
+        resource_type: subject
+        resource_name: "events-"
+        pattern_type: prefixed
+        operation: read
+        permission: allow
+        state: present
+
+  roles:
+    - role: redpanda.cluster.user_management
