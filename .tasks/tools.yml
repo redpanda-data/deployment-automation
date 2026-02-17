@@ -19,9 +19,9 @@ tasks:
     cmds:
       - |
         if [ "$(uname)" = "Darwin" ]; then
-          curl -L {{.MAC_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip
+          curl -fSL {{.MAC_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip
         else
-          curl -L {{.LINUX_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip
+          curl -fSL {{.LINUX_RPK}} -o {{.ARTIFACT_DIR}}/tmp/rpk.zip
         fi
       - unzip -o {{.ARTIFACT_DIR}}/tmp/rpk.zip -d {{.ARTIFACT_DIR}}/bin/
       - chmod 755 {{.ARTIFACT_DIR}}/bin/rpk
