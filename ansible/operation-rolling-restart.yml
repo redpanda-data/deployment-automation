@@ -18,16 +18,17 @@
     rpk_opts: >-
       -X brokers={{ hostvars[inventory_hostname].private_ip | default(ansible_default_ipv4.address) }}:{{ redpanda_kafka_port }}
       {% if enable_tls | default(false) %}-X tls.enabled=true -X tls.ca={{ redpanda_truststore_file }}{% endif %}
-      {% if kafka_enable_authorization | default(false) and sasl_superuser_password != '' %}-X user={{ sasl_superuser_username }} -X pass={{ sasl_superuser_password }} -X sasl.mechanism=SCRAM-SHA-256{% endif %}
 
     rpk_admin_opts: >-
       {% if enable_tls | default(false) %}-X admin.tls.enabled=true -X admin.tls.ca={{ redpanda_truststore_file }}{% endif %}
-      {% if admin_api_require_auth | default(false) and sasl_superuser_password != '' %}-X user={{ sasl_superuser_username }} -X pass={{ sasl_superuser_password }}{% endif %}
+
+    rpk_env: "{{ {'RPK_USER': sasl_superuser_username, 'RPK_PASS': sasl_superuser_password} if ((kafka_enable_authorization | default(false) | bool or admin_api_require_auth | default(false) | bool) and sasl_superuser_password != '') else {} }}"
 
   tasks:
     - name: Check cluster health
       ansible.builtin.shell: |
         {{ rpk_bin }} cluster health {{ rpk_opts }} {{ rpk_admin_opts }} | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      environment: "{{ rpk_env }}"
       register: health_check
       failed_when: "health_check.stdout != 'true'"
       changed_when: false
@@ -36,12 +37,14 @@
     - name: Get node ID
       ansible.builtin.shell: |
         {{ rpk_bin }} cluster info {{ rpk_opts }} | awk '$2 == "{{ ansible_host }}" {gsub("\\*", "", $1); print $1}'
+      environment: "{{ rpk_env }}"
       register: node_id
       changed_when: false
       no_log: "{{ kafka_enable_authorization | default(false) }}"
 
     - name: Enable maintenance mode
       ansible.builtin.command: "{{ rpk_bin }} cluster maintenance enable {{ node_id.stdout }} --wait {{ rpk_opts }} {{ rpk_admin_opts }}"
+      environment: "{{ rpk_env }}"
       register: maintenance_result
       failed_when:
         - "'Successfully enabled maintenance mode' not in maintenance_result.stdout"
@@ -52,6 +55,7 @@
     - name: Verify maintenance mode status
       ansible.builtin.shell: |
         {{ rpk_bin }} cluster maintenance status {{ rpk_opts }} {{ rpk_admin_opts }} | grep -q '{{ node_id.stdout }}'
+      environment: "{{ rpk_env }}"
       register: maintenance_status
       failed_when: maintenance_status.rc != 0
       changed_when: false
@@ -60,6 +64,7 @@
     - name: Check cluster health after enabling maintenance mode
       ansible.builtin.shell: |
         {{ rpk_bin }} cluster health --watch --exit-when-healthy {{ rpk_opts }} {{ rpk_admin_opts }} | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      environment: "{{ rpk_env }}"
       register: health_check_maintenance
       failed_when: "health_check_maintenance.stdout != 'true'"
       retries: 10
@@ -79,6 +84,7 @@
 
     - name: Disable maintenance mode
       ansible.builtin.command: "{{ rpk_bin }} cluster maintenance disable {{ node_id.stdout }} {{ rpk_opts }} {{ rpk_admin_opts }}"
+      environment: "{{ rpk_env }}"
       register: disable_maintenance_result
       changed_when: "'Successfully disabled maintenance mode' in disable_maintenance_result.stdout"
       failed_when: "'Successfully disabled maintenance mode' not in disable_maintenance_result.stdout"
@@ -87,6 +93,7 @@
     - name: Verify maintenance mode is disabled
       ansible.builtin.shell: |
         {{ rpk_bin }} cluster maintenance status {{ rpk_opts }} {{ rpk_admin_opts }} | grep -qv '{{ node_id.stdout }}'
+      environment: "{{ rpk_env }}"
       register: maintenance_status_after
       failed_when: maintenance_status_after.rc != 0
       changed_when: false
@@ -95,6 +102,7 @@
     - name: Check cluster health after disabling maintenance mode
       ansible.builtin.shell: |
         {{ rpk_bin }} cluster health --watch --exit-when-healthy {{ rpk_opts }} {{ rpk_admin_opts }} | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      environment: "{{ rpk_env }}"
       register: health_check_maintenance
       failed_when: "health_check_maintenance.stdout != 'true'"
       retries: 10
@@ -105,6 +113,7 @@
     - name: Check broker status
       ansible.builtin.shell: |
         {{ rpk_bin }} redpanda admin brokers list {{ rpk_admin_opts }} | grep -q 'active.*true'
+      environment: "{{ rpk_env }}"
       register: broker_status
       changed_when: false
       failed_when: broker_status.rc != 0

@@ -17,17 +17,18 @@
     rpk_opts: >-
       -X brokers={{ hostvars[inventory_hostname].private_ip | default(ansible_default_ipv4.address) }}:{{ redpanda_kafka_port }}
       {% if enable_tls | default(false) %}-X tls.enabled=true -X tls.ca={{ redpanda_truststore_file }}{% endif %}
-      {% if kafka_enable_authorization | default(false) and sasl_superuser_password != '' %}-X user={{ sasl_superuser_username }} -X pass={{ sasl_superuser_password }} -X sasl.mechanism=SCRAM-SHA-256{% endif %}
 
     rpk_admin_opts: >-
       {% if enable_tls | default(false) %}-X admin.tls.enabled=true -X admin.tls.ca={{ redpanda_truststore_file }}{% endif %}
-      {% if admin_api_require_auth | default(false) and sasl_superuser_password != '' %}-X user={{ sasl_superuser_username }} -X pass={{ sasl_superuser_password }}{% endif %}
+
+    rpk_env: "{{ {'RPK_USER': sasl_superuser_username, 'RPK_PASS': sasl_superuser_password} if ((kafka_enable_authorization | default(false) | bool or admin_api_require_auth | default(false) | bool) and sasl_superuser_password != '') else {} }}"
 
   tasks:
     - name: Check cluster health
       ansible.builtin.shell: |
         set -o pipefail
         {{ rpk_bin }} cluster health {{ rpk_opts }} {{ rpk_admin_opts }} | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+      environment: "{{ rpk_env }}"
       register: health_check
       run_once: true
       failed_when: "health_check.stdout != 'true'"
@@ -79,6 +80,7 @@
       ansible.builtin.shell: |
         set -o pipefail
         {{ rpk_bin }} redpanda admin brokers list {{ rpk_admin_opts }} | grep -q 'active.*true'
+      environment: "{{ rpk_env }}"
       register: broker_status
       changed_when: false
       failed_when: broker_status.rc != 0

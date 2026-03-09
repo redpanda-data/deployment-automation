@@ -39,17 +39,18 @@ tasks:
     cmds:
       - |
         REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.ANSIBLE_INVENTORY}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
-        SASL_PASSWORD="${REDPANDA_SASL_PASSWORD:-cicd-sasl-password}"
+        export RPK_USER=admin
+        export RPK_PASS="${REDPANDA_SASL_PASSWORD:-cicd-sasl-password}"
         echo "Redpanda Brokers: $REDPANDA_BROKERS"
         echo "TLS Truststore: {{.CA_CRT}}"
         echo "Checking TLS+SASL cluster status"
-        {{.ARTIFACT_DIR}}/bin/rpk cluster status -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -X user=admin -X pass="$SASL_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256 -v || exit 1
+        {{.ARTIFACT_DIR}}/bin/rpk cluster status -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
         echo "Creating topic"
-        {{.ARTIFACT_DIR}}/bin/rpk topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -X user=admin -X pass="$SASL_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256 -v || exit 1
+        {{.ARTIFACT_DIR}}/bin/rpk topic create {{.TEST_TOPIC_NAME}} -p {{.PARTITION_COUNT}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
         echo "Producing to topic"
-        echo squirrels | {{.ARTIFACT_DIR}}/bin/rpk topic produce {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -X user=admin -X pass="$SASL_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256 -v || exit 1
+        echo squirrels | {{.ARTIFACT_DIR}}/bin/rpk topic produce {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v || exit 1
         echo "Consuming from topic"
-        {{.ARTIFACT_DIR}}/bin/rpk topic consume {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -X user=admin -X pass="$SASL_PASSWORD" -X sasl.mechanism=SCRAM-SHA-256 -v -o :end | grep squirrels || exit 1
+        {{.ARTIFACT_DIR}}/bin/rpk topic consume {{.TEST_TOPIC_NAME}} -X brokers="$REDPANDA_BROKERS" -X tls.ca="{{.CA_CRT}}" -v -o :end | grep squirrels || exit 1
 
   schema:sasl:
     desc: Test schema registry with TLS + SASL (http_basic auth)
