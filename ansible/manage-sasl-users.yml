@@ -9,6 +9,8 @@
     sasl_admin_username: "admin"
     sasl_admin_password: "{{ lookup('env', 'REDPANDA_SASL_PASSWORD') }}"
 
+    # Example users — override passwords via PRODUCER_APP_PASSWORD / CONSUMER_APP_PASSWORD env vars.
+    # The hardcoded defaults below are for development/testing only.
     # users (set state: absent to delete)
     sasl_users:
       - username: "producer_app"

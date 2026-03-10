@@ -122,7 +122,7 @@ steps:
             - CONNECT_RPM_TOKEN
   - label: aws fedora sasl
     key: aws-up-fedora-sasl
-    concurrency_group: aws-fd-cn
+    concurrency_group: aws-sl
     concurrency: 1
     command: DEPLOYMENT_ID=ci-sl-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=41 task ci:aws:rp:sasl
     plugins:
@@ -136,6 +136,7 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
+            - REDPANDA_SASL_PASSWORD
             - AWS_DEFAULT_REGION
   - label: aws ubuntu sasl
     key: aws-up-ubuntu-sasl
@@ -153,6 +154,7 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
+            - REDPANDA_SASL_PASSWORD
             - AWS_DEFAULT_REGION
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
@@ -245,6 +247,7 @@ steps:
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
+            - REDPANDA_SASL_PASSWORD
   - label: gcp fedora sasl
     key: gcp-up-fedora-sasl
     concurrency_group: gcp-fd
@@ -260,6 +263,7 @@ steps:
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
+            - REDPANDA_SASL_PASSWORD
   - label: unstable aws fedora sasl
     key: aws-us-fedora-sasl
     concurrency_group: aws-sl
@@ -276,6 +280,7 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
+            - REDPANDA_SASL_PASSWORD
             - AWS_DEFAULT_REGION
   - label: unstable aws ubuntu sasl
     key: aws-us-ubuntu-sasl
@@ -293,6 +298,7 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
+            - REDPANDA_SASL_PASSWORD
             - AWS_DEFAULT_REGION
   - label: unstable gcp ubuntu sasl
     key: gcp-us-ubuntu-sasl
@@ -309,6 +315,7 @@ steps:
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
+            - REDPANDA_SASL_PASSWORD
   - label: unstable gcp fedora sasl
     key: gcp-us-fedora-sasl
     concurrency_group: gcp-us
@@ -324,6 +331,7 @@ steps:
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
+            - REDPANDA_SASL_PASSWORD
 
   - label: cleanup aws resources
     key: cleanup-aws

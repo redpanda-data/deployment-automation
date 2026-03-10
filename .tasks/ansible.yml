@@ -13,16 +13,6 @@ tasks:
       - :ensure-collections-dir
     cmds:
       - ansible-galaxy collection install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
-      - |
-        # Log git-based collection commit SHAs for debugging
-        for collection_dir in {{.ANSIBLE_COLLECTIONS_PATH}}/ansible_collections/*/*; do
-          if [ -d "$collection_dir/.git" ]; then
-            collection_name=$(basename $(dirname $collection_dir))/$(basename $collection_dir)
-            commit_sha=$(git -C "$collection_dir" rev-parse HEAD 2>/dev/null)
-            commit_msg=$(git -C "$collection_dir" log -1 --format="%s" 2>/dev/null)
-            echo "Collection $collection_name at commit: $commit_sha ($commit_msg)"
-          fi
-        done
 
   role:
     desc: Install Ansible roles

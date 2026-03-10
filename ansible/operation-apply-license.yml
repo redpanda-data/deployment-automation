@@ -41,7 +41,7 @@
       changed_when: false
       when:
         - redpanda_license is defined
-      no_log: true
+      no_log: true  # always suppress: license string is sensitive regardless of SASL config
 
     - name: Set Redpanda license (path)
       ansible.builtin.command: "{{ rpk_bin }} cluster license set --path {{ redpanda_license_path }} {{ rpk_opts }} {{ rpk_admin_opts }}"

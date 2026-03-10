@@ -74,7 +74,7 @@ tasks:
       - :ansible:prereqs
       - :ensure-logs-dir
     cmds:
-      - ansible-playbook ansible/provision-cluster-tls-sasl.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}} --extra-vars sasl_superuser_password={{.REDPANDA_SASL_PASSWORD}}
+      - ansible-playbook ansible/provision-cluster-tls-sasl.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}} --extra-vars 'sasl_superuser_password={{.REDPANDA_SASL_PASSWORD}}'
 
   sasl:idempotent:
     desc: Provision TLS + SASL + tiered storage cluster with idempotency check (runs twice)
@@ -82,5 +82,5 @@ tasks:
       - :ansible:prereqs
       - :ensure-logs-dir
     cmds:
-      - ansible-playbook ansible/provision-cluster-tls-sasl.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}} --extra-vars redpanda_broker_no_log=false --extra-vars sasl_superuser_password={{.REDPANDA_SASL_PASSWORD}}
-      - scripts/check-idempotency.sh ansible-playbook ansible/provision-cluster-tls-sasl.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}} --extra-vars redpanda_broker_no_log=false --extra-vars sasl_superuser_password={{.REDPANDA_SASL_PASSWORD}}
+      - ansible-playbook ansible/provision-cluster-tls-sasl.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}} --extra-vars redpanda_broker_no_log=false --extra-vars 'sasl_superuser_password={{.REDPANDA_SASL_PASSWORD}}'
+      - scripts/check-idempotency.sh ansible-playbook ansible/provision-cluster-tls-sasl.yml --private-key {{.PRIVATE_KEY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}} --extra-vars redpanda_broker_no_log=false --extra-vars 'sasl_superuser_password={{.REDPANDA_SASL_PASSWORD}}'
