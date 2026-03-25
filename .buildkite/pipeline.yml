@@ -1,5 +1,5 @@
 agents:
-  queue: "k8s-builders"
+  queue: "k8s-m6ixlarge"
 
 steps:
   - label: aws ubuntu
