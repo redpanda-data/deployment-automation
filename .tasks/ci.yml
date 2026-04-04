@@ -28,11 +28,11 @@ tasks:
     desc: CI workflow - AWS Redpanda with Connect
     vars:
       ENABLE_CONNECT: "true"
-      DISTRO: "41"
+      DISTRO: "43"
     cmds:
       - task: :tools:keygen
       - task: :infra:aws:build
-        vars: {ENABLE_CONNECT: "true", DISTRO: "41"}
+        vars: {ENABLE_CONNECT: "true", DISTRO: "43"}
       - task: :infra:extra:aws:copy
       - task: :infra:extra:aws:build
       - task: :cluster:provision
@@ -67,11 +67,11 @@ tasks:
     vars:
       ENABLE_CONNECT: "true"
       TIERED_STORAGE_ENABLED: "true"
-      DISTRO: "41"
+      DISTRO: "43"
     cmds:
       - task: :tools:keygen
       - task: :infra:aws:build
-        vars: {ENABLE_CONNECT: "true", TIERED_STORAGE_ENABLED: "true", DISTRO: "41"}
+        vars: {ENABLE_CONNECT: "true", TIERED_STORAGE_ENABLED: "true", DISTRO: "43"}
       - task: :cluster:tiered
       - task: :connect:deploy:tls
       - task: :monitor:deploy:tls
