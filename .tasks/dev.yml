@@ -5,13 +5,13 @@ tasks:
     desc: Stand up full Connect environment (primary + secondary clusters for replication)
     vars:
       ENABLE_CONNECT: "true"
-      DISTRO: "41"
+      DISTRO: "43"
     cmds:
       - task: :tools:keygen
       - task: :ansible:prereqs
       - task: :tools:rpk:install
       - task: :infra:aws:build
-        vars: {ENABLE_CONNECT: "true", DISTRO: "41"}
+        vars: {ENABLE_CONNECT: "true", DISTRO: "43"}
       - task: :infra:extra:aws:copy
       - task: :infra:extra:aws:build
       - task: :cluster:provision
