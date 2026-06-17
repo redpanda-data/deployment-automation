@@ -1,6 +1,5 @@
 ## we assume a default vpc. if you have one you want to use you will need to provide a vpc and subnet ID
 
-
 module "redpanda-cluster" {
   source                   = "redpanda-data/redpanda-cluster/aws"
   public_key_path          = var.public_key_path
@@ -21,9 +20,9 @@ module "redpanda-cluster" {
   client_instance_type     = var.client_instance_type
   prometheus_instance_type = var.prometheus_instance_type
   machine_architecture     = var.machine_architecture
-  connect_count = var.connect_count
-  connect_instance_type = var.broker_instance_type
-  enable_connect = var.enable_connect
+  connect_count            = var.connect_count
+  connect_instance_type    = var.broker_instance_type
+  enable_connect           = var.enable_connect
 }
 
 variable "broker_instance_type" {
