@@ -15,6 +15,8 @@ tasks:
   aws:rp:
     desc: CI workflow - AWS basic Redpanda
     cmds:
+      - defer:
+          task: :infra:aws:destroy
       - task: :tools:keygen
       - task: :infra:aws:build
       - task: :cluster:provision
@@ -30,6 +32,10 @@ tasks:
       ENABLE_CONNECT: "true"
       DISTRO: "43"
     cmds:
+      - defer:
+          task: :infra:aws:destroy
+      - defer:
+          task: :infra:extra:aws:destroy
       - task: :tools:keygen
       - task: :infra:aws:build
         vars: {ENABLE_CONNECT: "true", DISTRO: "43"}
@@ -51,6 +57,8 @@ tasks:
     vars:
       TIERED_STORAGE_ENABLED: "true"
     cmds:
+      - defer:
+          task: :infra:aws:destroy
       - task: :tools:keygen
       - task: :infra:aws:build
         vars: {TIERED_STORAGE_ENABLED: "true"}
@@ -69,6 +77,10 @@ tasks:
       TIERED_STORAGE_ENABLED: "true"
       DISTRO: "43"
     cmds:
+      - defer:
+          task: :infra:aws:destroy
+      - defer:
+          task: :infra:extra:aws:destroy
       - task: :tools:keygen
       - task: :infra:aws:build
         vars: {ENABLE_CONNECT: "true", TIERED_STORAGE_ENABLED: "true", DISTRO: "43"}
@@ -92,6 +104,8 @@ tasks:
   gcp:rp:
     desc: CI workflow - GCP basic Redpanda
     cmds:
+      - defer:
+          task: :infra:gcp:destroy
       - task: :tools:keygen
       - task: :infra:gcp:build
       - task: :cluster:provision
@@ -106,6 +120,8 @@ tasks:
     vars:
       TIERED_STORAGE_ENABLED: "true"
     cmds:
+      - defer:
+          task: :infra:gcp:destroy
       - task: :tools:keygen
       - task: :infra:gcp:build
         vars: {TIERED_STORAGE_ENABLED: "true"}

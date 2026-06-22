@@ -35,7 +35,7 @@ module "redpanda-cluster" {
   ssh_user              = var.ssh_user
   subnet                = coalesce(var.subnet, google_compute_subnetwork.test-subnet.id)
   image                 = var.image
-  availability_zone     = var.availability_zone
+  availability_zone     = local.availability_zones
   broker_count          = var.broker_count
   client_count          = var.client_count
   disks                 = var.disks
@@ -58,6 +58,18 @@ provider "google" {
   credentials = base64decode(var.gcp_creds)
 }
 
+data "google_compute_zones" "available" {
+  region = var.region
+  status = "UP"
+}
+
+locals {
+  availability_zones = length(var.availability_zone) > 0 ? var.availability_zone : [
+    for z in data.google_compute_zones.available.names :
+    trimprefix(z, "${var.region}-")
+  ]
+}
+
 variable "gcp_creds" {
   default     = ""
   type        = string
@@ -69,8 +81,8 @@ variable "region" {
 }
 
 variable "availability_zone" {
-  description = "The zone where the cluster will be deployed [a,b,...]"
-  default     = ["a"]
+  description = "The zone where the cluster will be deployed [a,b,...]. Leave empty to auto-discover available zones."
+  default     = []
   type        = list(string)
 }
 
