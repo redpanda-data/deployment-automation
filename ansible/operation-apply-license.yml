@@ -5,32 +5,54 @@
   vars:
     rpk_bin: rpk
 
+    # SASL/TLS settings for authenticated clusters
+    kafka_enable_authorization: false
+    admin_api_require_auth: false
+    sasl_superuser_username: "admin"
+    sasl_superuser_password: ""
+    enable_tls: false
+    redpanda_truststore_file: /etc/redpanda/certs/truststore.pem
+    redpanda_kafka_port: 9092
+
+    rpk_opts: >-
+      -X brokers={{ hostvars[inventory_hostname].private_ip | default(ansible_default_ipv4.address) }}:{{ redpanda_kafka_port }}
+      {% if enable_tls | default(false) %}-X tls.enabled=true -X tls.ca={{ redpanda_truststore_file }}{% endif %}
+      {% if kafka_enable_authorization | default(false) and sasl_superuser_password != '' %}-X user={{ sasl_superuser_username }} -X pass={{ sasl_superuser_password }} -X sasl.mechanism=SCRAM-SHA-256{% endif %}
+
+    rpk_admin_opts: >-
+      {% if enable_tls | default(false) %}-X admin.tls.enabled=true -X admin.tls.ca={{ redpanda_truststore_file }}{% endif %}
+      {% if admin_api_require_auth | default(false) and sasl_superuser_password != '' %}-X user={{ sasl_superuser_username }} -X pass={{ sasl_superuser_password }}{% endif %}
+
   tasks:
     - name: Check cluster health
       ansible.builtin.shell: |
-        {{ rpk_bin }} cluster health | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+        {{ rpk_bin }} cluster health {{ rpk_opts }} {{ rpk_admin_opts }} | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
       register: health_check
       run_once: true
       failed_when: "health_check.stdout != 'true'"
       changed_when: false
+      no_log: "{{ kafka_enable_authorization | default(false) }}"
 
     - name: Set Redpanda license (string)
-      ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+      ansible.builtin.command: "{{ rpk_bin }} cluster license set {{ redpanda_license }} {{ rpk_opts }} {{ rpk_admin_opts }}"
       run_once: true
       changed_when: false
       when:
         - redpanda_license is defined
+      no_log: true
 
     - name: Set Redpanda license (path)
-      ansible.builtin.command: rpk cluster license set --path {{ redpanda_license_path }}
+      ansible.builtin.command: "{{ rpk_bin }} cluster license set --path {{ redpanda_license_path }} {{ rpk_opts }} {{ rpk_admin_opts }}"
       changed_when: false
       run_once: true
       when:
         - redpanda_license_path is defined
+      no_log: "{{ kafka_enable_authorization | default(false) }}"
 
     - name: Check broker status
       ansible.builtin.shell: |
-        {{ rpk_bin }} redpanda admin brokers list | grep -q 'active.*true'
+        {{ rpk_bin }} redpanda admin brokers list {{ rpk_admin_opts }} | grep -q 'active.*true'
       register: broker_status
       changed_when: false
       failed_when: broker_status.rc != 0
+      no_log: "{{ kafka_enable_authorization | default(false) }}"
