@@ -1,6 +1,63 @@
 version: '3'
 
 tasks:
+  upgrade:capture:baseline:
+    desc: Record the baseline broker version on each node (run after the phase-1 baseline install)
+    cmds:
+      - echo ">> Capturing baseline broker version on all brokers"
+      - ansible redpanda -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b -m script -a scripts/upgrade/capture-baseline.sh
+
+  upgrade:seed:
+    desc: >-
+      Seed a known, countable dataset into the sentinel topic BEFORE the upgrade so the post-upgrade
+      assert can detect partial data loss (not just total loss). Produces SEED_COUNT records
+      "sentinel-1".."sentinel-N" and verifies they are all readable before proceeding.
+    vars:
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      # TLS lanes pass RPK_EXTRA='-X tls.ca={{.CA_CRT}}'; plaintext lanes leave it empty
+      RPK_EXTRA: '{{.RPK_EXTRA | default ""}}'
+    cmds:
+      - chmod 775 {{.RPK_PATH}}
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Seeding {{.SEED_COUNT}} records into {{.UPGRADE_SENTINEL_TOPIC}} before upgrade (brokers: $REDPANDA_BROKERS)"
+        {{.RPK_PATH}} topic create {{.UPGRADE_SENTINEL_TOPIC}} -p {{.PARTITION_COUNT}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -v || true
+        seq 1 {{.SEED_COUNT}} | sed 's/^/sentinel-/' | {{.RPK_PATH}} topic produce {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} || exit 1
+        GOT=$({{.RPK_PATH}} topic consume {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -o start -n {{.SEED_COUNT}} -f '%v\n' | grep -c '^sentinel-')
+        echo "pre-upgrade sentinel count: $GOT / {{.SEED_COUNT}}"
+        [ "$GOT" -eq "{{.SEED_COUNT}}" ] || { echo "FAIL: only seeded $GOT/{{.SEED_COUNT}} records before upgrade"; exit 1; }
+        echo "OK: {{.SEED_COUNT}} records present pre-upgrade"
+
+  upgrade:assert:
+    desc: >-
+      Assert the candidate collection safely re-converged a cluster the last release built:
+      per-node repo cutover (AR) + no GPG/signature error + service-active + broker version
+      UNCHANGED (RP is pinned across both phases), plus control-plane status and full survival of
+      the seeded sentinel dataset.
+    vars:
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      RPK_EXTRA: '{{.RPK_EXTRA | default ""}}'
+    cmds:
+      - echo ">> Per-node repo / signature / version-stable / service-active assertions"
+      - ansible redpanda -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b -m script -a scripts/upgrade/assert-node.sh
+      - echo ">> Control-plane status + data survival"
+      - chmod 775 {{.RPK_PATH}}
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Brokers: $REDPANDA_BROKERS"
+        echo "Checking cluster status after collection re-converge"
+        {{.RPK_PATH}} cluster status -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -v || exit 1
+        echo "Verifying seeded dataset survived re-converge: expect {{.SEED_COUNT}} records in {{.UPGRADE_SENTINEL_TOPIC}}"
+        OUT=$({{.RPK_PATH}} topic consume {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -o start -n {{.SEED_COUNT}} -f '%v\n')
+        GOT=$(printf '%s\n' "$OUT" | grep -c '^sentinel-')
+        echo "post-converge sentinel count: $GOT / {{.SEED_COUNT}}"
+        [ "$GOT" -eq "{{.SEED_COUNT}}" ] || { echo "FAIL: expected {{.SEED_COUNT}} sentinel records, got $GOT (data loss across re-converge)"; exit 1; }
+        printf '%s\n' "$OUT" | grep -qx "sentinel-{{.SEED_COUNT}}" \
+          || { echo "FAIL: tail record sentinel-{{.SEED_COUNT}} missing after re-converge"; exit 1; }
+        echo "OK: all {{.SEED_COUNT}} seeded records survived the collection re-converge (head..tail intact)"
+
   cluster:
     desc: Test Redpanda cluster functionality (create topic, produce, consume)
     cmds:

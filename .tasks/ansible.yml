@@ -20,3 +20,39 @@ tasks:
       - :ensure-roles-dir
     cmds:
       - ansible-galaxy role install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_ROLES_PATH}}
+
+  collection:candidate:
+    desc: >-
+      Install the candidate redpanda.cluster collection for the upgrade test's phase 2.
+      If CANDIDATE_COLLECTION_REF is set, force-install that ref — either a git branch
+      (e.g. "git+https://github.com/redpanda-data/redpanda-ansible-collection.git,my-branch")
+      or a released Galaxy version (e.g. "redpanda.cluster:0.12.0"). If unset, install
+      whatever requirements.yml pins.
+    deps:
+      - :ensure-collections-dir
+    vars:
+      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+    cmds:
+      - |
+        if [ -n "{{.CANDIDATE_COLLECTION_REF}}" ]; then
+          echo ">> candidate redpanda.cluster -> {{.CANDIDATE_COLLECTION_REF}}"
+          ansible-galaxy collection install '{{.CANDIDATE_COLLECTION_REF}}' --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
+        else
+          echo ">> candidate redpanda.cluster -> requirements.yml"
+          ansible-galaxy collection install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
+        fi
+
+  collection:override:
+    desc: >-
+      Force-install the redpanda.cluster collection at a specific git ref or galaxy version,
+      overriding whatever requirements.yml pinned. Used by the upgrade test to swap the
+      collection under test between phases without re-running the full requirements install.
+    deps:
+      - :ensure-collections-dir
+    vars:
+      # e.g. "git+https://github.com/redpanda-data/redpanda-ansible-collection.git,v0.11.1"
+      #  or  "redpanda.cluster:0.11.1" for a Galaxy release
+      COLLECTION_REF: '{{.COLLECTION_REF}}'
+    cmds:
+      - echo ">> Overriding redpanda.cluster collection -> {{.COLLECTION_REF}}"
+      - ansible-galaxy collection install '{{.COLLECTION_REF}}' --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
