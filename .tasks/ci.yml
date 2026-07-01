@@ -13,124 +13,291 @@ tasks:
 
   # AWS CI Workflows
   aws:rp:
-    desc: CI workflow - AWS basic Redpanda
+    desc: >-
+      CI workflow - AWS basic Redpanda, run as a COLLECTION UPGRADE test: build a cluster with the
+      last released collection (Galaxy) at a pinned RP version and seed data, then re-converge with
+      the candidate collection (requirements.yml) at the SAME pinned version and assert a safe
+      re-converge (repo/key cutover, version unchanged, service healthy) + full data survival.
+    vars:
+      DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
+      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
+      # candidate under test: unset -> requirements.yml; or a git branch
+      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
+      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
     cmds:
       - defer:
           task: :infra:aws:destroy
       - task: :tools:keygen
+      - task: :tools:rpk:install
       - task: :infra:aws:build
+        vars: {DISTRO: "{{.DISTRO}}"}
+      # install all requirements collections (candidate) + roles once
+      - task: :ansible:prereqs
+      # ---- Phase 1: last released collection, pinned RP version ----
+      - task: :ansible:collection:override
+        vars: {COLLECTION_REF: "{{.BASELINE_COLLECTION_REF}}"}
       - task: :cluster:provision
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
+      - task: :test:upgrade:capture:baseline
+      - task: :test:upgrade:seed
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
+      # ---- Phase 2: candidate collection (requirements.yml), SAME pinned RP version ----
+      - task: :ansible:collection:candidate
+        vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
+      - task: :cluster:provision
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
       - task: :monitor:deploy
       - task: :monitor:console:deploy
-      - task: :tools:rpk:install
       - task: :test:cluster
+      - task: :test:upgrade:assert
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
       - task: :infra:aws:destroy
 
   aws:rp:connect:
-    desc: CI workflow - AWS Redpanda with Connect
+    desc: >-
+      CI workflow - AWS Redpanda with Connect (Fedora/RPM), run as a COLLECTION UPGRADE test: build
+      with the last released collection at a pinned RP version + seed data, then re-converge with the
+      candidate collection at the SAME version and assert safe re-converge + data survival. Connect
+      + the extra cluster are deployed once in phase 2.
     vars:
       ENABLE_CONNECT: "true"
       DISTRO: "43"
+      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
+      # candidate under test: unset -> requirements.yml; or a git branch
+      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
+      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
     cmds:
       - defer:
           task: :infra:aws:destroy
       - defer:
           task: :infra:extra:aws:destroy
       - task: :tools:keygen
+      - task: :tools:rpk:install
       - task: :infra:aws:build
         vars: {ENABLE_CONNECT: "true", DISTRO: "43"}
       - task: :infra:extra:aws:copy
       - task: :infra:extra:aws:build
+      - task: :ansible:prereqs
+      # ---- Phase 1: last released collection, pinned RP version ----
+      - task: :ansible:collection:override
+        vars: {COLLECTION_REF: "{{.BASELINE_COLLECTION_REF}}"}
       - task: :cluster:provision
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
+      - task: :test:upgrade:capture:baseline
+      - task: :test:upgrade:seed
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
+      # ---- Phase 2: candidate collection, SAME pinned RP version ----
+      - task: :ansible:collection:candidate
+        vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
+      - task: :cluster:provision
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
       - task: :connect:deploy
       - task: :monitor:deploy
       - task: :monitor:console:deploy
-      - task: :tools:rpk:install
       - task: :test:cluster
       - task: :connect:connector:create
       - task: :test:spam
+      - task: :test:upgrade:assert
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
       - task: :infra:extra:aws:destroy
       - task: :infra:aws:destroy
 
   aws:rp:tiered:
-    desc: CI workflow - AWS Redpanda with tiered storage
+    desc: >-
+      CI workflow - AWS tiered storage (TLS), run as a COLLECTION UPGRADE test: build with the last
+      released collection at a pinned RP version + seed data, then re-converge with the candidate
+      collection at the SAME version and assert safe re-converge + data survival. TLS lanes pass
+      RPK_EXTRA so seed/assert talk to the brokers over TLS.
     vars:
       TIERED_STORAGE_ENABLED: "true"
+      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
+      # candidate under test: unset -> requirements.yml; or a git branch
+      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
+      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
+      RPK_EXTRA: '-X tls.ca={{.CA_CRT}}'
     cmds:
       - defer:
           task: :infra:aws:destroy
       - task: :tools:keygen
+      - task: :tools:rpk:install
       - task: :infra:aws:build
         vars: {TIERED_STORAGE_ENABLED: "true"}
+      - task: :ansible:prereqs
+      # ---- Phase 1: last released collection, pinned RP version ----
+      - task: :ansible:collection:override
+        vars: {COLLECTION_REF: "{{.BASELINE_COLLECTION_REF}}"}
       - task: :cluster:tiered
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
+      - task: :test:upgrade:capture:baseline
+      - task: :test:upgrade:seed
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
+      # ---- Phase 2: candidate collection, SAME pinned RP version ----
+      - task: :ansible:collection:candidate
+        vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
+      - task: :cluster:tiered
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
       - task: :monitor:deploy:tls
       - task: :monitor:console:deploy:tls
-      - task: :tools:rpk:install
       - task: :test:cluster:tls
       - task: :test:storage:aws
+      - task: :test:upgrade:assert
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
       - task: :infra:aws:destroy
 
   aws:rp:ts-connect:
-    desc: CI workflow - AWS Redpanda with tiered storage and Connect
+    desc: >-
+      CI workflow - AWS tiered storage + Connect (Fedora/RPM, TLS), run as a COLLECTION UPGRADE test:
+      build with the last released collection at a pinned RP version + seed data, then re-converge
+      with the candidate collection at the SAME version and assert safe re-converge + data survival.
+      Connect + the extra cluster are deployed once in phase 2. TLS lanes pass RPK_EXTRA.
     vars:
       ENABLE_CONNECT: "true"
       TIERED_STORAGE_ENABLED: "true"
       DISTRO: "43"
+      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
+      # candidate under test: unset -> requirements.yml; or a git branch
+      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
+      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
+      RPK_EXTRA: '-X tls.ca={{.CA_CRT}}'
     cmds:
       - defer:
           task: :infra:aws:destroy
       - defer:
           task: :infra:extra:aws:destroy
       - task: :tools:keygen
+      - task: :tools:rpk:install
       - task: :infra:aws:build
         vars: {ENABLE_CONNECT: "true", TIERED_STORAGE_ENABLED: "true", DISTRO: "43"}
+      - task: :infra:extra:aws:copy
+      - task: :infra:extra:aws:build
+      - task: :ansible:prereqs
+      # ---- Phase 1: last released collection, pinned RP version ----
+      - task: :ansible:collection:override
+        vars: {COLLECTION_REF: "{{.BASELINE_COLLECTION_REF}}"}
       - task: :cluster:tiered
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
+      - task: :test:upgrade:capture:baseline
+      - task: :test:upgrade:seed
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
+      # ---- Phase 2: candidate collection, SAME pinned RP version ----
+      - task: :ansible:collection:candidate
+        vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
+      - task: :cluster:tiered
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
       - task: :connect:deploy:tls
       - task: :monitor:deploy:tls
       - task: :monitor:console:deploy:tls
-      - task: :infra:extra:aws:copy
-      - task: :infra:extra:aws:build
       - task: :cluster:extra:provision
-      - task: :tools:rpk:install
       - task: :test:cluster:tls
       - task: :test:storage:aws
       - task: :test:connect:tls
       - task: :connect:connector:create:tls
       - task: :test:spam:tls
+      - task: :test:upgrade:assert
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
       - task: :infra:aws:destroy
       - task: :infra:extra:aws:destroy
 
   # GCP CI Workflows
   gcp:rp:
-    desc: CI workflow - GCP basic Redpanda
+    desc: >-
+      CI workflow - GCP basic Redpanda, run as a COLLECTION UPGRADE test: build with the last
+      released collection (Galaxy) at a pinned RP version + seed data, then re-converge with the
+      candidate collection (requirements.yml) at the SAME version and assert safe re-converge + data
+      survival. NOTE: on GCP install-rp-deb.yml sets allow_unauthenticated=true, so a bad apt
+      signature is ignored — GCP validates the workflow STRUCTURE + data survival, but the GPG key
+      cutover itself is only trustworthy on the AWS lane.
+    vars:
+      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
+      # candidate under test: unset -> requirements.yml; or a git branch
+      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
+      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
     cmds:
       - defer:
           task: :infra:gcp:destroy
       - task: :tools:keygen
+      - task: :tools:rpk:install
       - task: :infra:gcp:build
+      - task: :ansible:prereqs
+      # ---- Phase 1: last released collection, pinned RP version ----
+      - task: :ansible:collection:override
+        vars: {COLLECTION_REF: "{{.BASELINE_COLLECTION_REF}}"}
       - task: :cluster:provision
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
+      - task: :test:upgrade:capture:baseline
+      - task: :test:upgrade:seed
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
+      # ---- Phase 2: candidate collection (requirements.yml), SAME pinned RP version ----
+      - task: :ansible:collection:candidate
+        vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
+      - task: :cluster:provision
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
       - task: :monitor:deploy
       - task: :monitor:console:deploy
-      - task: :tools:rpk:install
       - task: :test:cluster
+      - task: :test:upgrade:assert
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
       - task: :infra:gcp:destroy
 
   gcp:rp:tiered:
-    desc: CI workflow - GCP Redpanda with tiered storage
+    desc: >-
+      CI workflow - GCP tiered storage (TLS), run as a COLLECTION UPGRADE test: build with the last
+      released collection at a pinned RP version + seed data, then re-converge with the candidate
+      collection at the SAME version and assert safe re-converge + data survival. TLS lanes pass
+      RPK_EXTRA so seed/assert talk to the brokers over TLS. (GCP masks the GPG cutover via
+      allow_unauthenticated; it validates structure + TLS + data survival.)
     vars:
       TIERED_STORAGE_ENABLED: "true"
+      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
+      # candidate under test: unset -> requirements.yml; or a git branch
+      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
+      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
+      RPK_EXTRA: '-X tls.ca={{.CA_CRT}}'
     cmds:
       - defer:
           task: :infra:gcp:destroy
       - task: :tools:keygen
+      - task: :tools:rpk:install
       - task: :infra:gcp:build
         vars: {TIERED_STORAGE_ENABLED: "true"}
+      - task: :ansible:prereqs
+      # ---- Phase 1: last released collection, pinned RP version ----
+      - task: :ansible:collection:override
+        vars: {COLLECTION_REF: "{{.BASELINE_COLLECTION_REF}}"}
       - task: :cluster:tiered
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
+      - task: :test:upgrade:capture:baseline
+      - task: :test:upgrade:seed
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
+      # ---- Phase 2: candidate collection, SAME pinned RP version ----
+      - task: :ansible:collection:candidate
+        vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
+      - task: :cluster:tiered
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
       - task: :monitor:deploy:tls
       - task: :monitor:console:deploy:tls
-      - task: :tools:rpk:install
       - task: :test:cluster:tls
       - task: :test:storage:gcp
+      - task: :test:upgrade:assert
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
       - task: :infra:gcp:destroy
 
   # Extra deployment workflows
