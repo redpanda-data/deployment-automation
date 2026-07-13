@@ -5,31 +5,30 @@ tasks:
     desc: >-
       Provision/converge the Redpanda cluster. RP_VERSION pins the broker version and
       RP_INSTALL_STATUS controls upgrade behaviour (present = leave version, latest = upgrade).
-      Does NOT install collections/roles itself: run ':ansible:prereqs' first, or let the
-      collection-upgrade workflow control which collection is installed before each converge.
+      Both are only passed to ansible when explicitly set, so playbook/inventory pins keep
+      working for callers that don't set them. Collections/roles are installed by the
+      :ansible:prereqs dep only when missing — the collection-upgrade workflow's
+      override/candidate installs are never clobbered.
     deps:
+      - :ansible:prereqs
       - :ensure-logs-dir
-    vars:
-      RP_VERSION: '{{.RP_VERSION | default "latest"}}'
-      RP_INSTALL_STATUS: '{{.RP_INSTALL_STATUS | default "present"}}'
     cmds:
       - >-
         ansible-playbook ansible/provision-cluster.yml
         --private-key {{.PRIVATE_KEY}}
         --inventory {{.ANSIBLE_INVENTORY}}
         --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
-        --extra-vars redpanda_version={{.RP_VERSION}}
-        --extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}
+        {{if .RP_VERSION}}--extra-vars redpanda_version={{.RP_VERSION}}{{end}}
+        {{if .RP_INSTALL_STATUS}}--extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}{{end}}
 
   tiered:
     desc: >-
       Provision/converge Redpanda with tiered storage. RP_VERSION/RP_INSTALL_STATUS as in
-      :cluster:provision. Does NOT install collections/roles itself: run ':ansible:prereqs' first.
+      :cluster:provision (only passed when explicitly set). Collections/roles come from the
+      non-clobbering :ansible:prereqs dep.
     deps:
+      - :ansible:prereqs
       - :ensure-logs-dir
-    vars:
-      RP_VERSION: '{{.RP_VERSION | default "latest"}}'
-      RP_INSTALL_STATUS: '{{.RP_INSTALL_STATUS | default "present"}}'
     cmds:
       - >-
         ansible-playbook ansible/provision-cluster-tiered-storage.yml
@@ -38,8 +37,8 @@ tasks:
         --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}}
         --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}}
         --extra-vars redpanda_license={{.REDPANDA_LICENSE}}
-        --extra-vars redpanda_version={{.RP_VERSION}}
-        --extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}
+        {{if .RP_VERSION}}--extra-vars redpanda_version={{.RP_VERSION}}{{end}}
+        {{if .RP_INSTALL_STATUS}}--extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}{{end}}
 
   proxy:
     desc: Provision Redpanda cluster with proxy

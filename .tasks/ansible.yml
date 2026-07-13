@@ -2,24 +2,42 @@ version: '3'
 
 tasks:
   prereqs:
-    desc: Install Ansible collections and roles
+    desc: >-
+      Install Ansible collections and roles from requirements.yml. Skips when already
+      installed (see :ansible:collection / :ansible:role), so it is safe as a dep of any
+      task: it will NOT clobber a collection installed by :ansible:collection:override or
+      :ansible:collection:candidate mid-workflow. Delete artifacts/collections to force a
+      full reinstall.
     deps: [collection, role]
     cmds:
       - echo "Ansible prerequisites installed"
 
   collection:
-    desc: Install Ansible collections
+    desc: >-
+      Install Ansible collections from requirements.yml. Skipped when the install marker
+      is newer than requirements.yml, so upgrade-test phases that swap redpanda.cluster
+      (override/candidate) are not silently reverted by later tasks that dep on prereqs.
     deps:
       - :ensure-collections-dir
     cmds:
       - ansible-galaxy collection install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
+      - touch {{.ANSIBLE_COLLECTIONS_PATH}}/.requirements-installed
+    status:
+      - test -f {{.ANSIBLE_COLLECTIONS_PATH}}/.requirements-installed
+      - test {{.ANSIBLE_COLLECTIONS_PATH}}/.requirements-installed -nt {{.USER_WORKING_DIR}}/requirements.yml
 
   role:
-    desc: Install Ansible roles
+    desc: >-
+      Install Ansible roles from requirements.yml. Skipped when the install marker is
+      newer than requirements.yml (same non-clobbering contract as :ansible:collection).
     deps:
       - :ensure-roles-dir
     cmds:
       - ansible-galaxy role install -r {{.USER_WORKING_DIR}}/requirements.yml --force -p {{.ANSIBLE_ROLES_PATH}}
+      - touch {{.ANSIBLE_ROLES_PATH}}/.requirements-installed
+    status:
+      - test -f {{.ANSIBLE_ROLES_PATH}}/.requirements-installed
+      - test {{.ANSIBLE_ROLES_PATH}}/.requirements-installed -nt {{.USER_WORKING_DIR}}/requirements.yml
 
   collection:candidate:
     desc: >-

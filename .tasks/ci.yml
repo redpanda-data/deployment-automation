@@ -1,5 +1,19 @@
 version: '3'
 
+vars:
+  # Shared knobs for every collection-upgrade lane — defined once so a GA pin bump
+  # or knob change is a single edit. Env vars (forwarded by the Buildkite docker
+  # plugin) override via the self-referencing defaults; individual lanes can still
+  # override per-task if ever needed.
+  BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
+  # candidate under test: unset -> requirements.yml; or a git branch
+  # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
+  CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+  # pinned across both phases of the stable upgrade lanes; the unstable lane ignores it
+  REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
+  SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+  UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
+
 tasks:
   # Composite workflows
   aws:rp:workflow:
@@ -20,13 +34,6 @@ tasks:
       re-converge (repo/key cutover, version unchanged, service healthy) + full data survival.
     vars:
       DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
-      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
-      # candidate under test: unset -> requirements.yml; or a git branch
-      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
-      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
-      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
-      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
-      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
     cmds:
       - defer:
           task: :infra:aws:destroy
@@ -65,13 +72,6 @@ tasks:
     vars:
       ENABLE_CONNECT: "true"
       DISTRO: "43"
-      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
-      # candidate under test: unset -> requirements.yml; or a git branch
-      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
-      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
-      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
-      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
-      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
     cmds:
       - defer:
           task: :infra:aws:destroy
@@ -116,13 +116,6 @@ tasks:
       RPK_EXTRA so seed/assert talk to the brokers over TLS.
     vars:
       TIERED_STORAGE_ENABLED: "true"
-      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
-      # candidate under test: unset -> requirements.yml; or a git branch
-      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
-      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
-      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
-      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
-      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
       RPK_EXTRA: '-X tls.ca={{.CA_CRT}}'
     cmds:
       - defer:
@@ -153,6 +146,38 @@ tasks:
         vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
       - task: :infra:aws:destroy
 
+  aws:rp:tiered:unstable:
+    desc: >-
+      CI workflow - AWS tiered storage (TLS) against the UNSTABLE Redpanda repo. Single-phase,
+      NOT a collection-upgrade test: unstable has no stable version to pin across two converges
+      (the GA pin doesn't exist in the unstable repo at all — see build 426). Instead this lane
+      fresh-installs the CANDIDATE collection at the latest unstable version, covering the
+      fresh-install path against the unstable repo.
+    vars:
+      TIERED_STORAGE_ENABLED: "true"
+    cmds:
+      - defer:
+          task: :infra:aws:destroy
+      - task: :tools:keygen
+      - task: :tools:rpk:install
+      - task: :infra:aws:build
+        vars: {TIERED_STORAGE_ENABLED: "true"}
+      - task: :ansible:prereqs
+      - task: :ansible:collection:candidate
+        vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
+      # IS_USING_UNSTABLE is pinned here (not in the Buildkite command) so a local
+      # `task ci:aws:rp:tiered:unstable` also converges against the unstable repo.
+      # No RP_VERSION pin: the playbook default (latest) tracks the unstable repo.
+      - task: :cluster:tiered
+        vars: {IS_USING_UNSTABLE: "true"}
+      - task: :monitor:deploy:tls
+        vars: {IS_USING_UNSTABLE: "true"}
+      - task: :monitor:console:deploy:tls
+        vars: {IS_USING_UNSTABLE: "true"}
+      - task: :test:cluster:tls
+      - task: :test:storage:aws
+      - task: :infra:aws:destroy
+
   aws:rp:ts-connect:
     desc: >-
       CI workflow - AWS tiered storage + Connect (Fedora/RPM, TLS), run as a COLLECTION UPGRADE test:
@@ -163,13 +188,6 @@ tasks:
       ENABLE_CONNECT: "true"
       TIERED_STORAGE_ENABLED: "true"
       DISTRO: "43"
-      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
-      # candidate under test: unset -> requirements.yml; or a git branch
-      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
-      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
-      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
-      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
-      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
       RPK_EXTRA: '-X tls.ca={{.CA_CRT}}'
     cmds:
       - defer:
@@ -180,8 +198,6 @@ tasks:
       - task: :tools:rpk:install
       - task: :infra:aws:build
         vars: {ENABLE_CONNECT: "true", TIERED_STORAGE_ENABLED: "true", DISTRO: "43"}
-      - task: :infra:extra:aws:copy
-      - task: :infra:extra:aws:build
       - task: :ansible:prereqs
       # ---- Phase 1: last released collection, pinned RP version ----
       - task: :ansible:collection:override
@@ -199,6 +215,11 @@ tasks:
       - task: :connect:deploy:tls
       - task: :monitor:deploy:tls
       - task: :monitor:console:deploy:tls
+      # extra cluster is built here, right before its only consumer — building it up
+      # front left it idle (billing) through both converge phases + seed, and let a
+      # transient extra-infra failure kill the run before any upgrade signal existed.
+      # :infra:extra:aws:copy runs via the build task's deps.
+      - task: :infra:extra:aws:build
       - task: :cluster:extra:provision
       - task: :test:cluster:tls
       - task: :test:storage:aws
@@ -220,13 +241,6 @@ tasks:
       signature is ignored — GCP validates the workflow STRUCTURE + data survival, but the GPG key
       cutover itself is only trustworthy on the AWS lane.
     vars:
-      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
-      # candidate under test: unset -> requirements.yml; or a git branch
-      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
-      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
-      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
-      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
-      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
     cmds:
       - defer:
           task: :infra:gcp:destroy
@@ -263,13 +277,6 @@ tasks:
       allow_unauthenticated; it validates structure + TLS + data survival.)
     vars:
       TIERED_STORAGE_ENABLED: "true"
-      BASELINE_COLLECTION_REF: '{{.BASELINE_COLLECTION_REF | default "redpanda.cluster"}}'
-      # candidate under test: unset -> requirements.yml; or a git branch
-      # ("git+<url>,<branch>") or a released Galaxy version ("redpanda.cluster:0.12.0")
-      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
-      REDPANDA_VERSION: '{{.REDPANDA_VERSION | default "26.1.11-1"}}'
-      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
-      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
       RPK_EXTRA: '-X tls.ca={{.CA_CRT}}'
     cmds:
       - defer:
