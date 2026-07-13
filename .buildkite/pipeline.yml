@@ -1,6 +1,13 @@
 agents:
   queue: "k8s-m6ixlarge"
 
+env:
+  # Branch-local default: test the AR-migration collection branch as the upgrade
+  # candidate. Build-level env vars override this (Buildkite precedence:
+  # pipeline env < build env), so one-off builds can still repoint it.
+  # TODO: remove or repoint before merging to main.
+  CANDIDATE_COLLECTION_REF: "git+https://github.com/redpanda-data/redpanda-ansible-collection.git,devprod-4109-ar-migration-key-fix"
+
 steps:
   - label: aws ubuntu
     key: aws-up-ubuntu
