@@ -164,6 +164,12 @@ tasks:
     desc: Destroy secondary AWS cluster
     cmds:
       - |
+        # The extra cluster is built mid-lane (phase 2 of ts-connect); a deferred
+        # destroy can fire before it was ever created — that's a no-op, not an error.
+        if ! ls aws-extra/{{.TF_DIR}}/*.tf >/dev/null 2>&1; then
+          echo "no extra infra to destroy (aws-extra was never built)"
+          exit 0
+        fi
         cd aws-extra/{{.TF_DIR}} && \
         terraform init && \
         terraform destroy -auto-approve \

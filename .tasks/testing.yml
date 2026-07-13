@@ -22,9 +22,14 @@ tasks:
       - |
         REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
         echo "Seeding {{.SEED_COUNT}} records into {{.UPGRADE_SENTINEL_TOPIC}} before upgrade (brokers: $REDPANDA_BROKERS)"
-        {{.RPK_PATH}} topic create {{.UPGRADE_SENTINEL_TOPIC}} -p {{.PARTITION_COUNT}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -v || true
+        # tolerate TOPIC_ALREADY_EXISTS (re-runs) but surface every other create failure
+        {{.RPK_PATH}} topic create {{.UPGRADE_SENTINEL_TOPIC}} -p {{.PARTITION_COUNT}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -v \
+          || {{.RPK_PATH}} topic describe {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} >/dev/null \
+          || { echo "FAIL: could not create or find sentinel topic {{.UPGRADE_SENTINEL_TOPIC}}"; exit 1; }
         seq 1 {{.SEED_COUNT}} | sed 's/^/sentinel-/' | {{.RPK_PATH}} topic produce {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} || exit 1
-        GOT=$({{.RPK_PATH}} topic consume {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -o start -n {{.SEED_COUNT}} -f '%v\n' | grep -c '^sentinel-')
+        # timeout: 'consume -n N' blocks forever when fewer than N records exist — the
+        # count check below must see the partial result, not hang the lane
+        GOT=$(timeout 120 {{.RPK_PATH}} topic consume {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -o start -n {{.SEED_COUNT}} -f '%v\n' | grep -c '^sentinel-' || true)
         echo "pre-upgrade sentinel count: $GOT / {{.SEED_COUNT}}"
         [ "$GOT" -eq "{{.SEED_COUNT}}" ] || { echo "FAIL: only seeded $GOT/{{.SEED_COUNT}} records before upgrade"; exit 1; }
         echo "OK: {{.SEED_COUNT}} records present pre-upgrade"
@@ -50,8 +55,10 @@ tasks:
         echo "Checking cluster status after collection re-converge"
         {{.RPK_PATH}} cluster status -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -v || exit 1
         echo "Verifying seeded dataset survived re-converge: expect {{.SEED_COUNT}} records in {{.UPGRADE_SENTINEL_TOPIC}}"
-        OUT=$({{.RPK_PATH}} topic consume {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -o start -n {{.SEED_COUNT}} -f '%v\n')
-        GOT=$(printf '%s\n' "$OUT" | grep -c '^sentinel-')
+        # timeout: 'consume -n N' blocks forever when fewer than N records exist — a hang
+        # here would silently mask the exact data-loss case this assert exists to catch
+        OUT=$(timeout 120 {{.RPK_PATH}} topic consume {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -o start -n {{.SEED_COUNT}} -f '%v\n' || true)
+        GOT=$(printf '%s\n' "$OUT" | grep -c '^sentinel-' || true)
         echo "post-converge sentinel count: $GOT / {{.SEED_COUNT}}"
         [ "$GOT" -eq "{{.SEED_COUNT}}" ] || { echo "FAIL: expected {{.SEED_COUNT}} sentinel records, got $GOT (data loss across re-converge)"; exit 1; }
         printf '%s\n' "$OUT" | grep -qx "sentinel-{{.SEED_COUNT}}" \

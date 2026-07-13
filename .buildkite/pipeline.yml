@@ -6,6 +6,7 @@ steps:
     key: aws-up-ubuntu
     concurrency_group: aws-ub
     concurrency: 1
+    timeout_in_minutes: 120
     command: DEPLOYMENT_ID=ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -18,10 +19,14 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: aws ubuntu tiered
     key: aws-up-ubuntu-tiered
     concurrency_group: aws-ub
     concurrency: 1
+    timeout_in_minutes: 120
     command: DEPLOYMENT_ID=ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -35,10 +40,14 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: aws ubuntu tiered large
     key: aws-up-ubuntu-ts-large
     concurrency_group: aws-ub
     concurrency: 1
+    timeout_in_minutes: 120
     command: DEPLOYMENT_ID=ci-ts-ub-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -52,10 +61,14 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: aws fedora
     key: aws-up-fedora
     concurrency_group: aws-fd
     concurrency: 1
+    timeout_in_minutes: 120
     command: DEPLOYMENT_ID=ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 task ci:aws:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -68,10 +81,14 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: aws fedora connect
     key: aws-up-fed-con
     concurrency_group: aws-fd-cn
     concurrency: 1
+    timeout_in_minutes: 120
     command: DEPLOYMENT_ID=ci-cn-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 task ci:aws:rp:connect
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -85,10 +102,14 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
             - CONNECT_RPM_TOKEN
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: aws fedora tiered
     key: aws-up-fedora-tiered
     concurrency_group: aws-fd
     concurrency: 1
+    timeout_in_minutes: 120
     command: DEPLOYMENT_ID=ci-ts-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -102,10 +123,14 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: aws fedora tiered connect
     key: aws-up-fed-cts
     concurrency_group: aws-fd-cn
     concurrency: 1
+    timeout_in_minutes: 120
     command: DEPLOYMENT_ID=ci-ct-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 task ci:aws:rp:ts-connect
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -120,10 +145,14 @@ steps:
             - AWS_DEFAULT_REGION
             - REDPANDA_LICENSE
             - CONNECT_RPM_TOKEN
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
     concurrency_group: aws-fd
     concurrency: 1
+    timeout_in_minutes: 120
     command: DEPLOYMENT_ID=ci-ts-fd-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -137,10 +166,14 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: gcp ubuntu basic
     key: gcp-up-ubuntu
     concurrency_group: gcp-ub
     concurrency: 1
+    timeout_in_minutes: 120
     command: GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" DEPLOYMENT_ID="ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -151,10 +184,14 @@ steps:
           image: glrp/atgt:latest
           environment:
             - GCP_CREDS
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: gcp ubuntu tiered
     key: gcp-up-ubuntu-tiered
     concurrency_group: gcp-ub
     concurrency: 1
+    timeout_in_minutes: 120
     command: GCP_IMAGE="ubuntu-os-cloud/ubuntu-2204-lts" DEPLOYMENT_ID="ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -167,10 +204,14 @@ steps:
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: gcp fedora basic
     key: gcp-up-fedora
     concurrency_group: gcp-fd
     concurrency: 1
+    timeout_in_minutes: 120
     command: GCP_IMAGE="fedora-cloud/fedora-cloud-43-x86-64" DEPLOYMENT_ID="ci-bs-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -181,10 +222,14 @@ steps:
           image: glrp/atgt:latest
           environment:
             - GCP_CREDS
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: gcp fedora tiered
     key: gcp-up-fedora-tiered
     concurrency_group: gcp-fd
     concurrency: 1
+    timeout_in_minutes: 120
     command: GCP_IMAGE="fedora-cloud/fedora-cloud-43-x86-64" DEPLOYMENT_ID="ci-ud-fd-`tr -dc a-z0-9 </dev/urandom | head -c 4`" task ci:gcp:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -196,11 +241,15 @@ steps:
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: unstable aws fedora tiered
     key: aws-us-fedora-tiered
     concurrency_group: unstable
     concurrency: 1
-    command: DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 IS_USING_UNSTABLE=true task ci:aws:rp:tiered
+    timeout_in_minutes: 120
+    command: DEPLOYMENT_ID=ci-ts-fd-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 task ci:aws:rp:tiered:unstable
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -213,11 +262,15 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: unstable aws fedora tiered large
     key: aws-us-fedora-ts-large
     concurrency_group: unstable
     concurrency: 1
-    command: DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 IS_USING_UNSTABLE=true INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
+    timeout_in_minutes: 120
+    command: DEPLOYMENT_ID=ci-ts-fd-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=43 INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered:unstable
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -230,11 +283,15 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: unstable aws ubuntu tiered
     key: aws-us-ubuntu-tiered
     concurrency_group: unstable
     concurrency: 1
-    command: DEPLOYMENT_ID=ci-ts-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal IS_USING_UNSTABLE=true task ci:aws:rp:tiered
+    timeout_in_minutes: 120
+    command: DEPLOYMENT_ID=ci-ts-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp:tiered:unstable
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -247,11 +304,15 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
   - label: unstable aws ubuntu tiered large
     key: aws-us-ubuntu-ts-large
     concurrency_group: unstable
     concurrency: 1
-    command: DEPLOYMENT_ID=ci-ts-ub-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal IS_USING_UNSTABLE=true INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
+    timeout_in_minutes: 120
+    command: DEPLOYMENT_ID=ci-ts-ub-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered:unstable
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
@@ -264,9 +325,13 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
+            - BASELINE_COLLECTION_REF
+            - CANDIDATE_COLLECTION_REF
+            - REDPANDA_VERSION
 
   - label: cleanup aws resources
     key: cleanup-aws
+    timeout_in_minutes: 30
     command: task cleanup:aws:ci
     plugins:
       - seek-oss/aws-sm#v2.3.2:
@@ -298,6 +363,7 @@ steps:
 
   - label: cleanup gcp resources
     key: cleanup-gcp
+    timeout_in_minutes: 30
     command: task cleanup:gcp:ci
     plugins:
       - seek-oss/aws-sm#v2.3.2:

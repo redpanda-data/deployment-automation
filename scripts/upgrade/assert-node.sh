@@ -47,12 +47,17 @@ else
 fi
 
 [ -n "$cur" ] || fail "could not determine current redpanda version"
-base="UNKNOWN"
-[ -f /tmp/upgrade_baseline_version ] && base=$(cat /tmp/upgrade_baseline_version)
+# A missing baseline is a FAILURE, not a skip: silently passing here would let a
+# version-moving candidate collection go green (the exact regression this checks for).
+# capture-baseline.sh writes to /var/tmp so a reboot can't wipe it (Fedora /tmp is tmpfs).
+[ -f /var/tmp/upgrade_baseline_version ] \
+  || fail "baseline version file missing — capture-baseline.sh did not run on this node?"
+base=$(cat /var/tmp/upgrade_baseline_version)
+[ -n "$base" ] || fail "baseline version file is empty"
 echo "baseline=$base current=$cur"
 
 # RP is pinned across both phases: the version must not move during a collection re-converge.
-if [ "$base" != "UNKNOWN" ] && [ "$base" != "$cur" ]; then
+if [ "$base" != "$cur" ]; then
   fail "broker version changed during collection re-converge: $base -> $cur (RP should be pinned)"
 fi
 
