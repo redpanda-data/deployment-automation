@@ -23,6 +23,7 @@ var (
 	dryRun           = flag.Bool("dry-run", false, "Preview mode - list resources without deleting")
 	autoApprove      = flag.Bool("auto-approve", false, "Skip confirmation prompt")
 	verifyDefaultVPC = flag.Bool("verify-default-vpc", true, "Verify using default VPC before proceeding")
+	minAge           = flag.Duration("min-age", 0, "Only delete resources created more than this long ago (e.g. 3h). Protects concurrent builds' live resources; 0 disables the filter")
 
 	// Colored output
 	red    = color.New(color.FgRed).SprintFunc()
@@ -157,6 +158,21 @@ func checkDefaultVPC(ctx context.Context, client *ec2.Client) error {
 	return nil
 }
 
+// oldEnough reports whether a resource created at t clears the -min-age bar.
+// When min-age is set, resources with an unknown creation time are treated as
+// NOT old enough: with concurrent CI builds, deleting a resource of unknown
+// age risks killing a live lane (see build 430 — a cleanup from one build
+// mass-terminated another build's mid-converge instances).
+func oldEnough(t *time.Time) bool {
+	if *minAge == 0 {
+		return true
+	}
+	if t == nil {
+		return false
+	}
+	return time.Since(*t) >= *minAge
+}
+
 func deleteInstances(ctx context.Context, client *ec2.Client) {
 	result, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
 		Filters: []types.Filter{
@@ -173,6 +189,10 @@ func deleteInstances(ctx context.Context, client *ec2.Client) {
 	var instanceIDs []string
 	for _, reservation := range result.Reservations {
 		for _, instance := range reservation.Instances {
+			if !oldEnough(instance.LaunchTime) {
+				fmt.Printf("%s\n", yellow("Skipping (younger than min-age, may belong to a running build): "+*instance.InstanceId))
+				continue
+			}
 			instanceIDs = append(instanceIDs, *instance.InstanceId)
 			if *dryRun {
 				fmt.Printf("%s\n", cyan("Would delete: "+*instance.InstanceId))
@@ -228,6 +248,10 @@ func deleteVolumes(ctx context.Context, client *ec2.Client) {
 	}
 
 	for _, volume := range result.Volumes {
+		if !oldEnough(volume.CreateTime) {
+			fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+*volume.VolumeId))
+			continue
+		}
 		if *dryRun {
 			fmt.Printf("%s\n", cyan("Would delete: "+*volume.VolumeId))
 		} else {
@@ -265,6 +289,25 @@ func deleteSecurityGroups(ctx context.Context, client *ec2.Client) {
 	for _, sg := range result.SecurityGroups {
 		// Never delete default security group
 		if *sg.GroupName == "default" {
+			continue
+		}
+
+		// SGs carry no creation timestamp, so min-age can't apply directly.
+		// Instead, skip any SG still attached to a network interface: it belongs
+		// to live instances (possibly a concurrent build's, protected by min-age
+		// above). Revoking rules on an in-use SG cuts traffic to running nodes
+		// even though the delete itself would fail.
+		eni, err := client.DescribeNetworkInterfaces(ctx, &ec2.DescribeNetworkInterfacesInput{
+			Filters: []types.Filter{
+				{Name: aws.String("group-id"), Values: []string{*sg.GroupId}},
+			},
+		})
+		if err != nil {
+			fmt.Println(yellow(fmt.Sprintf("Warning: could not check attachments for %s, skipping: %v", *sg.GroupName, err)))
+			continue
+		}
+		if len(eni.NetworkInterfaces) > 0 {
+			fmt.Printf("%s (%s)\n", yellow("Skipping (in use by live instances): "+*sg.GroupName), *sg.GroupId)
 			continue
 		}
 
@@ -354,6 +397,10 @@ func deleteIAMResources(ctx context.Context, client *iam.Client) {
 		if !strings.HasPrefix(*profile.InstanceProfileName, *prefix) {
 			continue
 		}
+		if !oldEnough(profile.CreateDate) {
+			fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+*profile.InstanceProfileName))
+			continue
+		}
 
 		if *dryRun {
 			fmt.Printf("%s\n", cyan("Would delete instance profile: "+*profile.InstanceProfileName))
@@ -389,6 +436,10 @@ func deleteIAMResources(ctx context.Context, client *iam.Client) {
 
 	for _, role := range rolesResult.Roles {
 		if !strings.HasPrefix(*role.RoleName, *prefix) {
+			continue
+		}
+		if !oldEnough(role.CreateDate) {
+			fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+*role.RoleName))
 			continue
 		}
 
@@ -453,6 +504,10 @@ func deleteKeyPairs(ctx context.Context, client *ec2.Client) {
 	}
 
 	for _, kp := range result.KeyPairs {
+		if !oldEnough(kp.CreateTime) {
+			fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+*kp.KeyName))
+			continue
+		}
 		if *dryRun {
 			fmt.Printf("%s\n", cyan("Would delete: "+*kp.KeyName))
 		} else {
@@ -481,6 +536,10 @@ func deleteS3Buckets(ctx context.Context, s3Client *s3.Client) {
 	found := false
 	for _, bucket := range result.Buckets {
 		if !strings.HasPrefix(*bucket.Name, *prefix) {
+			continue
+		}
+		if !oldEnough(bucket.CreationDate) {
+			fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+*bucket.Name))
 			continue
 		}
 

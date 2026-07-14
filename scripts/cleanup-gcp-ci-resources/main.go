@@ -24,6 +24,7 @@ var (
 	dryRun         = flag.Bool("dry-run", false, "Preview mode - list resources without deleting")
 	autoApprove    = flag.Bool("auto-approve", false, "Skip confirmation prompt")
 	useBase64Creds = flag.Bool("use-gcp-creds-base64", false, "Use base64-encoded GOOGLE_CREDENTIALS_BASE64 env var")
+	minAge         = flag.Duration("min-age", 0, "Only delete resources created more than this long ago (e.g. 3h). Protects concurrent builds' live resources; 0 disables the filter")
 
 	// Colored output
 	red    = color.New(color.FgRed).SprintFunc()
@@ -181,6 +182,22 @@ func setupBase64Credentials() (string, error) {
 	return tmpFile.Name(), nil
 }
 
+// oldEnough reports whether a resource with the given RFC3339 creation
+// timestamp clears the -min-age bar. When min-age is set, resources with a
+// missing/unparseable timestamp are treated as NOT old enough: with
+// concurrent CI builds, deleting a resource of unknown age risks killing a
+// live lane.
+func oldEnough(creationTimestamp string) bool {
+	if *minAge == 0 {
+		return true
+	}
+	t, err := time.Parse(time.RFC3339, creationTimestamp)
+	if err != nil {
+		return false
+	}
+	return time.Since(t) >= *minAge
+}
+
 func deleteInstances(ctx context.Context, service *compute.Service) {
 	// Get all instances across all zones
 	aggList, err := service.Instances.AggregatedList(*projectID).Do()
@@ -198,6 +215,10 @@ func deleteInstances(ctx context.Context, service *compute.Service) {
 
 		for _, instance := range instanceList.Instances {
 			if !strings.HasPrefix(instance.Name, *prefix) || strings.Contains(instance.Name, "devex") {
+				continue
+			}
+			if !oldEnough(instance.CreationTimestamp) {
+				fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+instance.Name))
 				continue
 			}
 
@@ -246,6 +267,10 @@ func deleteInstanceGroups(ctx context.Context, service *compute.Service) {
 			if !strings.HasPrefix(group.Name, *prefix) || strings.Contains(group.Name, "devex") {
 				continue
 			}
+			if !oldEnough(group.CreationTimestamp) {
+				fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+group.Name))
+				continue
+			}
 
 			found = true
 			if *dryRun {
@@ -289,6 +314,10 @@ func deleteFirewallRules(ctx context.Context, service *compute.Service) {
 		if !strings.HasPrefix(firewall.Name, *prefix) || strings.Contains(firewall.Name, "devex") {
 			continue
 		}
+		if !oldEnough(firewall.CreationTimestamp) {
+			fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+firewall.Name))
+			continue
+		}
 
 		found = true
 		if *dryRun {
@@ -329,6 +358,10 @@ func deleteAddresses(ctx context.Context, service *compute.Service) {
 
 		for _, address := range addressList.Addresses {
 			if !strings.HasPrefix(address.Name, *prefix) || strings.Contains(address.Name, "devex") {
+				continue
+			}
+			if !oldEnough(address.CreationTimestamp) {
+				fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+address.Name))
 				continue
 			}
 
@@ -374,6 +407,10 @@ func deleteSubnetworks(ctx context.Context, service *compute.Service) {
 			if !strings.HasPrefix(subnet.Name, *prefix) || strings.Contains(subnet.Name, "devex") {
 				continue
 			}
+			if !oldEnough(subnet.CreationTimestamp) {
+				fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+subnet.Name))
+				continue
+			}
 
 			found = true
 			if *dryRun {
@@ -410,6 +447,10 @@ func deleteNetworks(ctx context.Context, service *compute.Service) {
 	found := false
 	for _, network := range networks.Items {
 		if !strings.HasPrefix(network.Name, *prefix) || strings.Contains(network.Name, "devex") {
+			continue
+		}
+		if !oldEnough(network.CreationTimestamp) {
+			fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+network.Name))
 			continue
 		}
 
@@ -456,6 +497,13 @@ func deleteServiceAccounts(ctx context.Context, service *iam.Service) {
 		if !strings.HasPrefix(shortName, *prefix) || strings.Contains(shortName, "devex") {
 			continue
 		}
+		// Service accounts expose no creation timestamp; under min-age skip
+		// them rather than risk deleting one a live lane authenticates with.
+		// The manual cleanup (no min-age) still reaps them.
+		if *minAge != 0 {
+			fmt.Printf("%s\n", yellow("Skipping (min-age set, creation time unknown): "+account.Email))
+			continue
+		}
 
 		found = true
 		if *dryRun {
@@ -488,6 +536,10 @@ func deleteStorageBuckets(ctx context.Context, service *storage.Service) {
 	found := false
 	for _, bucket := range buckets.Items {
 		if !strings.HasPrefix(bucket.Name, *prefix) || strings.Contains(bucket.Name, "devex") {
+			continue
+		}
+		if !oldEnough(bucket.TimeCreated) {
+			fmt.Printf("%s\n", yellow("Skipping (younger than min-age): "+bucket.Name))
 			continue
 		}
 

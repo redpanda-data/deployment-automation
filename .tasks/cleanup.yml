@@ -42,12 +42,18 @@ tasks:
   aws:ci:
     desc: "Delete AWS CI resources (auto-approves without confirmation)"
     dir: scripts/cleanup-aws-ci-resources
+    vars:
+      # Concurrent builds interleave: another build's lanes may be mid-converge
+      # when this build's cleanup fires. 3h > the 2h lane timeout, so nothing a
+      # live lane owns can be reaped (build 430's tiered lanes were killed by
+      # exactly this). Override MIN_AGE=0 for a full sweep.
+      MIN_AGE: '{{.MIN_AGE | default "3h"}}'
     cmds:
       - |
         go run main.go \
           --prefix "{{.PREFIX}}" \
           --region "{{.AWS_CLEANUP_REGION}}" \
-          {{if .MIN_AGE}}--min-age "{{.MIN_AGE}}"{{end}} \
+          {{if ne .MIN_AGE "0"}}--min-age "{{.MIN_AGE}}"{{end}} \
           --auto-approve
 
   gcp:
@@ -74,12 +80,15 @@ tasks:
   gcp:ci:
     desc: "Delete GCP CI resources (auto-approves, uses base64 creds) - all regions"
     dir: scripts/cleanup-gcp-ci-resources
+    vars:
+      # Same concurrent-build guard as aws:ci (see comment there).
+      MIN_AGE: '{{.MIN_AGE | default "3h"}}'
     cmds:
       - |
         go run main.go \
           --project-id "{{.GCP_PROJECT_ID}}" \
           --prefix "{{.PREFIX}}" \
-          {{if .MIN_AGE}}--min-age "{{.MIN_AGE}}"{{end}} \
+          {{if ne .MIN_AGE "0"}}--min-age "{{.MIN_AGE}}"{{end}} \
           --auto-approve \
           --use-gcp-creds-base64
 
