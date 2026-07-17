@@ -100,7 +100,7 @@ vars:
   # GCP
   GOOGLE_PROJECT_ID: '{{.GOOGLE_PROJECT_ID | default "hallowed-ray-376320"}}'
   GCP_IMAGE: '{{.GCP_IMAGE | default "ubuntu-os-cloud/ubuntu-2204-lts"}}'
-  GCP_INSTANCE_TYPE: '{{.GCP_INSTANCE_TYPE | default "n2-standard-2"}}'
+  GCP_INSTANCE_TYPE: '{{.GCP_INSTANCE_TYPE | default "n2d-standard-4"}}'
   GCP_CREDS: '{{.GCP_CREDS | default ""}}'
   GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcp_creds.json"
 

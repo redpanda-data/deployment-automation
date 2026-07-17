@@ -130,15 +130,23 @@ variable "image" {
 variable machine_type {
   # List of available machines per region/ zone:
   # https://cloud.google.com/compute/docs/regions-zones#available
-  default = "n2-standard-2"
+  # N2D default: needs a local-SSD-capable family (the module attaches
+  # local-ssd scratch disks; E2 is incompatible — build 432). us-west2-b ran
+  # out of N2 stock for 2+ weeks (builds 425-431) and zone discovery only
+  # filters on zone status, not capacity, so every 3+ node cluster hit the
+  # dead zone. N2D is offered in all us-west2 zones, supports local SSD, is
+  # on Redpanda's recommended-families list, and draws from a separate (AMD)
+  # stock pool than the exhausted N2. standard-4 is the smallest shape that
+  # meets Redpanda's documented minimum of two physical cores.
+  default = "n2d-standard-4"
 }
 
 variable monitor_machine_type {
-  default = "n2-standard-2"
+  default = "n2d-standard-4"
 }
 
 variable client_machine_type {
-  default = "n2-standard-2"
+  default = "n2d-standard-4"
 }
 
 variable "public_key_path" {
