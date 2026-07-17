@@ -7,6 +7,16 @@ tasks:
       - echo ">> Capturing baseline broker version on all brokers"
       - ansible redpanda -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b -m script -a scripts/upgrade/capture-baseline.sh
 
+  upgrade:sabotage:keyring:
+    desc: >-
+      Key-rotation fixture: between phases, double the DEB signing keyring (served key twice) so the
+      candidate's key-refresh logic is forced down the rotation path: a fingerprint-presence
+      gate skips the refresh (first fpr still present) and the upgrade assert then fails the
+      byte-identity check; only a whole-keyring comparison refreshes correctly. No-op on RPM hosts.
+    cmds:
+      - echo ">> Sabotaging DEB signing keyring to force the key-rotation refresh path"
+      - ansible redpanda -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b -m script -a scripts/upgrade/sabotage-deb-keyring.sh
+
   upgrade:seed:
     desc: >-
       Seed a known, countable dataset into the sentinel topic BEFORE the upgrade so the post-upgrade
