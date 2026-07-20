@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
-# Upgrade fixture: force the DEB key-rotation refresh path so the assert can
-# prove the candidate collection replaces stale keyring material during an
-# upgrade — not just on fresh installs. Run between phase 1 (baseline converge)
-# and phase 2 (candidate converge):
+# Upgrade fixture: manufacture the first-fingerprint-collision case so the assert
+# can prove the candidate collection refreshes a keyring that a naive
+# fingerprint-presence gate would wrongly skip. Run between phase 1 (baseline
+# converge) and phase 2 (candidate converge):
 #   ansible redpanda -b -m script -a scripts/upgrade/sabotage-deb-keyring.sh
 #
-# The sabotage writes "served-key + served-key" (the currently served keyring
-# concatenated with itself) into the redpanda keyring. This is a valid keyring
-# whose FIRST fingerprint matches the served key — so a fingerprint-presence
-# gate (the pre-fix logic) skips the refresh and leaves the doubled keyring in
-# place — but whose bytes differ from the pristine dearmored key, so the
-# whole-keyring comparison (the fixed logic) must replace it. assert-node.sh
-# then requires the installed keyring to be byte-identical to the served key.
+# The keyring is rewritten to: the CURRENTLY-SERVED key, followed by whatever the
+# phase-1 (baseline) collection already installed. That is a realistic overlap
+# bundle, and it satisfies three constraints simultaneously:
+#   - the baseline key is retained, so the phase-2 `apt update` that
+#     system_setup runs BEFORE the repo is reconfigured still verifies the
+#     still-configured baseline repo (no premature NO_PUBKEY);
+#   - the served key's fingerprint is present, so a gate that only checks
+#     "is the served fingerprint in the keyring?" skips the refresh and leaves
+#     the extra baseline key in place — which the assert then catches;
+#   - the bytes differ from the served key alone, so a whole-keyring comparison
+#     correctly refreshes it down to exactly the served material.
 #
-# Fingerprint sets are recorded to /var/tmp for before/after visibility:
-#   upgrade_keyring_baseline  - keyring as left by the phase-1 (released) collection
-#   upgrade_keyring_sabotaged - keyring after this sabotage
+# No-op on RPM hosts. Fingerprint sets are recorded to /var/tmp for the log.
 set -euo pipefail
 
 if ! command -v apt-get >/dev/null 2>&1; then
@@ -31,16 +33,23 @@ list_fprs() {
     | awk -F: '/^fpr:/{print $10}'
 }
 
-echo "=== DEB keyring sabotage on $(hostname) (forcing the rotation-refresh path) ==="
-list_fprs "$KEYRING" > /var/tmp/upgrade_keyring_baseline || true
-echo "baseline keyring fprs (phase-1 collection):"
+echo "=== DEB keyring sabotage on $(hostname) (manufacturing the fpr-collision case) ==="
+if [ ! -s "$KEYRING" ]; then
+  echo "no baseline keyring at $KEYRING — phase-1 collection did not install one; nothing to sabotage"
+  exit 0
+fi
+cp "$KEYRING" /tmp/rp-baseline-keyring
+list_fprs /tmp/rp-baseline-keyring > /var/tmp/upgrade_keyring_baseline || true
+echo "baseline keyring fprs (installed by the phase-1 collection):"
 sed 's/^/  /' /var/tmp/upgrade_keyring_baseline
 
 curl -fsSL "$KEY_URL" -o /tmp/rp-served.key
 gpg --dearmor --yes -o /tmp/rp-served.gpg /tmp/rp-served.key
-cat /tmp/rp-served.gpg /tmp/rp-served.gpg > "$KEYRING"
+# served key first (its fpr is present, so a presence-gate skips), then the
+# retained baseline key (so intermediate apt-get update still verifies)
+cat /tmp/rp-served.gpg /tmp/rp-baseline-keyring > "$KEYRING"
 chmod 0644 "$KEYRING"
 
 list_fprs "$KEYRING" > /var/tmp/upgrade_keyring_sabotaged
-echo "sabotaged keyring fprs (served key doubled — first-fpr gates would skip refresh):"
+echo "sabotaged keyring fprs (served key + retained baseline key):"
 sed 's/^/  /' /var/tmp/upgrade_keyring_sabotaged
