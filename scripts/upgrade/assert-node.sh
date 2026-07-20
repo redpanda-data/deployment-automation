@@ -15,9 +15,9 @@
 #      between phases (first fingerprint still present!), so a fingerprint-presence
 #      gate skips the refresh and fails this assert; only a whole-keyring comparison
 #      passes. Before/sabotaged/after fingerprint sets are printed for the log.
-#   5. RPM: repo_gpgcheck=1 is configured and a fresh `dnf makecache` verifies the
-#      Artifact-Registry-signed repomd.xml against the imported AR signer key — signed
-#      metadata verification survives (and is exercised by) the upgrade.
+#   5. RPM: repo_gpgcheck matches the dnf backend — 0 on dnf5 (which cannot verify
+#      AR's repomd.xml signature) and 1 on dnf4, where a fresh `dnf makecache`
+#      verifies the AR-signed repomd.xml. Either way makecache must succeed.
 #   6. The redpanda package is installed, the service is active, and the broker version is
 #      UNCHANGED from the baseline phase (a collection re-converge must not move the broker).
 #
@@ -70,18 +70,23 @@ else
     fail "stale dl.redpanda.com yum repo still present after re-converge"
   fi
 
-  echo "--- signed repo metadata verification (repo_gpgcheck) ---"
-  # The candidate collection must write repo_gpgcheck=1 on the redpanda repos: AR
-  # signs repomd.xml with Google's Artifact Registry repository-signer key, and
-  # disabling the check would silently accept forged/replayed metadata.
-  grep -rEq "repo_gpgcheck[[:space:]]*=[[:space:]]*1" /etc/yum.repos.d/*redpanda*.repo \
-    || fail "repo_gpgcheck=1 not set on the redpanda repos after re-converge (metadata verification disabled)"
-  # Force a fresh metadata fetch so the repomd.xml signature is actually verified
-  # right now, on this upgraded host, with the keys the candidate imported.
-  # -y auto-confirms the AR signer key import into dnf's per-repo keyring.
-  dnf -q clean metadata >/dev/null 2>&1
-  out=$(dnf -y makecache 2>&1) || { echo "$out"; fail "dnf makecache failed with repo_gpgcheck=1 — AR metadata signature did not verify"; }
-  echo "OK: repomd.xml signature verified with repo_gpgcheck=1"
+  echo "--- repo metadata verification (repo_gpgcheck), gated on the dnf backend ---"
+  # dnf5 cannot verify AR's repomd.xml signature, so the collection sets
+  # repo_gpgcheck=0 on dnf5 and =1 on dnf4. Assert the value matches the backend,
+  # and where verification is on, prove it actually verifies now.
+  if [ -x /usr/bin/dnf5 ]; then
+    grep -rEq "repo_gpgcheck[[:space:]]*=[[:space:]]*0" /etc/yum.repos.d/*redpanda*.repo \
+      || fail "repo_gpgcheck should be 0 on dnf5 (AR repomd signature is not verifiable by dnf5) but is not"
+    dnf -q clean metadata >/dev/null 2>&1
+    dnf makecache >/dev/null 2>&1 || fail "dnf makecache failed on the redpanda AR repo"
+    echo "OK: dnf5 host, repo_gpgcheck=0 as expected, makecache succeeds"
+  else
+    grep -rEq "repo_gpgcheck[[:space:]]*=[[:space:]]*1" /etc/yum.repos.d/*redpanda*.repo \
+      || fail "repo_gpgcheck should be 1 on dnf4 but is not (metadata verification disabled)"
+    dnf -q clean metadata >/dev/null 2>&1
+    out=$(dnf -y makecache 2>&1) || { echo "$out"; fail "dnf makecache failed with repo_gpgcheck=1 — AR metadata signature did not verify"; }
+    echo "OK: dnf4 host, repomd.xml signature verified with repo_gpgcheck=1"
+  fi
   cur=$(rpm -q --qf '%{VERSION}-%{RELEASE}' redpanda) || fail "redpanda package not installed"
 fi
 
