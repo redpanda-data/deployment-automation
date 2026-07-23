@@ -8,7 +8,7 @@ Azure, or IBM.
 ## Installation Prerequisites
 
 Here are some prerequisites you'll need to install to run the content in this repo. You can also choose to use our
-Dockerfile_FEDORA or Dockerfile_UBUNTU dockerfiles to build a local client if you'd rather not install terraform and
+Dockerfile_UBUNTU dockerfile to build a local client if you'd rather not install terraform and
 ansible on your machine.
 
 * Install Terraform: https://www.terraform.io/downloads.html
@@ -117,16 +117,10 @@ For a manual `ansible-galaxy` run, change the redpanda.cluster entry in your req
     version: <<<YOUR BRANCH NAME>>>
 ```
 
-### pre-commit
+### linting
 
-We use pre-commit to ensure good code health on this repo. To install
-pre-commit [check the docs here](https://pre-commit.com/#install). The basic idea is that you'll have a fairly
-comprehensive checkup happen on each commit, guaranteeing that everything will be properly formatted and validated. You
-may also need to install some pre-requisite tools for pre-commit to work correctly. At the time of writing this
-includes:
-
-* [ansible-lint](https://ansible-lint.readthedocs.io/installing/#installing-from-source-code)
-* [tflint](https://github.com/terraform-linters/tflint#installation)
+CI enforces `ansible-lint` and `terraform fmt` on PRs (GitHub Actions). Run
+`ansible-lint -c .ansible-lint` locally before pushing.
 
 ## Ansible Linter Skip List Whys and Wherefores
 

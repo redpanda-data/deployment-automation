@@ -3,7 +3,7 @@
 Terraform + Ansible automation to provision Redpanda on AWS / GCP / Azure / IBM.
 This covers the non-obvious bits; see `README.md` for install and basic usage.
 
-## Run things with Task, not Make
+## Run things with Task
 
 CI is driven by [Task](https://taskfile.dev). `Taskfile.yml` includes the modules
 in `.tasks/` (namespaces: `infra ansible cluster monitor connect test ops ci cert
@@ -21,9 +21,6 @@ task ci:gcp:rp                  # GCP equivalent
 
 `.buildkite/pipeline.yml` just invokes these `ci:*` tasks. Task auto-loads `.env`
 (dotenv) — handy for local knobs like `REDPANDA_LICENSE`; keep secrets out of git.
-
-A standalone `Makefile` mirrors many lanes (`ci-aws-rp`, `cluster-tiered-storage`,
-…) as a parallel implementation. CI uses Task, so prefer Task and change it there.
 
 ## Collection under test: `CANDIDATE_COLLECTION_REF`
 
@@ -52,13 +49,11 @@ version and assert a safe re-converge + data survival. `:unstable` is single-pha
 - `ansible/` — `provision-cluster*`, `deploy-{monitor,console,connect}*`, `operation-*`
 - `docs/` — `COLLECTION_UPGRADE_TEST.md`, `CONNECT.md`
 
-## Lint / pre-commit
+## Lint
 
-`pre-commit` runs yaml checks, `ansible-lint` (profile `production`, config
-`.ansible-lint`), and terraform fmt/validate/tflint. GitHub Actions enforce
-ansible-lint + terraform-lint on PRs.
+GitHub Actions enforce `ansible-lint` and `terraform fmt` on PRs. Run
+`ansible-lint -c .ansible-lint` locally (profile `production`).
 
-- Terraform fmt/validate/lint is **AWS-only** — `ibm azure gcp` are excluded.
 - `.ansible-lint` excludes the cloud dirs, `templates/`, `artifacts/`; its skip
   list drops `jinja[spacing]`, `yaml[line-length]`, `yaml[trailing-spaces]`,
   `risky-shell-pipe`.
