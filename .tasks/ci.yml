@@ -51,6 +51,7 @@ tasks:
       - task: :test:upgrade:capture:baseline
       - task: :test:upgrade:seed
         vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
+      - task: :test:upgrade:sabotage:keyring
       # ---- Phase 2: candidate collection (requirements.yml), SAME pinned RP version ----
       - task: :ansible:collection:candidate
         vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
@@ -92,6 +93,7 @@ tasks:
       - task: :test:upgrade:capture:baseline
       - task: :test:upgrade:seed
         vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
+      - task: :test:upgrade:sabotage:keyring
       # ---- Phase 2: candidate collection, SAME pinned RP version ----
       - task: :ansible:collection:candidate
         vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
@@ -133,6 +135,7 @@ tasks:
       - task: :test:upgrade:capture:baseline
       - task: :test:upgrade:seed
         vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
+      - task: :test:upgrade:sabotage:keyring
       # ---- Phase 2: candidate collection, SAME pinned RP version ----
       - task: :ansible:collection:candidate
         vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
@@ -207,6 +210,7 @@ tasks:
       - task: :test:upgrade:capture:baseline
       - task: :test:upgrade:seed
         vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
+      - task: :test:upgrade:sabotage:keyring
       # ---- Phase 2: candidate collection, SAME pinned RP version ----
       - task: :ansible:collection:candidate
         vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
@@ -256,6 +260,7 @@ tasks:
       - task: :test:upgrade:capture:baseline
       - task: :test:upgrade:seed
         vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}"}
+      - task: :test:upgrade:sabotage:keyring
       # ---- Phase 2: candidate collection (requirements.yml), SAME pinned RP version ----
       - task: :ansible:collection:candidate
         vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
@@ -294,6 +299,7 @@ tasks:
       - task: :test:upgrade:capture:baseline
       - task: :test:upgrade:seed
         vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
+      - task: :test:upgrade:sabotage:keyring
       # ---- Phase 2: candidate collection, SAME pinned RP version ----
       - task: :ansible:collection:candidate
         vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
