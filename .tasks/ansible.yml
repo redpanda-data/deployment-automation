@@ -3,12 +3,14 @@ version: '3'
 tasks:
   prereqs:
     desc: >-
-      Install Ansible collections and roles from requirements.yml. Skips when already
-      installed (see :ansible:collection / :ansible:role), so it is safe as a dep of any
-      task: it will NOT clobber a collection installed by :ansible:collection:override or
-      :ansible:collection:candidate mid-workflow. Delete artifacts/collections to force a
-      full reinstall.
-    deps: [collection, role]
+      Install Ansible collections and roles from requirements.yml, then apply the
+      CANDIDATE_COLLECTION_REF pin (see :ansible:collection:pin) so any workflow can test
+      a candidate redpanda.cluster branch/version via that one env var without editing
+      requirements.yml. Skips when already installed (see :ansible:collection /
+      :ansible:role), so it is safe as a dep of any task: it will NOT clobber a collection
+      installed by :ansible:collection:override or :ansible:collection:candidate
+      mid-workflow. Delete artifacts/collections to force a full reinstall.
+    deps: [collection:pin, role]
     cmds:
       - echo "Ansible prerequisites installed"
 
@@ -38,6 +40,33 @@ tasks:
     status:
       - test -f {{.ANSIBLE_ROLES_PATH}}/.requirements-installed
       - test {{.ANSIBLE_ROLES_PATH}}/.requirements-installed -nt {{.USER_WORKING_DIR}}/requirements.yml
+
+  collection:pin:
+    desc: >-
+      When CANDIDATE_COLLECTION_REF is set, force-install redpanda.cluster from that ref
+      — a git branch (e.g.
+      "git+https://github.com/redpanda-data/redpanda-ansible-collection.git,my-branch")
+      or a released Galaxy version (e.g. "redpanda.cluster:0.12.0") — on top of the
+      requirements.yml collection, so ANY provision workflow can test a candidate
+      collection through one env var without editing requirements.yml. No-op when unset.
+      Runs once per workflow (run: once) so the repeated :ansible:prereqs deps do not
+      re-install and clobber the upgrade test's phase-1 baseline; the upgrade lanes'
+      explicit :ansible:collection:override/:candidate steps run afterward and still win.
+      Not behind the requirements mtime status marker that gates :ansible:collection, so a
+      warm collections cache does not skip the pin.
+    run: once
+    deps:
+      - collection
+    vars:
+      CANDIDATE_COLLECTION_REF: '{{.CANDIDATE_COLLECTION_REF | default ""}}'
+    cmds:
+      - |
+        if [ -n "{{.CANDIDATE_COLLECTION_REF}}" ]; then
+          echo ">> pinning redpanda.cluster -> {{.CANDIDATE_COLLECTION_REF}}"
+          ansible-galaxy collection install '{{.CANDIDATE_COLLECTION_REF}}' --force -p {{.ANSIBLE_COLLECTIONS_PATH}}
+        else
+          echo ">> no CANDIDATE_COLLECTION_REF set; using requirements.yml redpanda.cluster"
+        fi
 
   collection:candidate:
     desc: >-
