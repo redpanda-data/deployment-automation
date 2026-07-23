@@ -30,9 +30,9 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 # Install Terraform
 RUN ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = "amd64" ]; then TF_ARCH="amd64"; else TF_ARCH="arm64"; fi \
-    && wget "https://releases.hashicorp.com/terraform/1.4.5/terraform_1.4.5_linux_${TF_ARCH}.zip" \
-    && unzip "terraform_1.4.5_linux_${TF_ARCH}.zip" -d /usr/local/bin \
-    && rm "terraform_1.4.5_linux_${TF_ARCH}.zip"
+    && wget "https://releases.hashicorp.com/terraform/1.7.4/terraform_1.7.4_linux_${TF_ARCH}.zip" \
+    && unzip "terraform_1.7.4_linux_${TF_ARCH}.zip" -d /usr/local/bin \
+    && rm "terraform_1.7.4_linux_${TF_ARCH}.zip"
 
 # Install task
 RUN ARCH=$(dpkg --print-architecture) \
