@@ -1,16 +1,28 @@
-name: terraform fmt
+name: terraform lint
 
 on: [pull_request]
 
 jobs:
-  format:
+  fmt:
     runs-on: ubuntu-latest
-    name: Check terraform file are formatted correctly
+    name: terraform fmt
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: terraform fmt
         uses: dflook/terraform-fmt@v1
+        with:
+          path: aws
+
+  validate:
+    runs-on: ubuntu-latest
+    name: terraform validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: terraform validate
+        uses: dflook/terraform-validate@v1
         with:
           path: aws

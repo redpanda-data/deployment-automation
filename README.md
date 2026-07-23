@@ -119,8 +119,8 @@ For a manual `ansible-galaxy` run, change the redpanda.cluster entry in your req
 
 ### linting
 
-CI enforces `ansible-lint` and `terraform fmt` on PRs (GitHub Actions). Run
-`ansible-lint -c .ansible-lint` locally before pushing.
+CI enforces `ansible-lint` and terraform `fmt` / `validate` on PRs
+(GitHub Actions). Run `ansible-lint -c .ansible-lint` locally before pushing.
 
 ## Ansible Linter Skip List Whys and Wherefores
 

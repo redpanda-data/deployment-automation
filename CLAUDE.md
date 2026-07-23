@@ -51,8 +51,9 @@ version and assert a safe re-converge + data survival. `:unstable` is single-pha
 
 ## Lint
 
-GitHub Actions enforce `ansible-lint` and `terraform fmt` on PRs. Run
-`ansible-lint -c .ansible-lint` locally (profile `production`).
+GitHub Actions enforce `ansible-lint` and terraform `fmt` / `validate`
+(the terraform checks are **AWS-only**) on PRs. Run `ansible-lint -c .ansible-lint`
+locally (profile `production`).
 
 - `.ansible-lint` excludes the cloud dirs, `templates/`, `artifacts/`; its skip
   list drops `jinja[spacing]`, `yaml[line-length]`, `yaml[trailing-spaces]`,
