@@ -113,8 +113,10 @@ tasks:
           exit 1
         fi
 
-        echo "Superuser creates the app topic"
-        {{.RPK_PATH}} topic create {{.SASL_TEST_TOPIC}} -p 3 -X brokers=$REDPANDA_BROKERS $SUPER -v || exit 1
+        echo "Superuser creates the app topic (or confirms it exists on re-verification)"
+        {{.RPK_PATH}} topic create {{.SASL_TEST_TOPIC}} -p 3 -X brokers=$REDPANDA_BROKERS $SUPER \
+          || {{.RPK_PATH}} topic describe {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $SUPER >/dev/null \
+          || exit 1
 
         echo "ACL-scoped user produces and consumes its topic"
         echo sasl-squirrel | {{.RPK_PATH}} topic produce {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $APP || exit 1
