@@ -7,15 +7,12 @@ vars:
   GCP_PROJECT_ID: '{{.GCP_PROJECT_ID | default "hallowed-ray-376320"}}'
   MIN_AGE: '{{.MIN_AGE | default ""}}'
 
-env:
-  # AWS Credentials (inherited from parent or environment)
-  AWS_ACCESS_KEY_ID: '{{.AWS_ACCESS_KEY_ID}}'
-  AWS_SECRET_ACCESS_KEY: '{{.AWS_SECRET_ACCESS_KEY}}'
-  AWS_DEFAULT_REGION: '{{.AWS_CLEANUP_REGION}}'
-
-  # GCP Credentials (supports both variable names)
-  GCP_CREDS: '{{.GCP_CREDS}}'
-  GOOGLE_CREDENTIALS_BASE64: '{{.GOOGLE_CREDENTIALS_BASE64}}'
+# No env block here: included-taskfile env merges into the WHOLE run, and
+# these entries clobbered dotenv-supplied credentials globally (the cred
+# templates resolve empty before dotenv merges) while exporting the
+# comma-joined reaper region list as everyone's AWS_DEFAULT_REGION. The
+# reaper gets its regions via --region; credentials flow from process env
+# or .env untouched.
 
 tasks:
   aws:
