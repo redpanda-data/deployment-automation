@@ -22,6 +22,24 @@ steps:
             - BASELINE_COLLECTION_REF
             - CANDIDATE_COLLECTION_REF
             - REDPANDA_VERSION
+  - label: aws ubuntu sasl
+    key: aws-up-ubuntu-sasl
+    concurrency_group: aws-ub
+    concurrency: 1
+    timeout_in_minutes: 120
+    command: DEPLOYMENT_ID=ci-sa-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp:sasl
+    plugins:
+      - seek-oss/aws-sm#v2.3.2:
+          json-to-env:
+            - json-key: .
+              secret-id: sdlc/prod/buildkite/deployment_automation
+      - docker#v5.8.0:
+          image: glrp/atgt:latest
+          environment:
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
+            - AWS_DEFAULT_REGION
+            - CANDIDATE_COLLECTION_REF
   - label: aws ubuntu tiered
     key: aws-up-ubuntu-tiered
     concurrency_group: aws-ub

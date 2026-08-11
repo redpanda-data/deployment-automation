@@ -5,6 +5,10 @@
   serial: 1
   vars:
     rpk_bin: rpk
+  # On SASL-enabled clusters every rpk invocation below needs credentials;
+  # rpk rejects empty RPK_USER/RPK_PASS ("Malformed Authorization header"),
+  # so the environment is only populated when authorization is on.
+  environment: "{{ {'RPK_USER': sasl_user | default('admin'), 'RPK_PASS': sasl_password | default('')} if (kafka_enable_authorization | default(false) | bool) else {} }}"
 
   tasks:
     - name: Check cluster health
