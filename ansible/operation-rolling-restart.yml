@@ -11,11 +11,17 @@
   environment: "{{ {'RPK_USER': sasl_user | default('admin'), 'RPK_PASS': sasl_password | default('')} if (kafka_enable_authorization | default(false) | bool) else {} }}"
 
   tasks:
+    # With serial: 1 this gate runs right after the previous node rejoined;
+    # the cluster is often still healing, so wait for health like the
+    # post-restart checks do instead of failing on a one-shot probe.
     - name: Check cluster health
       ansible.builtin.shell: |
-        {{ rpk_bin }} cluster health | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
+        {{ rpk_bin }} cluster health --watch --exit-when-healthy | grep -i 'healthy:' | tr -d '[:space:]' | awk -F ':' '{print tolower($2)}'
       register: health_check
       failed_when: "health_check.stdout != 'true'"
+      retries: 10
+      delay: 30
+      until: "health_check.stdout == 'true'"
       changed_when: false
 
     - name: Get node ID
