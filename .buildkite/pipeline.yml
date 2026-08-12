@@ -1,6 +1,15 @@
 agents:
   queue: "k8s-m6ixlarge"
 
+# TEMP (DO NOT MERGE): the agent environment supplies
+# CANDIDATE_COLLECTION_REF=git+...,main from the pipeline secret, which
+# force-installs collection main over the requirements.yml branch pin (seen
+# in build 445 -- it validated main, not the candidate). Pin the candidate
+# here so every lane tests PR #152's branch; drop together with the
+# requirements TEMP commit before merging.
+env:
+  CANDIDATE_COLLECTION_REF: "git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening"
+
 steps:
   - label: aws ubuntu
     key: aws-up-ubuntu
