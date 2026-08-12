@@ -1,14 +1,6 @@
 agents:
   queue: "k8s-m6ixlarge"
 
-# TEMP (DO NOT MERGE): the agent environment supplies
-# CANDIDATE_COLLECTION_REF=git+...,main from the pipeline secret, which
-# force-installs collection main over the requirements.yml branch pin (seen
-# in build 445 -- it validated main, not the candidate). Pin the candidate
-# here so every lane tests PR #152's branch; drop together with the
-# requirements TEMP commit before merging.
-env:
-  CANDIDATE_COLLECTION_REF: "git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening"
 
 steps:
   - label: aws ubuntu
@@ -29,7 +21,9 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: aws ubuntu sasl
     key: aws-up-ubuntu-sasl
@@ -48,7 +42,9 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
   - label: aws ubuntu tiered
     key: aws-up-ubuntu-tiered
     concurrency_group: aws-ub
@@ -68,7 +64,9 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: aws ubuntu tiered large
     key: aws-up-ubuntu-ts-large
@@ -89,7 +87,9 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: aws fedora
     key: aws-up-fedora
@@ -109,7 +109,9 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: aws fedora connect
     key: aws-up-fed-con
@@ -130,7 +132,9 @@ steps:
             - AWS_DEFAULT_REGION
             - CONNECT_RPM_TOKEN
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: aws fedora tiered
     key: aws-up-fedora-tiered
@@ -151,7 +155,9 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: aws fedora tiered connect
     key: aws-up-fed-cts
@@ -173,7 +179,9 @@ steps:
             - REDPANDA_LICENSE
             - CONNECT_RPM_TOKEN
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
@@ -194,7 +202,9 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: gcp ubuntu basic
     key: gcp-up-ubuntu
@@ -212,7 +222,9 @@ steps:
           environment:
             - GCP_CREDS
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: gcp ubuntu tiered
     key: gcp-up-ubuntu-tiered
@@ -232,7 +244,9 @@ steps:
             - GCP_CREDS
             - REDPANDA_LICENSE
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: gcp fedora basic
     key: gcp-up-fedora
@@ -250,7 +264,9 @@ steps:
           environment:
             - GCP_CREDS
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: gcp fedora tiered
     key: gcp-up-fedora-tiered
@@ -269,7 +285,9 @@ steps:
             - GCP_CREDS
             - REDPANDA_LICENSE
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: unstable aws fedora tiered
     key: aws-us-fedora-tiered
@@ -290,7 +308,9 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: unstable aws fedora tiered large
     key: aws-us-fedora-ts-large
@@ -311,7 +331,9 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: unstable aws ubuntu tiered
     key: aws-us-ubuntu-tiered
@@ -332,7 +354,9 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
   - label: unstable aws ubuntu tiered large
     key: aws-us-ubuntu-ts-large
@@ -353,7 +377,9 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): the aws-sm secret exports git+...,main into the
+            # job env AFTER yaml env applies; only an in-container pin wins
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,collection-hardening
             - REDPANDA_VERSION
 
   - label: cleanup aws resources
