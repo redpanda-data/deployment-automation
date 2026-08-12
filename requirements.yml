@@ -1,10 +1,11 @@
 collections:
   - name: community.general
-  - name: redpanda.cluster
-    type: galaxy
-    # Pinned: an unpinned 'latest' means any bad collection release breaks
-    # every CI lane immediately. Bump deliberately when a release ships.
-    version: 0.12.0
+  # TEMP (DO NOT MERGE): points at the collection-hardening branch so CI can
+  # validate this harness against the 0.13.0 candidate. Revert to the pinned
+  # Galaxy release before merging.
+  - name: https://github.com/redpanda-data/redpanda-ansible-collection.git
+    type: git
+    version: collection-hardening
   - name: ansible.posix
   - name: grafana.grafana
     version: 5.6.0
