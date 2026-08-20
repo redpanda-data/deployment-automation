@@ -109,7 +109,7 @@ vars:
   SERVER_DIR: '{{.SERVER_DIR | default "/tmp"}}'
   LOCAL_FILE: '{{.ARTIFACT_DIR}}/redpanda-connect.x86_64.rpm'
   TOKEN: '{{.CONNECT_RPM_TOKEN | default ""}}'
-  DL_LINK: 'https://dl.redpanda.com/{{.TOKEN}}/connectors-artifacts/raw/names/redpanda-connectors/versions/{{.RPM_VERSION}}/redpanda-connectors-{{.RPM_VERSION}}.x86_64.rpm'
+  DL_LINK: 'https://vectorized-public.s3.amazonaws.com/releases/cloudsmith/connectors-artifacts/redpanda-connectors-{{.RPM_VERSION}}.x86_64.rpm'
 
   # AWS
   INSTANCE_TYPE_AWS: '{{.INSTANCE_TYPE_AWS | default "i3.2xlarge"}}'
