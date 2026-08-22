@@ -8,7 +8,14 @@ tasks:
       - :ensure-logs-dir
     cmds:
       - export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
-      - ansible-playbook ansible/deploy-monitor.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - |
+        # node_exporter downloads from GitHub flake under concurrent-lane rate
+        # limiting (builds 445/446); the play is idempotent, so retry once
+        for attempt in 1 2; do
+          ansible-playbook ansible/deploy-monitor.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} && break
+          [ "$attempt" = 2 ] && exit 1
+          echo "monitor deploy failed (attempt $attempt); retrying in 30s"; sleep 30
+        done
 
   deploy:tls:
     desc: Deploy monitoring stack with TLS
@@ -16,7 +23,14 @@ tasks:
       - :ansible:prereqs
       - :ensure-logs-dir
     cmds:
-      - ansible-playbook ansible/deploy-monitor-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+      - |
+        # node_exporter downloads from GitHub flake under concurrent-lane rate
+        # limiting (builds 445/446); the play is idempotent, so retry once
+        for attempt in 1 2; do
+          ansible-playbook ansible/deploy-monitor-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} && break
+          [ "$attempt" = 2 ] && exit 1
+          echo "monitor deploy failed (attempt $attempt); retrying in 30s"; sleep 30
+        done
 
   extra:deploy:
     desc: Deploy monitoring on secondary cluster

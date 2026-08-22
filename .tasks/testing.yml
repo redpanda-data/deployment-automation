@@ -92,6 +92,43 @@ tasks:
         echo "Consuming from topic"
         {{.RPK_PATH}} topic consume {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v -o :end | grep squirrel || exit 1
 
+  cluster:sasl:
+    desc: >-
+      Verify SASL enforcement: superuser rpk works, anonymous rpk is denied, and a
+      user_management-created user can use exactly the topic its ACL allows.
+    cmds:
+      - chmod 775 {{.RPK_PATH}}
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Brokers: $REDPANDA_BROKERS"
+        SUPER="-X user={{.SASL_USER}} -X pass={{.SASL_PASSWORD}} -X sasl.mechanism=SCRAM-SHA-256"
+        APP="-X user={{.SASL_TEST_USER}} -X pass={{.SASL_TEST_PASSWORD}} -X sasl.mechanism=SCRAM-SHA-256"
+
+        echo "Superuser can read cluster status"
+        {{.RPK_PATH}} cluster status -X brokers=$REDPANDA_BROKERS $SUPER -v || exit 1
+
+        echo "Anonymous topic creation must be denied"
+        if {{.RPK_PATH}} topic create anon-denied -X brokers=$REDPANDA_BROKERS 2>/dev/null; then
+          echo "ERROR: anonymous client was allowed to create a topic on a SASL cluster"
+          exit 1
+        fi
+
+        echo "Superuser creates the app topic (or confirms it exists on re-verification)"
+        {{.RPK_PATH}} topic create {{.SASL_TEST_TOPIC}} -p 3 -X brokers=$REDPANDA_BROKERS $SUPER \
+          || {{.RPK_PATH}} topic describe {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $SUPER >/dev/null \
+          || exit 1
+
+        echo "ACL-scoped user produces and consumes its topic"
+        echo sasl-squirrel | {{.RPK_PATH}} topic produce {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $APP || exit 1
+        {{.RPK_PATH}} topic consume {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $APP -o :end | grep sasl-squirrel || exit 1
+
+        echo "ACL-scoped user must not create unrelated topics"
+        if {{.RPK_PATH}} topic create off-limits -X brokers=$REDPANDA_BROKERS $APP 2>/dev/null; then
+          echo "ERROR: ACL-scoped user was allowed to create a topic outside its ACL"
+          exit 1
+        fi
+        echo "SASL enforcement verified"
+
   cluster:tls:
     desc: Test Redpanda cluster with TLS
     cmds:

@@ -149,6 +149,62 @@ tasks:
         vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
       - task: :infra:aws:destroy
 
+  aws:rp:sasl:
+    desc: >-
+      CI workflow - AWS Redpanda with SASL authorization. Single-phase: fresh-installs the
+      CANDIDATE collection with kafka_enable_authorization, reconciles a test user + topic ACL
+      via user_management, verifies enforcement (superuser ok, anonymous denied, ACL-scoped
+      user constrained to its topic), performs a SASL-authenticated rolling restart via
+      operation-rolling-restart.yml, and re-verifies enforcement and data access afterwards.
+    vars:
+      DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
+      SASL_USER: admin
+      SASL_PASSWORD: '{{.DEPLOYMENT_ID}}-sasl-pw'
+      SASL_TEST_USER: apptest
+      SASL_TEST_PASSWORD: '{{.DEPLOYMENT_ID}}-app-pw'
+      SASL_TEST_TOPIC: apptopic
+    cmds:
+      - defer:
+          task: :infra:aws:destroy
+      - task: :tools:keygen
+      - task: :tools:rpk:install
+      - task: :infra:aws:build
+        vars: {DISTRO: "{{.DISTRO}}"}
+      - task: :ansible:prereqs
+      - task: :ansible:collection:candidate
+        vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
+      - task: :cluster:sasl
+        vars:
+          SASL_USER: "{{.SASL_USER}}"
+          SASL_PASSWORD: "{{.SASL_PASSWORD}}"
+      - task: :ops:users:apply
+        vars:
+          SASL_USER: "{{.SASL_USER}}"
+          SASL_PASSWORD: "{{.SASL_PASSWORD}}"
+          SASL_USERS_JSON: '{"sasl_users":[{"username":"{{.SASL_TEST_USER}}","password":"{{.SASL_TEST_PASSWORD}}","state":"present"}]}'
+          SASL_ACLS_JSON: '{"sasl_acls":[{"principal":"{{.SASL_TEST_USER}}","operation":["read","write","describe"],"resource_type":"topic","resource_name":"{{.SASL_TEST_TOPIC}}","permission":"allow"}]}'
+      - task: :test:cluster:sasl
+        vars:
+          SASL_USER: "{{.SASL_USER}}"
+          SASL_PASSWORD: "{{.SASL_PASSWORD}}"
+          SASL_TEST_USER: "{{.SASL_TEST_USER}}"
+          SASL_TEST_PASSWORD: "{{.SASL_TEST_PASSWORD}}"
+          SASL_TEST_TOPIC: "{{.SASL_TEST_TOPIC}}"
+      # rolling restart with SASL credentials; enforcement and the app user's
+      # data must survive it
+      - task: :ops:broker:restart
+        vars:
+          SASL_USER: "{{.SASL_USER}}"
+          SASL_PASSWORD: "{{.SASL_PASSWORD}}"
+      - task: :test:cluster:sasl
+        vars:
+          SASL_USER: "{{.SASL_USER}}"
+          SASL_PASSWORD: "{{.SASL_PASSWORD}}"
+          SASL_TEST_USER: "{{.SASL_TEST_USER}}"
+          SASL_TEST_PASSWORD: "{{.SASL_TEST_PASSWORD}}"
+          SASL_TEST_TOPIC: "{{.SASL_TEST_TOPIC}}"
+      - task: :infra:aws:destroy
+
   aws:rp:tiered:unstable:
     desc: >-
       CI workflow - AWS tiered storage (TLS) against the UNSTABLE Redpanda repo. Single-phase,

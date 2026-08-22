@@ -21,6 +21,24 @@ tasks:
         {{if .RP_VERSION}}--extra-vars redpanda_version={{.RP_VERSION}}{{end}}
         {{if .RP_INSTALL_STATUS}}--extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}{{end}}
 
+  sasl:
+    desc: >-
+      Provision/converge Redpanda with SASL authorization enabled. SASL_USER/SASL_PASSWORD
+      set the bootstrap superuser; RP_VERSION/RP_INSTALL_STATUS as in :cluster:provision.
+    deps:
+      - :ansible:prereqs
+      - :ensure-logs-dir
+    cmds:
+      - >-
+        ansible-playbook ansible/provision-cluster-sasl.yml
+        --private-key {{.PRIVATE_KEY}}
+        --inventory {{.ANSIBLE_INVENTORY}}
+        --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
+        --extra-vars sasl_user={{.SASL_USER}}
+        --extra-vars sasl_password={{.SASL_PASSWORD}}
+        {{if .RP_VERSION}}--extra-vars redpanda_version={{.RP_VERSION}}{{end}}
+        {{if .RP_INSTALL_STATUS}}--extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}{{end}}
+
   tiered:
     desc: >-
       Provision/converge Redpanda with tiered storage. RP_VERSION/RP_INSTALL_STATUS as in
