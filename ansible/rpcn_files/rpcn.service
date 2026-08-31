@@ -1,0 +1,13 @@
+[Unit]
+Description=Redpanda Connect Pipeline
+After=network.target
+
+[Service]
+ExecStart=/etc/redpanda/rpk connect run /etc/redpanda/pipeline.yaml
+Restart=on-failure
+User=ubuntu
+#Group=redpanda-connect
+Environment="REDPANDA_PIPELINE_ID=%H"
+
+[Install]
+WantedBy=multi-user.target

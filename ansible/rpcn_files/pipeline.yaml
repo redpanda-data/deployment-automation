@@ -1,0 +1,12 @@
+#Example pipeline to smoke test with
+input:
+  label: "file_input"
+  file:
+    paths: [ "/opt/rpcn/pipeline.yaml" ]
+    scanner: 
+      lines: {}
+
+output:
+  label: "stdout"
+  stdout:
+    codec: lines
