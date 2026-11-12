@@ -33,7 +33,7 @@ tasks:
       the candidate collection (requirements.yml) at the SAME pinned version and assert a safe
       re-converge (repo/key cutover, version unchanged, service healthy) + full data survival.
     vars:
-      DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
+      DISTRO: '{{.DISTRO | default "ubuntu-jammy"}}'
     cmds:
       - defer:
           task: :infra:aws:destroy
