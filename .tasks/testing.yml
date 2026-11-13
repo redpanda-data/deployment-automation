@@ -92,6 +92,76 @@ tasks:
         echo "Consuming from topic"
         {{.RPK_PATH}} topic consume {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v -o :end | grep squirrel || exit 1
 
+  sasl:enable-on-existing-blocked:
+    desc: >-
+      Enabling SASL on a running cluster that has no SASL superuser must stop before any
+      cluster or node configuration changes: the playbook fails with the collection's
+      guard message, the Admin API still answers without credentials, and the cluster
+      config still has no superusers.
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - |
+        LOG={{.ARTIFACT_DIR}}/logs/sasl-enable-on-existing.log
+        echo ">> Enabling SASL on the existing cluster without a superuser; expecting the guard to stop it"
+        if ansible-playbook ansible/provision-cluster-sasl.yml \
+            --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} \
+            --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} \
+            --extra-vars sasl_user={{.SASL_USER}} --extra-vars sasl_password={{.SASL_PASSWORD}} \
+            {{if .RP_VERSION}}--extra-vars redpanda_version={{.RP_VERSION}}{{end}} \
+            {{if .RP_INSTALL_STATUS}}--extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}{{end}} \
+            > "$LOG" 2>&1; then
+          tail -40 "$LOG"
+          echo "FAIL: enabling SASL without a superuser succeeded; the existing-cluster guard did not stop it"
+          exit 1
+        fi
+        if ! grep -q "has no SASL user named '{{.SASL_USER}}'" "$LOG"; then
+          tail -40 "$LOG"
+          echo "FAIL: the playbook failed, but not at the existing-cluster SASL guard"
+          exit 1
+        fi
+        echo "OK: the guard stopped the run (has no SASL user named '{{.SASL_USER}}')"
+      - |
+        echo ">> The Admin API must still answer without credentials, with no superusers configured"
+        ansible redpanda -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b -m ansible.builtin.shell \
+          -a 'set -e; a=$(rpk cluster config get admin_api_require_auth); s=$(rpk cluster config get superusers); echo "admin_api_require_auth=$a superusers=$s"; [ "$a" = false ] && [ "$s" = "[]" ]'
+        echo "OK: Admin API unlocked and cluster config unchanged on every broker"
+
+  sasl:create-superuser:
+    desc: Create the SASL superuser on a running cluster (Admin API without auth), from one broker
+    cmds:
+      - >-
+        ansible 'redpanda[0]' -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b
+        -m ansible.builtin.command
+        -a "rpk security user create {{.SASL_USER}} -p {{.SASL_PASSWORD}} --mechanism SCRAM-SHA-256"
+
+  cluster:sasl:
+    desc: >-
+      Verify SASL enforcement: the superuser can read cluster status and produce/consume,
+      and an anonymous client is denied.
+    cmds:
+      - chmod 775 {{.RPK_PATH}}
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Brokers: $REDPANDA_BROKERS"
+        SUPER="-X user={{.SASL_USER}} -X pass={{.SASL_PASSWORD}} -X sasl.mechanism=SCRAM-SHA-256"
+
+        echo "Superuser can read cluster status"
+        {{.RPK_PATH}} cluster status -X brokers=$REDPANDA_BROKERS $SUPER -v || exit 1
+
+        echo "Anonymous topic creation must be denied"
+        if {{.RPK_PATH}} topic create sasl-anon-denied -X brokers=$REDPANDA_BROKERS 2>/dev/null; then
+          echo "FAIL: an anonymous client created a topic on a SASL cluster"
+          exit 1
+        fi
+
+        echo "Superuser creates the test topic (or finds it on a later check)"
+        {{.RPK_PATH}} topic create {{.SASL_TEST_TOPIC}} -p 3 -X brokers=$REDPANDA_BROKERS $SUPER \
+          || {{.RPK_PATH}} topic describe {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $SUPER >/dev/null \
+          || exit 1
+        echo sasl-squirrel | {{.RPK_PATH}} topic produce {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $SUPER || exit 1
+        timeout 120 {{.RPK_PATH}} topic consume {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $SUPER -o :end -n 1 | grep sasl-squirrel || exit 1
+        echo "OK: SASL enforced"
+
   cluster:tls:
     desc: Test Redpanda cluster with TLS
     cmds:
