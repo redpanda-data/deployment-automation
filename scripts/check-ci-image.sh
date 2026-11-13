@@ -46,7 +46,10 @@ check 'go'                             'go version'                             
 check 'aws cli v2'                     'aws --version'                            'aws-cli/2.'
 check 'gcloud'                         'gcloud --version | head -1'               'Google Cloud SDK'
 check 'keytool'                        'command -v keytool'                       '/keytool'
-check 'jq git make unzip wget curl'    'm=; for t in jq git make unzip wget curl; do command -v $t >/dev/null || m="$m $t"; done; [ -z "$m" ] && echo tools-ok || echo "missing:$m"' 'tools-ok'
+# ssh and scp: Ansible's connection to the hosts. ssh-keygen: tools:keygen.
+# sshpass: password-based Ansible connections.
+check 'ssh tools'                      'm=; for t in ssh scp ssh-keygen sshpass; do command -v $t >/dev/null || m="$m $t"; done; [ -z "$m" ] && echo tools-ok || echo "missing:$m"' 'tools-ok'
+check 'jq git make unzip wget curl openssl' 'm=; for t in jq git make unzip wget curl openssl; do command -v $t >/dev/null || m="$m $t"; done; [ -z "$m" ] && echo tools-ok || echo "missing:$m"' 'tools-ok'
 
 if ((failures)); then
   echo "$failures check(s) failed"
