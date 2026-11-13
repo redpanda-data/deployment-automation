@@ -20,7 +20,10 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: aws ubuntu sasl
     key: aws-up-ubuntu-sasl
@@ -39,7 +42,10 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
   - label: aws ubuntu tiered
     key: aws-up-ubuntu-tiered
     concurrency_group: aws-ub
@@ -59,7 +65,10 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: aws ubuntu tiered large
     key: aws-up-ubuntu-ts-large
@@ -80,7 +89,10 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: aws fedora
     key: aws-up-fedora
@@ -100,7 +112,10 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: aws fedora connect
     key: aws-up-fed-con
@@ -121,7 +136,10 @@ steps:
             - AWS_DEFAULT_REGION
             - CONNECT_RPM_TOKEN
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: aws fedora tiered
     key: aws-up-fedora-tiered
@@ -142,7 +160,10 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: aws fedora tiered connect
     key: aws-up-fed-cts
@@ -164,7 +185,10 @@ steps:
             - REDPANDA_LICENSE
             - CONNECT_RPM_TOKEN
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: aws fedora tiered large
     key: aws-up-fedora-ts-large
@@ -185,7 +209,10 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: gcp ubuntu basic
     key: gcp-up-ubuntu
@@ -203,7 +230,10 @@ steps:
           environment:
             - GCP_CREDS
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: gcp ubuntu tiered
     key: gcp-up-ubuntu-tiered
@@ -223,7 +253,10 @@ steps:
             - GCP_CREDS
             - REDPANDA_LICENSE
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: gcp fedora basic
     key: gcp-up-fedora
@@ -241,7 +274,10 @@ steps:
           environment:
             - GCP_CREDS
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: gcp fedora tiered
     key: gcp-up-fedora-tiered
@@ -260,7 +296,10 @@ steps:
             - GCP_CREDS
             - REDPANDA_LICENSE
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: unstable aws fedora tiered
     key: aws-us-fedora-tiered
@@ -281,7 +320,10 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: unstable aws fedora tiered large
     key: aws-us-fedora-ts-large
@@ -302,7 +344,10 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: unstable aws ubuntu tiered
     key: aws-us-ubuntu-tiered
@@ -323,7 +368,10 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
   - label: unstable aws ubuntu tiered large
     key: aws-us-ubuntu-ts-large
@@ -344,7 +392,10 @@ steps:
             - REDPANDA_LICENSE
             - AWS_DEFAULT_REGION
             - BASELINE_COLLECTION_REF
-            - CANDIDATE_COLLECTION_REF
+            # TEMP (DO NOT MERGE): pins the candidate to the top of the collection PR stack (#159 + JMX fix + #160 + restart fix). The
+            # aws-sm secret exports the collection main ref into the job env, so only an
+            # in-container value takes effect.
+            - CANDIDATE_COLLECTION_REF=git+https://github.com/redpanda-data/redpanda-ansible-collection.git,fix/safe-restart-sasl-credentials
             - REDPANDA_VERSION
 
   - label: cleanup aws resources
