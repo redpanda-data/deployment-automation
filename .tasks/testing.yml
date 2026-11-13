@@ -126,6 +126,32 @@ tasks:
           -a 'set -e; a=$(rpk cluster config get admin_api_require_auth); s=$(rpk cluster config get superusers); echo "admin_api_require_auth=$a superusers=$s"; [ "$a" = false ] && [ "$s" = "[]" ]'
         echo "OK: Admin API unlocked and cluster config unchanged on every broker"
 
+  sasl:upgraded:
+    desc: >-
+      After a Redpanda upgrade on the SASL cluster, every broker in the inventory is alive and
+      none still runs FROM_VERSION. Reads the broker list through the Admin API as the SASL
+      superuser.
+    cmds:
+      - |
+        from=$(echo "{{.FROM_VERSION}}" | sed 's/-[0-9]*$//')
+        want=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep -c '^[0-9]')
+        out=$(ansible 'redpanda[0]' -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b -m ansible.builtin.shell \
+          -a "RPK_USER={{.SASL_USER}} RPK_PASS={{.SASL_PASSWORD}} rpk redpanda admin brokers list") || { echo "$out"; exit 1; }
+        echo "$out"
+        # the broker table: the rows under the IS-ALIVE header, up to the next blank line
+        # (rpk 26.2 adds section titles and a disk table below it, and marks the controller "0*")
+        rows=$(echo "$out" | awk '/IS-ALIVE/ {t=1; next} t && !NF {exit} t && /^[0-9]/')
+        if [ "$(echo "$rows" | grep -c .)" -ne "$want" ]; then
+          echo "FAIL: expected $want brokers in the broker list"; exit 1
+        fi
+        if echo "$rows" | grep -qvw true; then
+          echo "FAIL: a broker is not alive after the upgrade"; exit 1
+        fi
+        if echo "$rows" | grep -qE "(^|[ v])${from}([ -]|$)"; then
+          echo "FAIL: a broker still runs ${from} after the upgrade"; exit 1
+        fi
+        echo "OK: all $want brokers alive and upgraded from ${from}"
+
   sasl:create-superuser:
     desc: Create the SASL superuser on a running cluster (Admin API without auth), from one broker
     cmds:

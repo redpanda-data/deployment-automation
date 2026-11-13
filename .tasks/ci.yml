@@ -69,8 +69,9 @@ tasks:
       CI workflow - AWS, enable SASL on an existing cluster. Provisions the CANDIDATE collection
       without SASL, then enables kafka_enable_authorization before a SASL superuser exists and
       asserts the run stops with nothing changed (Admin API still open, no superusers). Creates
-      the superuser on the running cluster, enables SASL, verifies enforcement, then re-converges
-      the SASL cluster and verifies again.
+      the superuser on the running cluster, enables SASL, verifies enforcement, upgrades Redpanda
+      from the pinned REDPANDA_VERSION to the latest release with SASL on, then re-converges the
+      SASL cluster and verifies again.
     vars:
       DISTRO: '{{.DISTRO | default "ubuntu-jammy"}}'
       SASL_USER: admin
@@ -86,17 +87,25 @@ tasks:
       - task: :ansible:prereqs
       - task: :ansible:collection:candidate
         vars: {CANDIDATE_COLLECTION_REF: "{{.CANDIDATE_COLLECTION_REF}}"}
-      # ---- a running cluster without SASL ----
+      # ---- a running cluster without SASL, on the pinned version ----
       - task: :cluster:provision
+        vars: {RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
       - task: :test:cluster
       # ---- enabling SASL before the superuser exists must change nothing ----
       - task: :test:sasl:enable-on-existing-blocked
-        vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}"}
+        vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}", RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
       # ---- create the superuser, then enable SASL ----
       - task: :test:sasl:create-superuser
         vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}"}
       - task: :cluster:sasl
-        vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}"}
+        vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}", RP_VERSION: "{{.REDPANDA_VERSION}}", RP_INSTALL_STATUS: "present"}
+      - task: :test:cluster:sasl
+        vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}", SASL_TEST_TOPIC: "{{.SASL_TEST_TOPIC}}"}
+      # ---- upgrade Redpanda on the SASL cluster (rolling restart with the Admin API locked) ----
+      - task: :cluster:sasl
+        vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}", RP_VERSION: latest, RP_INSTALL_STATUS: latest}
+      - task: :test:sasl:upgraded
+        vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}", FROM_VERSION: "{{.REDPANDA_VERSION}}"}
       - task: :test:cluster:sasl
         vars: {SASL_USER: "{{.SASL_USER}}", SASL_PASSWORD: "{{.SASL_PASSWORD}}", SASL_TEST_TOPIC: "{{.SASL_TEST_TOPIC}}"}
       # ---- re-converge the SASL cluster ----
