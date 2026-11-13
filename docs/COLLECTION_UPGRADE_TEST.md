@@ -71,7 +71,7 @@ Unstable lanes (`IS_USING_UNSTABLE=true`) stay single-phase fresh installs — t
 # candidate defaults to whatever requirements.yml pins; override it with CANDIDATE_COLLECTION_REF:
 #   a git branch:       git+https://github.com/redpanda-data/redpanda-ansible-collection.git,my-branch
 #   a released version: redpanda.cluster:0.12.0
-DEPLOYMENT_ID=cu-ub-$RANDOM DISTRO=ubuntu-focal \
+DEPLOYMENT_ID=cu-ub-$RANDOM DISTRO=ubuntu-jammy \
   CANDIDATE_COLLECTION_REF="git+https://github.com/redpanda-data/redpanda-ansible-collection.git,my-branch" \
   task ci:aws:rp
 ```

@@ -87,7 +87,7 @@ variable "vpc_id" {
 
 variable "distro" {
   type    = string
-  default = "ubuntu-focal"
+  default = "ubuntu-jammy"
 }
 
 variable "hosts_file" {
