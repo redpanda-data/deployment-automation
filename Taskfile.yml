@@ -64,7 +64,7 @@ vars:
     sh: echo "{{.DEPLOYMENT_ID}}" | tr '_' '-' | sed 's/$/-bucket/'
 
   # Distribution
-  DISTRO: '{{.DISTRO | default "ubuntu-focal"}}'
+  DISTRO: '{{.DISTRO | default "ubuntu-jammy"}}'
 
   # Licensing
   REDPANDA_LICENSE: '{{.REDPANDA_LICENSE | default "empty"}}'

@@ -64,16 +64,31 @@ tasks:
         echo "Brokers: $REDPANDA_BROKERS"
         echo "Checking cluster status after collection re-converge"
         {{.RPK_PATH}} cluster status -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -v || exit 1
-        echo "Verifying seeded dataset survived re-converge: expect {{.SEED_COUNT}} records in {{.UPGRADE_SENTINEL_TOPIC}}"
+      - task: upgrade:sentinel:assert
+        vars: {UPGRADE_SENTINEL_TOPIC: "{{.UPGRADE_SENTINEL_TOPIC}}", SEED_COUNT: "{{.SEED_COUNT}}", RPK_EXTRA: "{{.RPK_EXTRA}}"}
+
+  upgrade:sentinel:assert:
+    desc: >-
+      Every record upgrade:seed wrote to the sentinel topic is still readable, head to tail.
+      AFTER names what the records had to survive, for the log.
+    vars:
+      UPGRADE_SENTINEL_TOPIC: '{{.UPGRADE_SENTINEL_TOPIC | default "upgrade-sentinel"}}'
+      SEED_COUNT: '{{.SEED_COUNT | default "500"}}'
+      RPK_EXTRA: '{{.RPK_EXTRA | default ""}}'
+      AFTER: '{{.AFTER | default "the collection re-converge"}}'
+    cmds:
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Verifying seeded dataset survived {{.AFTER}}: expect {{.SEED_COUNT}} records in {{.UPGRADE_SENTINEL_TOPIC}}"
         # timeout: 'consume -n N' blocks forever when fewer than N records exist — a hang
         # here would silently mask the exact data-loss case this assert exists to catch
         OUT=$(timeout 120 {{.RPK_PATH}} topic consume {{.UPGRADE_SENTINEL_TOPIC}} -X brokers=$REDPANDA_BROKERS {{.RPK_EXTRA}} -o start -n {{.SEED_COUNT}} -f '%v\n' || true)
         GOT=$(printf '%s\n' "$OUT" | grep -c '^sentinel-' || true)
-        echo "post-converge sentinel count: $GOT / {{.SEED_COUNT}}"
-        [ "$GOT" -eq "{{.SEED_COUNT}}" ] || { echo "FAIL: expected {{.SEED_COUNT}} sentinel records, got $GOT (data loss across re-converge)"; exit 1; }
+        echo "sentinel count after {{.AFTER}}: $GOT / {{.SEED_COUNT}}"
+        [ "$GOT" -eq "{{.SEED_COUNT}}" ] || { echo "FAIL: expected {{.SEED_COUNT}} sentinel records, got $GOT (data loss across {{.AFTER}})"; exit 1; }
         printf '%s\n' "$OUT" | grep -qx "sentinel-{{.SEED_COUNT}}" \
-          || { echo "FAIL: tail record sentinel-{{.SEED_COUNT}} missing after re-converge"; exit 1; }
-        echo "OK: all {{.SEED_COUNT}} seeded records survived the collection re-converge (head..tail intact)"
+          || { echo "FAIL: tail record sentinel-{{.SEED_COUNT}} missing after {{.AFTER}}"; exit 1; }
+        echo "OK: all {{.SEED_COUNT}} seeded records survived {{.AFTER}} (head..tail intact)"
 
   cluster:
     desc: Test Redpanda cluster functionality (create topic, produce, consume)
@@ -91,6 +106,155 @@ tasks:
         echo squirrel | {{.RPK_PATH}} topic produce {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v || exit 1
         echo "Consuming from topic"
         {{.RPK_PATH}} topic consume {{.TEST_TOPIC_NAME}} -X brokers=$REDPANDA_BROKERS -v -o :end | grep squirrel || exit 1
+
+  sasl:enable-on-existing-blocked:
+    desc: >-
+      Enabling SASL on a running cluster that has no SASL superuser must stop before any
+      cluster or node configuration changes: the playbook fails with the collection's
+      guard message, the Admin API still answers without credentials, and the cluster
+      config still has no superusers.
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - |
+        LOG={{.ARTIFACT_DIR}}/logs/sasl-enable-on-existing.log
+        echo ">> Enabling SASL on the existing cluster without a superuser; expecting the guard to stop it"
+        if ansible-playbook ansible/provision-cluster-sasl.yml \
+            --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} \
+            --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} \
+            --extra-vars sasl_user={{.SASL_USER}} --extra-vars sasl_password={{.SASL_PASSWORD}} \
+            {{if .RP_VERSION}}--extra-vars redpanda_version={{.RP_VERSION}}{{end}} \
+            {{if .RP_INSTALL_STATUS}}--extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}{{end}} \
+            > "$LOG" 2>&1; then
+          tail -40 "$LOG"
+          echo "FAIL: enabling SASL without a superuser succeeded; the existing-cluster guard did not stop it"
+          exit 1
+        fi
+        if ! grep -q "has no SASL user named '{{.SASL_USER}}'" "$LOG"; then
+          tail -40 "$LOG"
+          echo "FAIL: the playbook failed, but not at the existing-cluster SASL guard"
+          exit 1
+        fi
+        echo "OK: the guard stopped the run (has no SASL user named '{{.SASL_USER}}')"
+      - |
+        echo ">> The Admin API must still answer without credentials, with no superusers configured"
+        ansible redpanda -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b -m ansible.builtin.shell \
+          -a 'set -e; a=$(rpk cluster config get admin_api_require_auth); s=$(rpk cluster config get superusers); echo "admin_api_require_auth=$a superusers=$s"; [ "$a" = false ] && [ "$s" = "[]" ]'
+        echo "OK: Admin API unlocked and cluster config unchanged on every broker"
+
+  sasl:upgrade-rolling:
+    desc: >-
+      Upgrade Redpanda on the SASL cluster (RP_VERSION/RP_INSTALL_STATUS) while counting, once a
+      second, the brokers that accept Kafka connections. Fails if the upgrade fails or if more
+      than one broker was down at once (the upgrade wasn't rolling).
+    cmds:
+      - mkdir -p {{.ARTIFACT_DIR}}/logs
+      - |
+        BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        UPGRADE_LOG={{.ARTIFACT_DIR}}/logs/sasl-upgrade.log
+        UP_LOG={{.ARTIFACT_DIR}}/logs/upgrade-brokers-up.log
+        STOP={{.ARTIFACT_DIR}}/logs/upgrade-probe.stop
+        HOSTS=$(echo "$BROKERS" | tr ',' '\n' | cut -d: -f1)
+        WANT=$(echo "$HOSTS" | grep -c .)
+        rm -f "$STOP" "$STOP.done"; : > "$UP_LOG"
+
+        # brokers accepting Kafka connections, once a second; each line is "<epoch> <up>"
+        ( while [ ! -f "$STOP" ]; do
+            up=$(python3 -c 'import socket, sys
+        n = 0
+        for h in sys.argv[1:]:
+            try:
+                socket.create_connection((h, 9092), 1).close(); n += 1
+            except OSError:
+                pass
+        print(n)' $HOSTS)
+            echo "$(date +%s) $up" >> "$UP_LOG"
+            sleep 1
+          done
+          touch "$STOP.done" ) &
+        sleep 5
+
+        echo ">> Upgrading Redpanda while counting the brokers up (log: $UPGRADE_LOG)"
+        ansible-playbook ansible/provision-cluster-sasl.yml \
+          --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} \
+          --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}} \
+          --extra-vars sasl_user={{.SASL_USER}} --extra-vars sasl_password={{.SASL_PASSWORD}} \
+          {{if .RP_VERSION}}--extra-vars redpanda_version={{.RP_VERSION}}{{end}} \
+          {{if .RP_INSTALL_STATUS}}--extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}{{end}} \
+          > "$UPGRADE_LOG" 2>&1
+        rc=$?
+        sleep 5; touch "$STOP"
+        for i in $(seq 30); do [ -f "$STOP.done" ] && break; sleep 1; done
+        if [ $rc -ne 0 ]; then tail -60 "$UPGRADE_LOG"; echo "FAIL: the upgrade failed"; exit 1; fi
+
+        samples=$(grep -c . "$UP_LOG" || true); fewest=$(awk 'NR == 1 || $2 < m {m = $2} END {print m + 0}' "$UP_LOG")
+        echo "brokers up: $samples samples, fewest $fewest of $WANT"
+        if [ "$samples" -lt 10 ] || [ "$fewest" -lt $((WANT - 1)) ]; then
+          echo "FAIL: $((WANT - fewest)) of $WANT brokers were down at once during the upgrade; a rolling upgrade takes down one at a time"
+          exit 1
+        fi
+        echo "OK: at most one broker was down at a time during the upgrade"
+
+  sasl:upgraded:
+    desc: >-
+      After a Redpanda upgrade on the SASL cluster, every broker in the inventory is alive and
+      none still runs FROM_VERSION. Reads the broker list through the Admin API as the SASL
+      superuser.
+    cmds:
+      - |
+        from=$(echo "{{.FROM_VERSION}}" | sed 's/-[0-9]*$//')
+        want=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep -c '^[0-9]')
+        out=$(ansible 'redpanda[0]' -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b -m ansible.builtin.shell \
+          -a "RPK_USER={{.SASL_USER}} RPK_PASS={{.SASL_PASSWORD}} rpk redpanda admin brokers list") || { echo "$out"; exit 1; }
+        echo "$out"
+        # the broker table: the rows under the IS-ALIVE header, up to the next blank line
+        # (rpk 26.2 adds section titles and a disk table below it, and marks the controller "0*")
+        rows=$(echo "$out" | awk '/IS-ALIVE/ {t=1; next} t && !NF {exit} t && /^[0-9]/')
+        if [ "$(echo "$rows" | grep -c .)" -ne "$want" ]; then
+          echo "FAIL: expected $want brokers in the broker list"; exit 1
+        fi
+        if echo "$rows" | grep -qvw true; then
+          echo "FAIL: a broker is not alive after the upgrade"; exit 1
+        fi
+        if echo "$rows" | grep -qE "(^|[ v])${from}([ -]|$)"; then
+          echo "FAIL: a broker still runs ${from} after the upgrade"; exit 1
+        fi
+        echo "OK: all $want brokers alive and upgraded from ${from}"
+
+  sasl:create-superuser:
+    desc: Create the SASL superuser on a running cluster (Admin API without auth), from one broker
+    cmds:
+      - >-
+        ansible 'redpanda[0]' -i {{.ANSIBLE_INVENTORY}} --private-key {{.PRIVATE_KEY}} -b
+        -m ansible.builtin.command
+        -a "rpk security user create {{.SASL_USER}} -p {{.SASL_PASSWORD}} --mechanism SCRAM-SHA-256"
+
+  cluster:sasl:
+    desc: >-
+      Verify SASL enforcement: the superuser can read cluster status and produce/consume,
+      and an anonymous client is denied.
+    cmds:
+      - chmod 775 {{.RPK_PATH}}
+      - |
+        REDPANDA_BROKERS=$(sed -n '/^\[redpanda\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | sed 's/$/:9092/' | paste -sd ',' -)
+        echo "Brokers: $REDPANDA_BROKERS"
+        SUPER="-X user={{.SASL_USER}} -X pass={{.SASL_PASSWORD}} -X sasl.mechanism=SCRAM-SHA-256"
+
+        echo "Superuser can read cluster status"
+        {{.RPK_PATH}} cluster status -X brokers=$REDPANDA_BROKERS $SUPER -v || exit 1
+
+        echo "Anonymous topic creation must be denied"
+        if {{.RPK_PATH}} topic create sasl-anon-denied -X brokers=$REDPANDA_BROKERS 2>/dev/null; then
+          echo "FAIL: an anonymous client created a topic on a SASL cluster"
+          exit 1
+        fi
+
+        echo "Superuser creates the test topic (or finds it on a later check)"
+        {{.RPK_PATH}} topic create {{.SASL_TEST_TOPIC}} -p 3 -X brokers=$REDPANDA_BROKERS $SUPER \
+          || {{.RPK_PATH}} topic describe {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $SUPER >/dev/null \
+          || exit 1
+        echo sasl-squirrel | {{.RPK_PATH}} topic produce {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $SUPER || exit 1
+        timeout 120 {{.RPK_PATH}} topic consume {{.SASL_TEST_TOPIC}} -X brokers=$REDPANDA_BROKERS $SUPER -o :end -n 1 | grep sasl-squirrel || exit 1
+        echo "OK: SASL enforced"
 
   cluster:tls:
     desc: Test Redpanda cluster with TLS

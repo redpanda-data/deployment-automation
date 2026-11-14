@@ -4,7 +4,8 @@ collections:
     type: galaxy
   - name: ansible.posix
   - name: grafana.grafana
-    version: 5.6.0
+    # 6.x: boolean conditionals for ansible-core >= 2.19; settings go under grafana_ini
+    version: 6.1.0
   - name: prometheus.prometheus
 
 roles:
