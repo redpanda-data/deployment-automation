@@ -61,9 +61,10 @@
     - grafana.grafana.grafana
   vars:
     grafana_version: latest
-    grafana_security:
-      admin_user: admin
-      admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
+    grafana_ini:
+      security:
+        admin_user: admin
+        admin_password: "{{ grafana_admin_pass | default('enter_your_secure_password', true) }}"
     grafana_datasources:
       - name: prometheus
         type: prometheus

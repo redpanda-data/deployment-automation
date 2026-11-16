@@ -7,14 +7,14 @@ steps:
     concurrency_group: aws-ub
     concurrency: 1
     timeout_in_minutes: 120
-    command: DEPLOYMENT_ID=ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp
+    command: DEPLOYMENT_ID=ci-bs-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-jammy task ci:aws:rp
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -27,14 +27,14 @@ steps:
     concurrency_group: aws-ub
     concurrency: 1
     timeout_in_minutes: 120
-    command: DEPLOYMENT_ID=ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp:tiered
+    command: DEPLOYMENT_ID=ci-ts-ub-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-jammy task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -48,14 +48,14 @@ steps:
     concurrency_group: aws-ub
     concurrency: 1
     timeout_in_minutes: 120
-    command: DEPLOYMENT_ID=ci-ts-ub-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
+    command: DEPLOYMENT_ID=ci-ts-ub-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-jammy INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -76,7 +76,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -96,7 +96,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -117,7 +117,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -138,7 +138,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -160,7 +160,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -181,7 +181,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - GCP_CREDS
             - BASELINE_COLLECTION_REF
@@ -199,7 +199,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           pre-exit: task infra:gcp:destroy
           environment:
             - GCP_CREDS
@@ -219,7 +219,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - GCP_CREDS
             - BASELINE_COLLECTION_REF
@@ -237,7 +237,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - GCP_CREDS
             - REDPANDA_LICENSE
@@ -256,7 +256,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -277,7 +277,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -291,14 +291,14 @@ steps:
     concurrency_group: unstable
     concurrency: 1
     timeout_in_minutes: 120
-    command: DEPLOYMENT_ID=ci-ts-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal task ci:aws:rp:tiered:unstable
+    command: DEPLOYMENT_ID=ci-ts-ub-us-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-jammy task ci:aws:rp:tiered:unstable
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -312,14 +312,14 @@ steps:
     concurrency_group: unstable
     concurrency: 1
     timeout_in_minutes: 120
-    command: DEPLOYMENT_ID=ci-ts-ub-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-focal INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered:unstable
+    command: DEPLOYMENT_ID=ci-ts-ub-us-lg-`tr -dc a-z0-9 </dev/urandom | head -c 4` DISTRO=ubuntu-jammy INSTANCE_TYPE_AWS=is4gen.4xlarge MACHINE_ARCH=arm64 task ci:aws:rp:tiered:unstable
     plugins:
       - seek-oss/aws-sm#v2.3.2:
           json-to-env:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -339,7 +339,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
@@ -371,7 +371,7 @@ steps:
             - json-key: .
               secret-id: sdlc/prod/buildkite/deployment_automation
       - docker#v5.8.0:
-          image: glrp/atgt:latest
+          image: glrp/atgt:v1.0.10
           environment:
             - GCP_CREDS
             - GOOGLE_CREDENTIALS_BASE64
