@@ -1,0 +1,37 @@
+- name: Update rpcn pipeline and restart service
+  hosts: connect
+  become: true
+
+  vars:
+    rpcn_dir: /etc/redpanda
+    local_files_dir: "./rpcn_files"   # same convention as your other playbook
+
+  tasks:
+    - name: Ensure target directory exists
+      file:
+        path: "{{ rpcn_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Copy pipeline.yaml to /etc/redpanda
+      copy:
+        src: "{{ local_files_dir }}/pipeline.yaml"
+        dest: "{{ rpcn_dir }}/pipeline.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - daemon-reload
+        - restart rpcn
+
+  handlers:
+    - name: daemon-reload
+      systemd:
+        daemon_reload: true
+
+    - name: restart rpcn
+      systemd:
+        name: rpcn.service
+        state: restarted
