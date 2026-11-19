@@ -1,0 +1,19 @@
+# Reconciles SASL users and ACLs via the user_management role.
+# The desired users/ACLs are passed by the caller via --extra-vars, e.g.:
+#   -e sasl_password=... \
+#   -e '{"sasl_users":[{"username":"app","password":"s3cret","state":"present"}]}' \
+#   -e '{"sasl_acls":[{"principal":"app","operation":["read","write","describe","create"],"resource_type":"topic","resource_name":"apptopic","permission":"allow"}]}'
+# Admin credentials flow from sasl_superuser_* (the role follows the broker's
+# variables), so the same extra-vars used for provisioning work here.
+---
+- name: Manage SASL users and ACLs
+  hosts: redpanda
+  run_once: true
+  vars:
+    kafka_enable_authorization: true
+    sasl_superuser_username: "{{ sasl_user | default('admin') }}"
+    sasl_superuser_password: "{{ sasl_password | default('ci-only-password') }}"
+  tasks:
+    - name: Reconcile users, roles and ACLs
+      ansible.builtin.include_role:
+        name: redpanda.cluster.user_management

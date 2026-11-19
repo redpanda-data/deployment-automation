@@ -18,12 +18,35 @@ tasks:
       - ansible-playbook ansible/operation-rolling-restart-connect.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}}
 
   broker:restart:
-    desc: Perform rolling restart of Redpanda broker cluster
+    desc: >-
+      Perform rolling restart of Redpanda broker cluster. On SASL clusters pass
+      SASL_USER/SASL_PASSWORD so the playbook's rpk calls authenticate.
     deps:
       - :ansible:prereqs
       - :ensure-logs-dir
     cmds:
-      - ansible-playbook ansible/operation-rolling-restart.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}}
+      - >-
+        ansible-playbook ansible/operation-rolling-restart.yml
+        --private-key {{.PRIVATE_KEY}}
+        --inventory {{.ANSIBLE_INVENTORY}}
+        {{if .SASL_PASSWORD}}--extra-vars kafka_enable_authorization=true --extra-vars sasl_user={{.SASL_USER}} --extra-vars sasl_password={{.SASL_PASSWORD}}{{end}}
+
+  users:apply:
+    desc: >-
+      Reconcile SASL users and ACLs via the user_management role. Desired state is passed
+      as JSON in SASL_USERS_JSON / SASL_ACLS_JSON; admin creds via SASL_USER/SASL_PASSWORD.
+    deps:
+      - :ansible:prereqs
+      - :ensure-logs-dir
+    cmds:
+      - >-
+        ansible-playbook ansible/operation-user-management.yml
+        --private-key {{.PRIVATE_KEY}}
+        --inventory {{.ANSIBLE_INVENTORY}}
+        --extra-vars sasl_user={{.SASL_USER}}
+        --extra-vars sasl_password={{.SASL_PASSWORD}}
+        --extra-vars '{{.SASL_USERS_JSON}}'
+        --extra-vars '{{.SASL_ACLS_JSON}}'
 
   license:apply:
     desc: Apply Redpanda license to the cluster

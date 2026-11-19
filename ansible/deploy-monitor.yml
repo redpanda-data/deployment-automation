@@ -5,11 +5,28 @@
     - name: Set node_exporter_arch based on host architecture
       ansible.builtin.set_fact:
         rp_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+    # Prefetched with retries because GitHub resets connections under
+    # concurrent-lane rate limiting (five separate CI lane failures), and the
+    # role's own download/latest-lookup hit GitHub per host with no retry.
+    # Pinning the version also skips the role's 'latest' GitHub API lookup.
+    - name: Prefetch node_exporter tarball with retries
+      ansible.builtin.get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_pinned_version }}/node_exporter-{{ node_exporter_pinned_version }}.linux-{{ rp_arch }}.tar.gz"
+        dest: "/tmp/node_exporter-{{ node_exporter_pinned_version }}.linux-{{ rp_arch }}.tar.gz"
+        mode: "0644"
+      register: node_exporter_prefetch
+      until: node_exporter_prefetch is succeeded
+      retries: 10
+      delay: 15
+      vars:
+        node_exporter_pinned_version: "1.12.1"
     - name: Include geerlingguy nodeexporter
       ansible.builtin.include_role:
         name: geerlingguy.node_exporter
       vars:
         node_exporter_arch: "{{ rp_arch }}"
+        node_exporter_version: "1.12.1"
+        node_exporter_download_url: "/tmp/node_exporter-1.12.1.linux-{{ rp_arch }}.tar.gz"
 
 - name: Install prometheus
   hosts: monitor

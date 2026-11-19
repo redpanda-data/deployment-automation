@@ -1,0 +1,25 @@
+# Provisions a Redpanda cluster with SASL authorization enabled.
+# variables
+# advertise_public_ips : advertise public ips so the CI runner can reach the cluster
+# sasl_superuser_username / sasl_superuser_password : bootstrap superuser; supply
+#   real values via --extra-vars (the defaults here are CI-only placeholders)
+---
+- name: Provision SASL-enabled cluster
+  hosts: redpanda
+  vars:
+    advertise_public_ips: true
+    redpanda_version: latest
+    kafka_enable_authorization: true
+    sasl_superuser_username: "{{ sasl_user | default('admin') }}"
+    sasl_superuser_password: "{{ sasl_password | default('ci-only-password') }}"
+  tasks:
+    - name: Install system prereqs
+      ansible.builtin.include_role:
+        name: redpanda.cluster.system_setup
+    - name: Handle sysctl changes
+      ansible.builtin.include_role:
+        name: redpanda.cluster.sysctl_setup
+    - name: Install and start redpanda
+      ansible.builtin.include_role:
+        name: redpanda.cluster.redpanda_broker
+      when: not skip_node | default(false) | bool
