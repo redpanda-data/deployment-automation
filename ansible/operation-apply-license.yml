@@ -14,12 +14,40 @@
       failed_when: "health_check.stdout != 'true'"
       changed_when: false
 
+    # The license string is never an rpk argument: task output and ps on the
+    # host would show it. It goes through a mode-600 temp file instead. Check
+    # mode skips the block, as it skipped the rpk command it replaces.
     - name: Set Redpanda license (string)
-      ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
-      run_once: true
-      changed_when: false
       when:
         - redpanda_license is defined
+        - not ansible_check_mode
+      run_once: true
+      block:
+        - name: Create temp file for license string
+          ansible.builtin.tempfile:
+            state: file
+            suffix: .license
+          register: license_string_tmp
+          changed_when: false
+
+        - name: Write license string to temp file
+          ansible.builtin.copy:
+            content: "{{ redpanda_license }}"
+            dest: "{{ license_string_tmp.path }}"
+            mode: "0600"
+          no_log: true
+          changed_when: false
+
+        - name: Set Redpanda license from temp file
+          ansible.builtin.command: rpk cluster license set --path {{ license_string_tmp.path }}
+          changed_when: false
+      always:
+        - name: Remove license string temp file
+          ansible.builtin.file:
+            path: "{{ license_string_tmp.path }}"
+            state: absent
+          when: license_string_tmp.path is defined
+          changed_when: false
 
     - name: Set Redpanda license (path)
       ansible.builtin.command: rpk cluster license set --path {{ redpanda_license_path }}
