@@ -131,11 +131,23 @@ tasks:
 
   storage:gcp:
     desc: Verify tiered storage in GCP
+    env:
+      DA_GCP_CREDS: '{{.GCP_CREDS}}'
+      CLOUDSDK_CORE_PROJECT: '{{.GOOGLE_PROJECT_ID}}'
     cmds:
-      - echo "{{.GCP_CREDS}}" | base64 -d > /tmp/gcp_creds.json
-      - export CLOUDSDK_CORE_PROJECT={{.GOOGLE_PROJECT_ID}}
-      - gcloud auth activate-service-account --key-file={{.GOOGLE_APPLICATION_CREDENTIALS}} --project={{.GOOGLE_PROJECT_ID}}
-      - gcloud storage --project {{.GOOGLE_PROJECT_ID}} ls | grep {{.SIMPLE_BUCKET_NAME}}
+      - |
+        set -e
+        key_file=
+        CLOUDSDK_CONFIG=
+        trap 'rm -rf ${key_file:+"$key_file"} ${CLOUDSDK_CONFIG:+"$CLOUDSDK_CONFIG"}' EXIT
+        key_file=$(mktemp)
+        # activate-service-account copies the key into the gcloud config dir,
+        # so that dir is temporary too.
+        CLOUDSDK_CONFIG=$(mktemp -d)
+        export CLOUDSDK_CONFIG
+        printf '%s' "$DA_GCP_CREDS" | base64 -d > "$key_file"
+        gcloud auth activate-service-account --key-file="$key_file" --project={{.GOOGLE_PROJECT_ID}}
+        gcloud storage --project {{.GOOGLE_PROJECT_ID}} ls | grep {{.SIMPLE_BUCKET_NAME}}
 
   connect:tls:
     desc: Test Connect REST API with TLS client cert
