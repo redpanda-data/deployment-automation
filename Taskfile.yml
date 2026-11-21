@@ -60,6 +60,7 @@ vars:
   # credentials out of the log; scripts/check-secret-hygiene.py enforces it.
   REDPANDA_BROKER_NO_LOG: '{{.REDPANDA_BROKER_NO_LOG | default "true"}}'
   HTTP_DEBUG: '{{.HTTP_DEBUG | default "false"}}'
+  RPK_DEBUG: '{{.RPK_DEBUG | default "false"}}'
 
   # Network
   VPC_ID: '{{.VPC_ID | default ""}}'
