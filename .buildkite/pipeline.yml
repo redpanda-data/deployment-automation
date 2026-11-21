@@ -2,6 +2,18 @@ agents:
   queue: "k8s-m6ixlarge"
 
 steps:
+  # Runs without credentials and blocks the lanes, so a change that would
+  # print a credential fails here instead of in a lane's log.
+  - label: secret hygiene
+    key: secret-hygiene
+    timeout_in_minutes: 10
+    command: task tools:lint:secrets
+    plugins:
+      - docker#v5.8.0:
+          image: glrp/atgt:v1.0.10
+
+  - wait
+
   - label: aws ubuntu
     key: aws-up-ubuntu
     concurrency_group: aws-ub
@@ -344,19 +356,31 @@ steps:
             - AWS_DEFAULT_REGION
             - CI=true
     depends_on:
-      - aws-up-ubuntu
-      - aws-up-ubuntu-tiered
-      - aws-up-ubuntu-ts-large
-      - aws-up-fedora
-      - aws-up-fed-con
-      - aws-up-fedora-tiered
-      - aws-up-fed-cts
-      - aws-up-fedora-ts-large
-      - aws-us-fedora-tiered
-      - aws-us-fedora-ts-large
-      - aws-us-ubuntu-tiered
-      - aws-us-ubuntu-ts-large
-    allow_dependency_failure: true
+      - step: secret-hygiene
+      - step: aws-up-ubuntu
+        allow_failure: true
+      - step: aws-up-ubuntu-tiered
+        allow_failure: true
+      - step: aws-up-ubuntu-ts-large
+        allow_failure: true
+      - step: aws-up-fedora
+        allow_failure: true
+      - step: aws-up-fed-con
+        allow_failure: true
+      - step: aws-up-fedora-tiered
+        allow_failure: true
+      - step: aws-up-fed-cts
+        allow_failure: true
+      - step: aws-up-fedora-ts-large
+        allow_failure: true
+      - step: aws-us-fedora-tiered
+        allow_failure: true
+      - step: aws-us-fedora-ts-large
+        allow_failure: true
+      - step: aws-us-ubuntu-tiered
+        allow_failure: true
+      - step: aws-us-ubuntu-ts-large
+        allow_failure: true
     soft_fail: true
 
   - label: cleanup gcp resources
@@ -375,9 +399,13 @@ steps:
             - GOOGLE_CREDENTIALS_BASE64
             - CI=true
     depends_on:
-      - gcp-up-ubuntu
-      - gcp-up-ubuntu-tiered
-      - gcp-up-fedora
-      - gcp-up-fedora-tiered
-    allow_dependency_failure: true
+      - step: secret-hygiene
+      - step: gcp-up-ubuntu
+        allow_failure: true
+      - step: gcp-up-ubuntu-tiered
+        allow_failure: true
+      - step: gcp-up-fedora
+        allow_failure: true
+      - step: gcp-up-fedora-tiered
+        allow_failure: true
     soft_fail: true
