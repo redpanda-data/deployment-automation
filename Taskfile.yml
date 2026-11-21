@@ -56,6 +56,12 @@ vars:
   ENABLE_CONNECT: '{{.ENABLE_CONNECT | default "false"}}'
   IS_USING_UNSTABLE: '{{.IS_USING_UNSTABLE | default "false"}}'
 
+  # Local debugging only. CI leaves these at their defaults, which keep
+  # credentials out of the log; scripts/check-secret-hygiene.py enforces it.
+  REDPANDA_BROKER_NO_LOG: '{{.REDPANDA_BROKER_NO_LOG | default "true"}}'
+  HTTP_DEBUG: '{{.HTTP_DEBUG | default "false"}}'
+  RPK_DEBUG: '{{.RPK_DEBUG | default "false"}}'
+
   # Network
   VPC_ID: '{{.VPC_ID | default ""}}'
 
@@ -102,13 +108,11 @@ vars:
   GCP_IMAGE: '{{.GCP_IMAGE | default "ubuntu-os-cloud/ubuntu-2204-lts"}}'
   GCP_INSTANCE_TYPE: '{{.GCP_INSTANCE_TYPE | default "n2d-standard-4"}}'
   GCP_CREDS: '{{.GCP_CREDS | default ""}}'
-  GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcp_creds.json"
 
   # Connect RPM
   RPM_VERSION: '{{.RPM_VERSION | default "v1.0.0-7ae9d19"}}'
   SERVER_DIR: '{{.SERVER_DIR | default "/tmp"}}'
   LOCAL_FILE: '{{.ARTIFACT_DIR}}/redpanda-connect.x86_64.rpm'
-  TOKEN: '{{.CONNECT_RPM_TOKEN | default ""}}'
   DL_LINK: 'https://vectorized-public.s3.amazonaws.com/releases/cloudsmith/connectors-artifacts/redpanda-connectors-{{.RPM_VERSION}}.x86_64.rpm'
 
   # AWS

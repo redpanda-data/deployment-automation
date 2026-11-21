@@ -32,3 +32,12 @@ tasks:
     cmds:
       - echo "Running ansible-lint"
       - ansible-lint -c .ansible-lint
+
+  lint:secrets:
+    desc: >-
+      Fail if any task or CI step can print a credential: runs the guard's tests, then
+      dry-runs every task with canary credentials and checks the task files, pipeline and
+      scripts statically. Needs no credentials or network.
+    cmds:
+      - python3 scripts/test_check_secret_hygiene.py
+      - python3 scripts/check-secret-hygiene.py

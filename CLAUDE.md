@@ -55,6 +55,16 @@ GitHub Actions enforce `ansible-lint` and terraform `fmt` / `validate`
 (the terraform checks are **AWS-only**) on PRs. Run `ansible-lint -c .ansible-lint`
 locally (profile `production`).
 
+- `task tools:lint:secrets` (`scripts/check-secret-hygiene.py`, tested by
+  `scripts/test_check_secret_hygiene.py`) runs first in the Buildkite pipeline
+  and blocks the lanes. Task prints every command after expanding `{{.VAR}}`, so
+  a credential goes through the task's `env:` block and the program reads it
+  from its environment (`TF_VAR_*`, an Ansible env lookup); never template it
+  into a command or put it on a command line. Give the `env:` entry a name that
+  is not already in the process environment (`DA_REDPANDA_LICENSE`), because a
+  process environment value wins over a task's `env:`. Debug output
+  (`REDPANDA_BROKER_NO_LOG=false`, `HTTP_DEBUG=true`, `RPK_DEBUG=true`, `ANSIBLE_VERBOSITY`,
+  `TF_LOG`, `-v` on ansible) is for local runs only; CI must not set it.
 - `.ansible-lint` excludes the cloud dirs, `templates/`, `artifacts/`; its skip
   list drops `jinja[spacing]`, `yaml[line-length]`, `yaml[trailing-spaces]`,
   `risky-shell-pipe`.

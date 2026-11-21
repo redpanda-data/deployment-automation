@@ -98,6 +98,8 @@ tasks:
   # GCP Infrastructure
   gcp:build:
     desc: Build GCP infrastructure with Terraform
+    env:
+      TF_VAR_gcp_creds: '{{.GCP_CREDS}}'
     cmds:
       - |
         cd gcp && \
@@ -110,11 +112,12 @@ tasks:
           -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
           -var='image={{.GCP_IMAGE}}' \
           -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
-          -var='machine_type={{.GCP_INSTANCE_TYPE}}' \
-          -var='gcp_creds={{.GCP_CREDS}}'
+          -var='machine_type={{.GCP_INSTANCE_TYPE}}'
 
   gcp:destroy:
     desc: Destroy GCP infrastructure
+    env:
+      TF_VAR_gcp_creds: '{{.GCP_CREDS}}'
     cmds:
       - |
         cd gcp/{{.TF_DIR}} && \
@@ -127,8 +130,7 @@ tasks:
           -var='tiered_storage_enabled={{.TIERED_STORAGE_ENABLED}}' \
           -var='image={{.GCP_IMAGE}}' \
           -var='hosts_file={{.ANSIBLE_INVENTORY}}' \
-          -var='machine_type={{.GCP_INSTANCE_TYPE}}' \
-          -var='gcp_creds={{.GCP_CREDS}}'
+          -var='machine_type={{.GCP_INSTANCE_TYPE}}'
 
   # Extra AWS cluster for mirroring/testing
   extra:aws:copy:

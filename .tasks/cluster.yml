@@ -29,6 +29,8 @@ tasks:
     deps:
       - :ansible:prereqs
       - :ensure-logs-dir
+    env:
+      DA_REDPANDA_LICENSE: '{{.REDPANDA_LICENSE}}'
     cmds:
       - >-
         ansible-playbook ansible/provision-cluster-tiered-storage.yml
@@ -36,7 +38,7 @@ tasks:
         --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
         --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}}
         --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}}
-        --extra-vars redpanda_license={{.REDPANDA_LICENSE}}
+        --extra-vars @ansible/vars/redpanda-license-from-env.yml
         {{if .RP_VERSION}}--extra-vars redpanda_version={{.RP_VERSION}}{{end}}
         {{if .RP_INSTALL_STATUS}}--extra-vars redpanda_install_status={{.RP_INSTALL_STATUS}}{{end}}
 
@@ -65,9 +67,11 @@ tasks:
       - ansible-playbook ansible/provision-cluster-tls.yml --private-key {{.PRIVATE_KEY}} --inventory {{.EXTRA_INVENTORY}} --extra-vars is_using_unstable={{.IS_USING_UNSTABLE}}
 
   dev:tiered:
-    desc: Development tiered storage deployment (no log suppression)
+    desc: >-
+      Development tiered storage deployment. Broker role output stays masked unless
+      REDPANDA_BROKER_NO_LOG=false is set, which is for local runs only.
     deps:
       - :ansible:prereqs
       - :ensure-logs-dir
     cmds:
-      - ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key {{.PRIVATE_KEY}} --extra-vars redpanda_broker_no_log=false --extra-vars development_build=true --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}}
+      - ansible-playbook ansible/provision-cluster-tiered-storage.yml --private-key {{.PRIVATE_KEY}} --extra-vars redpanda_broker_no_log={{.REDPANDA_BROKER_NO_LOG}} --extra-vars development_build=true --extra-vars segment_upload_interval={{.SEGMENT_UPLOAD_INTERVAL}} --extra-vars cloud_storage_credentials_source={{.CLOUD_STORAGE_CREDENTIALS_SOURCE}}

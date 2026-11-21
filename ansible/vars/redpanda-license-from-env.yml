@@ -1,0 +1,2 @@
+---
+redpanda_license: "{{ lookup('ansible.builtin.env', 'DA_REDPANDA_LICENSE') }}"
