@@ -55,7 +55,7 @@ module "redpanda-cluster" {
 provider "google" {
   region      = var.region
   project     = var.project_name
-  credentials = base64decode(var.gcp_creds)
+  credentials = var.gcp_creds == "" ? null : base64decode(var.gcp_creds)
 }
 
 data "google_compute_zones" "available" {
@@ -73,7 +73,8 @@ locals {
 variable "gcp_creds" {
   default     = ""
   type        = string
-  description = "base64 encoded contents of the key for a service account with all necessary permissions"
+  sensitive   = true
+  description = "base64 encoded contents of the key for a service account with all necessary permissions. Pass it as TF_VAR_gcp_creds, not -var. Empty uses Application Default Credentials."
 }
 
 variable "region" {

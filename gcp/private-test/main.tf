@@ -1,12 +1,14 @@
 variable "gcp_creds" {
   default     = ""
-  description = "base64 encoded json GCP key file for a service account"
+  type        = string
+  sensitive   = true
+  description = "base64 encoded json GCP key file for a service account. Pass it as TF_VAR_gcp_creds, not -var. Empty uses Application Default Credentials."
 }
 
 provider "google" {
   project     = var.project_name
   region      = var.region
-  credentials = base64decode(var.gcp_creds)
+  credentials = var.gcp_creds == "" ? null : base64decode(var.gcp_creds)
 }
 
 variable "region" {
