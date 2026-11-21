@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Fail when a task or a CI step can write a credential to a job log or the
-terminal.
+"""Fail when a task, CI step, playbook or Terraform stack can write a
+credential to a job log or the terminal.
 
 Task echoes every command after expanding {{.VAR}} templates, so a credential
 must reach a command through a task env: block and be read by the program from
@@ -12,12 +12,14 @@ Two checks, both offline and credential-free:
           variable to a distinct canary in a scrubbed environment and as a
           task argument, runs `task --dry --force` for every task, and fails
           if a canary is printed or a printed command turns on debug output.
-  static  Reads the task files, pipeline, workflows and scripts for what a
-          dry run cannot see: credentials expanded from shell variables onto
-          a command line, credential-named --extra-vars and -var arguments,
-          debug and trace switches, no_log turned off, credentials written to
-          fixed paths or uploaded as artifacts, credentials nothing reads,
-          and steps that can run when this guard fails.
+  static  Reads the task files, pipeline, workflows, scripts, playbooks,
+          ansible.cfg and Terraform stacks for what a dry run cannot see:
+          credentials expanded from shell variables onto a command line,
+          credential-named --extra-vars and -var arguments, debug and trace
+          switches, no_log turned off, credentials written to fixed paths or
+          uploaded as artifacts, credentials nothing reads, steps that can
+          run when this guard fails, playbook tasks that print a credential,
+          and Terraform credentials not marked sensitive.
 
 usage: scripts/check-secret-hygiene.py [--canary | --static] [REPO_ROOT]
 """
@@ -691,6 +693,307 @@ def check_unused_credentials(report, root, model):
 
 
 # ---------------------------------------------------------------------------
+# Playbooks and Ansible configuration
+
+
+TASK_META_KEYS = {
+    "name", "when", "tags", "register", "notify", "listen", "become", "become_user", "become_method",
+    "become_flags", "delegate_to", "delegate_facts", "run_once", "changed_when", "failed_when", "until",
+    "retries", "delay", "loop_control", "ignore_errors", "ignore_unreachable", "no_log",
+    "environment", "vars", "block", "rescue", "always", "check_mode", "diff", "any_errors_fatal",
+    "throttle", "timeout", "module_defaults", "collections", "connection", "debugger",
+}
+LOOP_KEY = re.compile(r"^(loop|with_\w+)$")
+# Modules that only hand values on: their arguments are not printed at the
+# verbosity CI uses, and what they pass is checked where it is used.
+PASS_THROUGH_MODULES = re.compile(
+    r"^(ansible\.builtin\.)?(set_fact|include_role|import_role|include_tasks|import_tasks|include_vars|"
+    r"tempfile|meta)$"
+)
+JINJA_EXPR = re.compile(r"{{(.*?)}}", re.S)
+DUMP_VARS = {"vars", "hostvars"}
+
+
+def dump(value):
+    return json.dumps(value, default=str)
+
+
+def truthy(value):
+    # A templated no_log, such as the collection's "{{ redpanda_broker_no_log }}",
+    # is treated as masking: its default is to mask.
+    return value is True or str(value).strip().lower() in ("true", "yes") or "{{" in str(value)
+
+
+def literally_false(value):
+    return value is False or str(value).strip().lower() in ("false", "no")
+
+
+def jinja_roots(text):
+    """Root variables referenced by the {{ }} expressions in text."""
+    roots = set()
+    for expr in JINJA_EXPR.findall(text):
+        bare = re.sub(r"'[^']*'|\"[^\"]*\"", "''", expr)
+        for m in re.finditer(r"(?<![\w.|])(?<!\|\s)([A-Za-z_][A-Za-z0-9_]*)", bare):
+            roots.add(m.group(1))
+        roots |= set(re.findall(r"\b(?:lookup|query|q)\s*\(\s*['\"][\w.]*env['\"]\s*,\s*['\"](\w+)['\"]", expr))
+    return roots
+
+
+COMMAND_MODULES = re.compile(r"^(ansible\.(builtin|legacy)\.)?(command|shell|raw|script|expect)$")
+
+
+def module_args_text(value, module=""):
+    """A module's arguments as text, without the arguments whose names mark them
+    as credentials: modules declare those no_log themselves. Command modules
+    have no such arguments; everything they get is on the command line."""
+    if COMMAND_MODULES.match(str(module)):
+        return dump(value)
+    if isinstance(value, dict):
+        value = {k: v for k, v in value.items() if not is_secret_param(str(k))}
+    elif isinstance(value, str):
+        value = re.sub(r"(?<!\S)(\w+)=(\S+)", lambda m: "" if is_secret_param(m.group(1)) else m.group(0), value)
+    return dump(value)
+
+
+def walk_tasks(items, inherited=None):
+    """(task, no_log, inherited vars, inherited environment) for every task."""
+    inherited = inherited or (False, {}, {})
+    for node in items if isinstance(items, list) else []:
+        if not isinstance(node, dict):
+            continue
+        no_log = inherited[0] or truthy(node.get("no_log"))
+        vars_ = dict(inherited[1], **(node.get("vars") if isinstance(node.get("vars"), dict) else {}))
+        env = dict(inherited[2], **(node.get("environment") if isinstance(node.get("environment"), dict) else {}))
+        children = [k for k in ("tasks", "pre_tasks", "post_tasks", "handlers", "block", "rescue", "always") if k in node]
+        if not children and not node.get("hosts") and not node.get("import_playbook"):
+            yield node, no_log, vars_, env
+        for key in children:
+            yield from walk_tasks(node[key], (no_log, vars_, env))
+
+
+def yaml_mappings(node):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            yield key, value
+            yield from yaml_mappings(value)
+    elif isinstance(node, list):
+        for item in node:
+            yield from yaml_mappings(item)
+
+
+def playbook_files(root):
+    files = sorted(list((root / "ansible").rglob("*.yml")) + list((root / "ansible").rglob("*.yaml")))
+    for path in sorted(list(root.glob("*.yml")) + list(root.glob("*.yaml"))):
+        doc = load_yaml(path)
+        if isinstance(doc, list) and any(isinstance(p, dict) and ("hosts" in p or "import_playbook" in p) for p in doc):
+            files.append(path)
+    return files
+
+
+def check_playbooks(report, root):
+    for path in playbook_files(root):
+        raw = path.read_text(errors="replace")
+        doc = load_yaml(path, report)
+        if doc is None:
+            continue
+        for key, value in yaml_mappings(doc):
+            if str(key).endswith("no_log") and key != "no_log" and literally_false(value):
+                report.add(path, line_of(raw, f"{key}:"), "masking-off", f"{key} is set to {value}, which turns off no_log")
+        tasks = list(walk_tasks(doc))
+        registered = {str(t.get("register")) for t, *_ in tasks if t.get("register")}
+        file_tainted = set()
+
+        def secret_refs(text, tainted):
+            return {r for r in jinja_roots(text) if r not in registered and (is_secret_param(r) or r in tainted)}
+
+        for task, *_ in tasks:
+            for key, value in task.items():
+                if str(key).endswith("set_fact") and isinstance(value, dict):
+                    for fact, fact_value in value.items():
+                        if secret_refs(dump(fact_value), set()):
+                            file_tainted.add(fact)
+        cursor = 0
+        for task, no_log, vars_, env in tasks:
+            modules = [k for k in task if k not in TASK_META_KEYS and k != "args" and not LOOP_KEY.match(str(k))]
+            name = task.get("name", "<unnamed>")
+            anchor = f"name: {name}" if "name" in task else f"{modules[0]}:" if modules else ""
+            found = raw.find(anchor, cursor) if anchor else -1
+            if found >= 0:
+                cursor = found + 1
+            lineno = raw.count("\n", 0, found) + 1 if found >= 0 else 0
+            if literally_false(task.get("no_log")):
+                report.add(path, lineno, "masking-off", f"task '{name}' turns off no_log")
+            if no_log or not modules or all(PASS_THROUGH_MODULES.match(str(m)) for m in modules):
+                continue
+            tainted = set(file_tainted)
+            for vname, vvalue in vars_.items():
+                if secret_refs(dump(vvalue), set()):
+                    tainted.add(vname)
+            parts = {m: module_args_text(task[m], m) for m in modules}
+            if "args" in task:
+                parts["args"] = module_args_text(task["args"], modules[0] if len(modules) == 1 else "")
+            label = (task.get("loop_control") or {}).get("label") if isinstance(task.get("loop_control"), dict) else None
+            if label is None:
+                parts.update({k: dump(v) for k, v in task.items() if LOOP_KEY.match(str(k))})
+            body = " ".join(parts.values())
+            refs = secret_refs(body, tainted)
+            for m in modules:
+                value = task[m]
+                if re.search(r"(^|\.)debug$", str(m)):
+                    var = value.get("var") if isinstance(value, dict) else (re.search(r"\bvar=(\S+)", str(value)) or [None, None])[1]
+                    for root_name in jinja_roots("{{ " + str(var) + " }}") if var else ():
+                        if root_name not in registered and (is_secret_param(root_name) or root_name in tainted or root_name in DUMP_VARS):
+                            refs.add(root_name)
+            for ename, evalue in env.items():
+                if secret_refs(dump(evalue), tainted) and re.search(r"\$\{?" + re.escape(str(ename)) + r"\b", body):
+                    refs.add(f"{ename} (expanded from environment onto the command line)")
+            if refs:
+                report.add(path, lineno, "playbook-secret-argv",
+                           f"task '{name}' puts {', '.join(sorted(refs))} into {', '.join(map(str, modules))} "
+                           "arguments or output without no_log: true; write it to a mode-600 temp file and pass the path")
+
+
+def check_ansible_cfg(report, root):
+    import configparser
+
+    path = root / "ansible.cfg"
+    if not path.exists():
+        return
+    raw = path.read_text(errors="replace")
+    cfg = configparser.RawConfigParser(strict=False, interpolation=None)
+    try:
+        cfg.read_string(raw)
+    except configparser.Error as e:
+        report.add(path, 0, "debug-output", f"cannot be parsed, so it went unchecked: {str(e).splitlines()[0]}")
+        return
+    for section, key in (("defaults", "verbosity"), ("defaults", "debug"), ("defaults", "display_args_to_stdout"),
+                         ("diff", "always")):
+        value = cfg.get(section, key, fallback="").strip()
+        if value.lower() not in QUIET_VALUES:
+            m = re.search(r"^\s*" + key + r"\s*[=:]", raw, re.M | re.I)
+            report.add(path, raw.count("\n", 0, m.start()) + 1 if m else 0, "debug-output",
+                       f"[{section}] {key} = {value} makes every Ansible run print task arguments, results or diffs")
+
+
+# ---------------------------------------------------------------------------
+# Terraform
+
+
+def hcl_mask(text):
+    """text with string, heredoc and comment contents blanked, same length and lines."""
+    out, i, n = list(text), 0, len(text)
+
+    def blank(a, b):
+        for j in range(a, b):
+            if out[j] != "\n":
+                out[j] = " "
+
+    while i < n:
+        c = text[i]
+        if c == '"':
+            j = i + 1
+            while j < n and text[j] != '"':
+                j += 2 if text[j] == "\\" else 1
+            blank(i + 1, j)
+            i = j + 1
+        elif c == "#" or text.startswith("//", i):
+            j = text.find("\n", i)
+            j = n if j < 0 else j
+            blank(i, j)
+            i = j
+        elif text.startswith("/*", i):
+            j = text.find("*/", i + 2)
+            j = n if j < 0 else j + 2
+            blank(i, j)
+            i = j
+        elif text.startswith("<<", i) and (m := re.match(r"<<-?([A-Za-z_]\w*)[^\n]*\n", text[i:])):
+            body_start = i + m.end()
+            end = re.search(r"^\s*" + re.escape(m.group(1)) + r"\s*$", text[body_start:], re.M)
+            j = body_start + end.start() if end else n
+            blank(body_start, j)
+            i = j
+        else:
+            i += 1
+    return "".join(out)
+
+
+class _Header:
+    def __init__(self, m, text):
+        self._m, self._text = m, text
+
+    def start(self):
+        return self._m.start()
+
+    def group(self, i):
+        a, b = self._m.span(i)
+        if a < 0:
+            return None
+        label = self._text[a:b]
+        return label[1:-1] if label.startswith('"') else label
+
+
+def tf_blocks(text, masked, kind):
+    label = r'("[^"]*"|[A-Za-z_][\w-]*)'
+    for raw_m in re.finditer(r'^\s*' + kind + r'\s+' + label + r'(?:\s+' + label + r')?\s*{', masked, re.M):
+        m = _Header(raw_m, text)
+        depth, i = 0, raw_m.end() - 1
+        while i < len(masked):
+            if masked[i] == "{":
+                depth += 1
+            elif masked[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+            i += 1
+        yield m, text[raw_m.end():i], masked[raw_m.end():i]
+
+
+def is_sensitive(masked_body):
+    return bool(re.search(r"^\s*sensitive\s*=\s*true\b", masked_body, re.M))
+
+
+def attribute_value(body, masked_body, name):
+    """Source text of attribute `name` in a block body, up to the next attribute."""
+    m = re.search(r"^\s*" + name + r"\s*=\s*", masked_body, re.M)
+    if not m:
+        return ""
+    nxt = re.search(r"^\s*[A-Za-z_][\w-]*\s*(=|{)", masked_body[m.end():], re.M)
+    return body[m.end(): m.end() + nxt.start() if nxt else len(body)]
+
+
+def check_terraform(report, root):
+    modules = {}
+    for path in sorted(root.rglob("*.tf")):
+        if ".terraform" not in path.parts and "artifacts" not in path.parts:
+            text = path.read_text(errors="replace")
+            modules.setdefault(path.parent, []).append((path, text, hcl_mask(text)))
+    for files in modules.values():
+        secret_vars = set()
+        for path, text, masked in files:
+            for m, body, mbody in tf_blocks(text, masked, "variable"):
+                if not is_secret_param(m.group(1)) or re.search(r"^\s*type\s*=\s*(bool|number)\b", mbody, re.M):
+                    continue
+                secret_vars.add(m.group(1))
+                if not is_sensitive(mbody):
+                    report.add(path, text.count("\n", 0, m.start()) + 1, "tf-sensitive",
+                               f'variable "{m.group(1)}" holds a credential and is not marked sensitive = true')
+        for path, text, masked in files:
+            for m, body, mbody in tf_blocks(text, masked, "output"):
+                refs = set(re.findall(r"\bvar\.([A-Za-z0-9_]+)", body))
+                if (refs & secret_vars or is_secret_param(m.group(1))) and not is_sensitive(mbody):
+                    report.add(path, text.count("\n", 0, m.start()) + 1, "tf-sensitive",
+                               f'output "{m.group(1)}" exposes a credential and is not marked sensitive = true')
+            for m, body, mbody in tf_blocks(text, masked, "provisioner"):
+                if m.group(1) != "local-exec":
+                    continue
+                refs = set(re.findall(r"\bvar\.([A-Za-z0-9_]+)", attribute_value(body, mbody, "command"))) & secret_vars
+                if refs:
+                    report.add(path, text.count("\n", 0, m.start()) + 1, "tf-local-exec",
+                               f"local-exec interpolates {', '.join(sorted(refs))} into its command; "
+                               "pass it through environment = {}")
+
+
+# ---------------------------------------------------------------------------
 # Canary dry run
 
 
@@ -835,6 +1138,9 @@ def main():
         run_check(report, "pipeline", check_pipelines, report, root, secrets)
         run_check(report, "unused credentials", check_unused_credentials, report, root, model)
         run_check(report, "scripts", check_scripts, report, root, secrets)
+        run_check(report, "playbooks", check_playbooks, report, root)
+        run_check(report, "ansible.cfg", check_ansible_cfg, report, root)
+        run_check(report, "terraform", check_terraform, report, root)
         summary.append("static")
     if not args.static:
         n = run_check(report, "canary", check_canary, report, root, secrets, model.files, default=0)

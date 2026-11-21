@@ -615,5 +615,277 @@ class CanaryReporting(GuardTestCase):
             """, extra="vars:\n  R:\n    sh: 'cat $HOME/secret.txt 2>/dev/null || true'\n")}, "--canary", env={"HOME": home})
             self.assertNotIn("home-value-7781", out)
 
+# --- playbook and Terraform rules ---
+
+
+class CodebaseRules(GuardTestCase):
+    def play(self, tasks, extra=""):
+        return (
+            "- hosts: all\n" + extra + "  tasks:\n" + textwrap.indent(textwrap.dedent(tasks), "    ")
+        )
+
+    def test_command_with_a_credential(self):
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - name: set
+              ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+        """)}, "playbook-secret-argv")
+
+    def test_yaml_extension_and_vault_tags(self):
+        self.assertFlags({"ansible/p.yaml": self.play("""
+            - name: set
+              ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+        """)}, "playbook-secret-argv")
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - name: set
+              ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+        """, extra="  vars:\n    other: !vault |\n      $ANSIBLE_VAULT;1.1;AES256\n      6162\n")}, "playbook-secret-argv")
+
+    def test_other_modules_and_argument_forms(self):
+        for task in (
+            "- ansible.builtin.debug: var=redpanda_license",
+            "- ansible.builtin.command:\n  args:\n    cmd: rpk cluster license set {{ redpanda_license }}",
+            "- ansible.legacy.command: rpk cluster license set {{ redpanda_license }}",
+            "- ansible.builtin.fail:\n    msg: '{{ redpanda_license }}'",
+            "- ansible.builtin.assert:\n    that: [x]\n    fail_msg: 'bad {{ sasl_password }}'",
+            "- ansible.builtin.uri:\n    url: 'https://example.invalid/?token={{ api_token }}'",
+        ):
+            with self.subTest(task=task):
+                self.assertFlags({"ansible/p.yml": self.play(task + "\n")}, "playbook-secret-argv")
+
+    def test_indirection(self):
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - ansible.builtin.command: rpk cluster license set {{ lic }}
+              vars:
+                lic: "{{ redpanda_license }}"
+        """)}, "playbook-secret-argv")
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - ansible.builtin.set_fact:
+                lic: "{{ redpanda_license }}"
+              no_log: true
+            - ansible.builtin.command: rpk cluster license set {{ lic }}
+        """)}, "playbook-secret-argv")
+
+    def test_environment_value_expanded_onto_argv(self):
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - ansible.builtin.shell: rpk cluster license set "$LIC"
+              environment:
+                LIC: "{{ redpanda_license }}"
+        """)}, "playbook-secret-argv")
+
+    def test_inherited_no_log_and_registered_results(self):
+        self.assertClean({"ansible/p.yml": self.play("""
+            - block:
+                - ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+              no_log: true
+            - ansible.builtin.tempfile: {state: file}
+              register: license_tmp
+            - ansible.builtin.command: rpk cluster license set --path {{ license_tmp.path | quote }}
+            - ansible.builtin.command: rpk cluster license info
+              register: license_status
+            - ansible.builtin.debug:
+                msg: "{{ license_status.stdout }}"
+        """)})
+        self.assertClean({"ansible/p.yml": self.play("""
+            - ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+        """, extra="  no_log: true\n")})
+
+    def test_no_log_comment_is_not_a_setting(self):
+        self.assertClean({"ansible/p.yml": self.play("""
+            # Never set no_log: false on credential tasks.
+            - ansible.builtin.command: echo ok
+        """)})
+
+    def test_ansible_cfg_verbosity(self):
+        for line in ("verbosity = 3", "display_args_to_stdout = True"):
+            with self.subTest(line=line):
+                self.assertFlags({"ansible.cfg": f"[defaults]\n{line}\n"}, "debug-output")
+
+    def test_terraform_sensitive(self):
+        self.assertFlags({"gcp/main.tf": 'variable "gcp_creds" {\n  type = string\n}\n'}, "tf-sensitive")
+        for name in ("ssh_private_key", "sasl_pw"):
+            with self.subTest(name=name):
+                self.assertFlags({"gcp/main.tf": f'variable "{name}" {{\n  type = string\n}}\n'}, "tf-sensitive")
+        self.assertFlags({"gcp/main.tf": textwrap.dedent('''\
+            variable "gcp_creds" {
+              description = <<EOT
+            sensitive = true
+            EOT
+            }
+        ''')}, "tf-sensitive")
+
+    def test_terraform_strings_with_braces(self):
+        self.assertClean({"gcp/main.tf": textwrap.dedent('''\
+            variable "gcp_creds" {
+              description = "a } in text"
+              validation {
+                condition     = can(regex("^[^}]*$", var.gcp_creds))
+                error_message = "no braces"
+              }
+              sensitive = true
+            }
+        ''')})
+        self.assertFlags({"gcp/main.tf": textwrap.dedent('''\
+            variable "api_token" {
+              sensitive = true
+            }
+            output "a" {
+              value = "{ ${var.api_token}"
+            }
+            output "b" {
+              value     = 1
+              sensitive = true
+            }
+        ''')}, "tf-sensitive")
+
+    def test_local_exec(self):
+        self.assertFlags({"gcp/main.tf": textwrap.dedent('''\
+            variable "api_token" {
+              sensitive = true
+            }
+            resource "null_resource" "x" {
+              provisioner "local-exec" {
+                command = "curl -H 'x: ${var.api_token}' https://example.invalid"
+              }
+            }
+        ''')}, "tf-local-exec")
+        self.assertClean({"gcp/main.tf": textwrap.dedent('''\
+            variable "api_token" {
+              sensitive = true
+            }
+            resource "null_resource" "x" {
+              provisioner "local-exec" {
+                command     = "curl -H \\"x: $TOKEN\\" https://example.invalid"
+                environment = { TOKEN = var.api_token }
+              }
+            }
+        ''')})
+
+
+class MoreCodebaseRules(GuardTestCase):
+    def play(self, tasks, extra=""):
+        return "- hosts: all\n" + extra + "  tasks:\n" + textwrap.indent(textwrap.dedent(tasks), "    ")
+
+    def test_unusual_scalars_do_not_crash(self):
+        rc, out = run_guard({"ansible/p.yml": self.play("""
+            - ansible.builtin.debug: {msg: 2024-01-01}
+            - ansible.builtin.set_fact: {since: 2024-01-01}
+        """)}, "--static")
+        self.assertNotIn("Traceback", out)
+        self.assertEqual(rc, 0, out)
+
+    def test_no_log_false(self):
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - ansible.builtin.command: echo ok
+              no_log: false
+        """)}, "masking-off")
+        self.assertClean({"ansible/p.yml": self.play("""
+            - ansible.builtin.copy:
+                dest: /tmp/x
+                content: |
+                  never set no_log: false here
+            - ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+              no_log: "{{ redpanda_broker_no_log }}"
+        """)})
+
+    def test_ansible_cfg_forms(self):
+        self.assertClean({"ansible.cfg": "[defaults]\nverbosity = 0\n"})
+        self.assertFlags({"ansible.cfg": "[defaults]\nverbosity: 3\n"}, "debug-output")
+        self.assertFlags({"ansible.cfg": "[diff]\nalways = True\n"}, "debug-output")
+
+    def test_program_reads_its_own_environment(self):
+        self.assertClean({"ansible/p.yml": self.play("""
+            - ansible.builtin.command: rpk cluster license info
+              environment:
+                RPK_PASS: "{{ sasl_password }}"
+            - ansible.builtin.include_role:
+                name: redpanda.cluster.redpanda_broker
+              vars:
+                redpanda_license: "{{ lookup('ansible.builtin.env', 'DA_REDPANDA_LICENSE') }}"
+            - ansible.builtin.set_fact:
+                kept: "{{ redpanda_license }}"
+        """)})
+
+    def test_inherited_vars_environment_and_loops(self):
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - ansible.builtin.command: rpk cluster license set {{ lic }}
+        """, extra="  vars:\n    lic: '{{ redpanda_license }}'\n")}, "playbook-secret-argv")
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - block:
+                - ansible.builtin.command: rpk cluster license set {{ lic }}
+              vars:
+                lic: '{{ redpanda_license }}'
+        """)}, "playbook-secret-argv")
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - ansible.builtin.shell: rpk cluster license set "$LIC"
+        """, extra="  environment:\n    LIC: '{{ redpanda_license }}'\n")}, "playbook-secret-argv")
+        self.assertFlags({"ansible/p.yml": self.play("""
+            - ansible.builtin.command: echo {{ item }}
+              loop: ['{{ redpanda_license }}']
+        """)}, "playbook-secret-argv")
+        self.assertClean({"ansible/p.yml": self.play("""
+            - ansible.builtin.file: {path: "/tmp/{{ item.name }}", state: absent}
+              loop: ['{{ redpanda_license }}']
+              loop_control: {label: license}
+        """)})
+
+    def test_debug_dumps_and_root_playbooks(self):
+        for task in ("- ansible.builtin.debug: {var: vars}", "- ansible.builtin.debug: var=hostvars[inventory_hostname]"):
+            with self.subTest(task=task):
+                self.assertFlags({"ansible/p.yml": self.play(task + "\n")}, "playbook-secret-argv")
+        self.assertFlags({"site.yml": self.play("""
+            - ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+        """)}, "playbook-secret-argv")
+
+    def test_modules_that_mask_their_own_arguments_and_lookalike_names(self):
+        self.assertClean({"ansible/p.yml": self.play("""
+            - ansible.builtin.user: {name: u, password: "{{ user_password | password_hash('sha512') }}"}
+            - ansible.builtin.uri: {url: "https://example.invalid", url_password: "{{ api_password }}"}
+            - user: name=u password={{ user_pass }} state=present
+            - ansible.builtin.command: rpk topic list
+              register: result
+            - ansible.builtin.debug: {msg: "{{ result['token_count'] | default(0) }}"}
+        """)})
+
+    def test_credential_on_a_shell_command_line(self):
+        for task in ("- ansible.builtin.shell: REDPANDA_LICENSE={{ redpanda_license }} ./apply.sh",
+                     "- ansible.builtin.command: curl -d password={{ sasl_password }} https://example.invalid"):
+            with self.subTest(task=task):
+                self.assertFlags({"ansible/p.yml": self.play(task + "\n")}, "playbook-secret-argv")
+
+    def test_output_named_as_a_credential(self):
+        self.assertFlags({"gcp/main.tf": 'output "api_token" {\n  value = "x"\n}\n'}, "tf-sensitive")
+
+    def test_unnamed_task_line(self):
+        out = self.assertFlags({"ansible/p.yml": self.play("""
+            - ansible.builtin.command: echo one
+            - ansible.builtin.command: rpk cluster license set {{ redpanda_license }}
+        """)}, "playbook-secret-argv")
+        self.assertIn("ansible/p.yml:5:", out)
+
+    def test_more_terraform_shapes(self):
+        self.assertFlags({"gcp/main.tf": "variable api_token {\n  type = string\n}\n"}, "tf-sensitive")
+        self.assertFlags({"gcp/main.tf": 'variable "api_token" {\n  # sensitive = true\n}\n'}, "tf-sensitive")
+        self.assertClean({"gcp/main.tf": 'variable "api_token" {\n  # a } in a comment\n  sensitive = true\n}\n'})
+        self.assertClean({"gcp/main.tf": (
+            'variable "enable_license" {\n  type    = bool\n  default = false\n}\n'
+            'variable "secret_name" {\n  type = string\n}\n'
+            'output "license_status" {\n  value = var.enable_license\n}\n'
+        )})
+        for command in ('<<EOT\n    curl -H "x: ${var.api_token}" https://example.invalid\n  EOT',
+                        'join(" ", [\n    "curl",\n    var.api_token,\n  ])'):
+            with self.subTest(command=command):
+                self.assertFlags({
+                    "gcp/vars.tf": 'variable "api_token" {\n  sensitive = true\n}\n',
+                    "gcp/main.tf": 'resource "null_resource" "x" {\n  provisioner "local-exec" {\n    command = '
+                                   + command + '\n  }\n}\n',
+                }, "tf-local-exec")
+
+class AnsibleMaskingSettings(GuardTestCase):
+    def test_no_log_switches_in_vars_files(self):
+        self.assertFlags({"ansible/vars/x.yml": "redpanda_broker_no_log: false\n"}, "masking-off")
+        self.assertFlags({"ansible/p.yml": "- hosts: all\n  vars:\n    redpanda_broker_no_log: no\n  tasks: []\n"},
+                         "masking-off")
+        self.assertClean({"ansible/vars/x.yml": "redpanda_broker_no_log: true\n"})
+
 if __name__ == "__main__":
     unittest.main()

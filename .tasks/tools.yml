@@ -35,9 +35,10 @@ tasks:
 
   lint:secrets:
     desc: >-
-      Fail if any task or CI step can print a credential: runs the guard's tests, then
-      dry-runs every task with canary credentials and checks the task files, pipeline and
-      scripts statically. Needs no credentials or network.
+      Fail if any task, CI step, playbook or Terraform stack can print a credential: runs
+      the guard's tests, then dry-runs every task with canary credentials and checks the
+      task files, pipeline, scripts, playbooks and stacks statically. Needs no credentials
+      or network.
     cmds:
       - python3 scripts/test_check_secret_hygiene.py
       - python3 scripts/check-secret-hygiene.py
