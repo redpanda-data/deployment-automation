@@ -101,7 +101,6 @@ steps:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
-            - CONNECT_RPM_TOKEN
             - BASELINE_COLLECTION_REF
             - CANDIDATE_COLLECTION_REF
             - REDPANDA_VERSION
@@ -144,7 +143,6 @@ steps:
             - AWS_SECRET_ACCESS_KEY
             - AWS_DEFAULT_REGION
             - REDPANDA_LICENSE
-            - CONNECT_RPM_TOKEN
             - BASELINE_COLLECTION_REF
             - CANDIDATE_COLLECTION_REF
             - REDPANDA_VERSION
