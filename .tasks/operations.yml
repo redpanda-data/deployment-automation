@@ -30,5 +30,7 @@ tasks:
     deps:
       - :ansible:prereqs
       - :ensure-logs-dir
+    env:
+      DA_REDPANDA_LICENSE: '{{.REDPANDA_LICENSE}}'
     cmds:
-      - ansible-playbook ansible/operation-apply-license.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars redpanda_license={{.REDPANDA_LICENSE}}
+      - ansible-playbook ansible/operation-apply-license.yml --private-key {{.PRIVATE_KEY}} --inventory {{.ANSIBLE_INVENTORY}} --extra-vars @ansible/vars/redpanda-license-from-env.yml
