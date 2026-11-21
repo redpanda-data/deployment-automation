@@ -156,7 +156,7 @@ tasks:
     cmds:
       - |
         CONNECT_TARGET=$(sed -n '/^\[connect\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | head -n1)
-        curl -vvvvv -k --cert ansible/tls/clients/client.crt --key {{.CLIENT_KEY}} --cacert {{.CLIENT_CERT}} -X GET https://$CONNECT_TARGET:8083/connectors
+        curl {{if eq .HTTP_DEBUG "true"}}-v {{end}}-k --cert ansible/tls/clients/client.crt --key {{.CLIENT_KEY}} --cacert {{.CLIENT_CERT}} -X GET https://$CONNECT_TARGET:8083/connectors
 
   prometheus:
     desc: Test Prometheus exporter endpoint
@@ -165,7 +165,7 @@ tasks:
     cmds:
       - |
         PROMETHEUS_EXPORTER_TARGET=$(sed -n '/^\[connect\]/,/^\[/p' "{{.HOSTS_FILE}}" | grep '^[0-9]' | cut -d' ' -f1 | head -n1)
-        curl -vvvvv -k --cert ansible/tls/clients/client.crt --key ansible/tls/clients/client.key --cacert ansible/tls/ca/ca.crt -X GET https://$PROMETHEUS_EXPORTER_TARGET:9404/metrics
+        curl {{if eq .HTTP_DEBUG "true"}}-v {{end}}-k --cert ansible/tls/clients/client.crt --key ansible/tls/clients/client.key --cacert ansible/tls/ca/ca.crt -X GET https://$PROMETHEUS_EXPORTER_TARGET:9404/metrics
 
   spam:
     desc: Produce multiple messages to test topic
